@@ -72,7 +72,7 @@ export default function Header() {
 
         {/* Auth Buttons */}
         <Space>
-          <Link href="/login">
+          <Link href="/auth/login">
             <Button type="text" icon={<LoginOutlined />} style={{ color: '#666' }}>
               Đăng nhập
             </Button>
