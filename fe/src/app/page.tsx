@@ -22,7 +22,7 @@ export default function Home() {
         }}>
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             <Title level={1} style={{ fontSize: '3.5rem', marginBottom: '24px' }}>
-              Hệ thống <span style={{ color: '#ff6b35' }}>Duyệt đề tài</span> và <span style={{ color: '#ff6b35' }}>Kiểm tra đạo văn</span>
+              Quản lý <span style={{ color: '#ff6b35' }}>luận văn</span> <span style={{ color: '#ff6b35' }}>tốt nghiệp</span>
             </Title>
             <Paragraph style={{ fontSize: '20px', color: '#666', marginBottom: '40px', maxWidth: 800, margin: '0 auto 40px' }}>
               Nền tảng chuyên nghiệp dành cho giảng viên và trưởng môn học để duyệt đề tài đồ án tốt nghiệp 
