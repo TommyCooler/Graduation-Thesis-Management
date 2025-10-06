@@ -1,13 +1,10 @@
 'use client';
-import { Layout, Button, Space, Typography, Menu, Dropdown } from 'antd';
+import { Layout, Button, Space, Typography } from 'antd';
 import { 
   LoginOutlined, 
   UserOutlined, 
   FileAddOutlined, 
-  DashboardOutlined,
-  DownOutlined,
-  BookOutlined,
-  BarChartOutlined
+  SearchOutlined
 } from '@ant-design/icons';
 import Link from 'next/link';
 
@@ -15,18 +12,6 @@ const { Header: AntHeader } = Layout;
 const { Title } = Typography;
 
 export default function Header() {
-  const teacherMenuItems = [
-    {
-      key: 'create-topic',
-      icon: <FileAddOutlined />,
-      label: (
-        <Link href="/topics">
-          Đăng tải đề tài
-        </Link>
-      ),
-    },
-  ];
-
   return (
     <AntHeader style={{ 
       background: '#fff', 
@@ -65,6 +50,15 @@ export default function Header() {
                 style={{ color: '#666', height: '40px', padding: '0 16px' }}
               >
                 Đăng tải đề tài
+              </Button>
+            </Link>
+            <Link href="/check-plagiarism">
+              <Button 
+                type="text" 
+                icon={<SearchOutlined />}
+                style={{ color: '#666', height: '40px', padding: '0 16px' }}
+              >
+                Kiểm tra đạo văn
               </Button>
             </Link>
           </nav>
