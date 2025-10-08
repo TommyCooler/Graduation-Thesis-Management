@@ -13,7 +13,7 @@ export default function LoginPage() {
 
   const onFinish = async (values: { email: string; password: string }) => {
     setLoading(true);
-    
+
     try {
       // Validate email domain
       if (!values.email.endsWith('@fe.edu.vn')) {
@@ -24,19 +24,19 @@ export default function LoginPage() {
 
       // TODO: Thay thế bằng API call thực tế
       console.log('Login attempt:', values);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       message.success('Đăng nhập thành công!');
-      
+
       // Redirect based on user role (temporary logic)
       if (values.email.includes('head')) {
         router.push('/head-of-department/dashboard');
       } else {
         router.push('/teacher/dashboard');
       }
-      
+
     } catch (error) {
       message.error('Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.');
     } finally {
@@ -45,37 +45,16 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #fff5f0 0%, #ffffff 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-[#fff5f0] to-white flex items-center justify-center p-6">
       <Card
-        style={{
-          width: '100%',
-          maxWidth: 400,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          borderRadius: '12px'
-        }}
+        className="w-full max-w-sm shadow-xl rounded-xl"
         styles={{ body: { padding: '40px 32px' } }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            width: 64,
-            height: 64,
-            background: '#fff5f0',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px'
-          }}>
-            <UserOutlined style={{ fontSize: '32px', color: '#ff6b35' }} />
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-[#fff5f0] rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserOutlined className="text-4xl text-[#ff6b35]" />
           </div>
-          <Title level={2} style={{ margin: 0, color: '#ff6b35' }}>
+          <Title level={2} className="m-0 text-[#ff6b35]">
             Đăng nhập
           </Title>
           <Text type="secondary">
@@ -95,14 +74,14 @@ export default function LoginPage() {
             rules={[
               { required: true, message: 'Vui lòng nhập email!' },
               { type: 'email', message: 'Email không hợp lệ!' },
-              { 
-                pattern: /@fe\.edu\.vn$/, 
-                message: 'Chỉ chấp nhận email @fe.edu.vn!' 
+              {
+                pattern: /@fe\.edu\.vn$/,
+                message: 'Chỉ chấp nhận email @fe.edu.vn!'
               }
             ]}
           >
             <Input
-              prefix={<MailOutlined style={{ color: '#ff6b35' }} />}
+              prefix={<MailOutlined className="text-[#ff6b35]" />}
               placeholder="yourname@fe.edu.vn"
             />
           </Form.Item>
@@ -116,7 +95,7 @@ export default function LoginPage() {
             ]}
           >
             <Input.Password
-              prefix={<LockOutlined style={{ color: '#ff6b35' }} />}
+              prefix={<LockOutlined className="text-[#ff6b35]" />}
               placeholder="Nhập mật khẩu"
             />
           </Form.Item>
@@ -126,35 +105,28 @@ export default function LoginPage() {
               type="primary"
               htmlType="submit"
               loading={loading}
-              style={{
-                width: '100%',
-                height: '48px',
-                background: '#ff6b35',
-                borderColor: '#ff6b35',
-                fontSize: '16px',
-                fontWeight: 'bold'
-              }}
+             className="w-full h-12 bg-orange-500 border-orange-500 text-base font-bold"
             >
               Đăng nhập
             </Button>
           </Form.Item>
         </Form>
 
-        <Divider style={{ margin: '24px 0' }}>
+        <Divider className="my-6">
           <Text type="secondary">Hoặc</Text>
         </Divider>
 
-        <div style={{ textAlign: 'center' }}>
+        <div className="text-center">
           <Text type="secondary">
             Chưa có tài khoản?{' '}
-            <Link href="/auth/register" style={{ color: '#ff6b35' }}>
+            <Link href="/auth/register" className="text-[#ff6b35]">
               Đăng ký ngay
             </Link>
           </Text>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Link href="/" style={{ color: '#666' }}>
+        <div className="text-center mt-4">
+          <Link href="/" className="text-gray-600">
             ← Quay về trang chủ
           </Link>
         </div>

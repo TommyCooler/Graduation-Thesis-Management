@@ -24,3 +24,23 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+
+/* ghi đè màu button của ant design */
+
+.ant-btn-primary {
+  background-color: #ff6b35 !important;
+  border-color: #ff6b35 !important;
+}
+/* vòng tròn tiến độ ở dashboard */
+.bg-conic-gradient {
+  background-image: conic-gradient(#ff6b35 0deg 252deg, #e8e8e8 252deg 360deg);
+}
+
+.bg-conic-gradient-approved {
+  background-image: conic-gradient(#52c41a 0deg 180deg, #e8e8e8 180deg 360deg);
+}
+
+.bg-conic-gradient-pending {
+  background-image: conic-gradient(#faad14 0deg 72deg, #e8e8e8 72deg 360deg);
+}
