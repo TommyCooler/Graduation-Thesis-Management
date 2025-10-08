@@ -1,0 +1,18 @@
+package mss.project.topicapprovalservice.dtos.responses;
+
+
+import lombok.Data;
+
+@Data
+public class TopicsDTOResponse {
+
+
+    private Long id;
+    private String title;
+    private String description;
+    private String submitedAt;
+    private String status;
+    private String filePathUrl;
+    private String createdAt;
+    private String updatedAt;
+}
