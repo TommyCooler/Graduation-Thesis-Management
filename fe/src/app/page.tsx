@@ -1,7 +1,6 @@
 'use client';
-import { Layout, Button, Card, Row, Col, Statistic, Typography, Space } from 'antd';
-import { CheckCircleOutlined, SearchOutlined, UserOutlined, AuditOutlined, SafetyOutlined } from '@ant-design/icons';
-import Link from 'next/link';
+import { Layout, Card, Row, Col, Typography, Divider } from 'antd';
+import { CheckCircleOutlined, SearchOutlined, SafetyOutlined } from '@ant-design/icons';
 import Header from '../components/combination/Header';
 import Footer from '../components/combination/Footer';
 
@@ -15,84 +14,38 @@ export default function Home() {
       
       <Content>
         {/* Hero Section */}
-        <div style={{ 
-          background: 'linear-gradient(135deg, #fff5f0 0%, #ffffff 100%)',
-          padding: '80px 24px',
-          textAlign: 'center'
-        }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <Title level={1} style={{ fontSize: '3.5rem', marginBottom: '24px' }}>
-              Quản lý <span style={{ color: '#ff6b35' }}>luận văn</span> <span style={{ color: '#ff6b35' }}>tốt nghiệp</span>
+        <div className="bg-gradient-to-br from-orange-50 to-white py-20 px-6 text-center">
+          <div className="max-w-6xl mx-auto">
+            <Title level={1} className="text-6xl mb-6">
+              Quản lý <span className="text-orange-500">luận văn</span> <span className="text-orange-500">tốt nghiệp</span>
             </Title>
-            <Paragraph style={{ fontSize: '20px', color: '#666', marginBottom: '40px', maxWidth: 800, margin: '0 auto 40px' }}>
+            <Paragraph className="text-xl text-gray-600 mb-10 max-w-4xl mx-auto">
               Nền tảng chuyên nghiệp dành cho giảng viên và trưởng môn học để duyệt đề tài đồ án tốt nghiệp 
               và kiểm tra tính nguyên bản của nội dung nghiên cứu.
             </Paragraph>
-            <Space size="large">
-              <Link href="/teacher/dashboard">
-                <Button 
-                  type="primary" 
-                  size="large" 
-                  style={{ 
-                    background: '#ff6b35', 
-                    borderColor: '#ff6b35',
-                    height: '50px',
-                    padding: '0 32px',
-                    fontSize: '16px'
-                  }}
-                  icon={<UserOutlined />}
-                >
-                  Dành cho Giảng viên
-                </Button>
-              </Link>
-              <Link href="/head-of-department/dashboard">
-                <Button 
-                  size="large" 
-                  style={{ 
-                    color: '#ff6b35',
-                    borderColor: '#ff6b35',
-                    height: '50px',
-                    padding: '0 32px',
-                    fontSize: '16px'
-                  }}
-                  icon={<AuditOutlined />}
-                >
-                  Dành cho Trưởng môn
-                </Button>
-              </Link>
-            </Space>
           </div>
         </div>
 
         {/* Features Section */}
-        <div style={{ padding: '80px 24px', background: '#fff' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <Title level={2} style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div className="py-20 px-6 bg-white">
+          <div className="max-w-6xl mx-auto">
+            <Title level={2} className="text-center mb-15">
               Tính năng chính
             </Title>
             <Row gutter={[32, 32]}>
               <Col xs={24} md={8}>
                 <Card 
                   hoverable
-                  style={{ textAlign: 'center', height: '100%' }}
+                  className="text-center h-full"
                   styles={{ body: { padding: '40px 24px' } }}
                 >
-                  <div style={{
-                    width: 64,
-                    height: 64,
-                    background: '#fff5f0',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 24px'
-                  }}>
-                    <CheckCircleOutlined style={{ fontSize: '32px', color: '#ff6b35' }} />
+                  <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircleOutlined className="text-3xl text-orange-500" />
                   </div>
-                  <Title level={4} style={{ marginBottom: '16px' }}>
+                  <Title level={4} className="mb-4">
                     Duyệt đề tài
                   </Title>
-                  <Paragraph style={{ color: '#666' }}>
+                  <Paragraph className="text-gray-600">
                     Xem xét, đánh giá và phê duyệt đề tài đồ án tốt nghiệp của sinh viên
                   </Paragraph>
                 </Card>
@@ -100,25 +53,16 @@ export default function Home() {
               <Col xs={24} md={8}>
                 <Card 
                   hoverable
-                  style={{ textAlign: 'center', height: '100%' }}
+                  className="text-center h-full"
                   styles={{ body: { padding: '40px 24px' } }}
                 >
-                  <div style={{
-                    width: 64,
-                    height: 64,
-                    background: '#fff5f0',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 24px'
-                  }}>
-                    <SearchOutlined style={{ fontSize: '32px', color: '#ff6b35' }} />
+                  <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <SearchOutlined className="text-3xl text-orange-500" />
                   </div>
-                  <Title level={4} style={{ marginBottom: '16px' }}>
+                  <Title level={4} className="mb-4">
                     Kiểm tra đạo văn
                   </Title>
-                  <Paragraph style={{ color: '#666' }}>
+                  <Paragraph className="text-gray-600">
                     Sử dụng công nghệ AI để phát hiện và kiểm tra tính nguyên bản của nội dung
                   </Paragraph>
                 </Card>
@@ -126,25 +70,16 @@ export default function Home() {
               <Col xs={24} md={8}>
                 <Card 
                   hoverable
-                  style={{ textAlign: 'center', height: '100%' }}
+                  className="text-center h-full"
                   styles={{ body: { padding: '40px 24px' } }}
                 >
-                  <div style={{
-                    width: 64,
-                    height: 64,
-                    background: '#fff5f0',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 24px'
-                  }}>
-                    <SafetyOutlined style={{ fontSize: '32px', color: '#ff6b35' }} />
+                  <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <SafetyOutlined className="text-3xl text-orange-500" />
                   </div>
-                  <Title level={4} style={{ marginBottom: '16px' }}>
+                  <Title level={4} className="mb-4">
                     Quản lý quy trình
                   </Title>
-                  <Paragraph style={{ color: '#666' }}>
+                  <Paragraph className="text-gray-600">
                     Theo dõi và quản lý toàn bộ quy trình từ nộp đề tài đến phê duyệt cuối cùng
                   </Paragraph>
                 </Card>
@@ -153,63 +88,20 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Stats Section */}
-        <div style={{ padding: '80px 24px', background: '#ff6b35' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <Row gutter={[32, 32]}>
-              <Col xs={12} md={6}>
-                <Statistic
-                  title={<span style={{ color: '#ffb399' }}>Đề tài đã duyệt</span>}
-                  value={1250}
-                  suffix="+"
-                  valueStyle={{ color: '#fff', fontSize: '3rem', fontWeight: 'bold' }}
-                  style={{ textAlign: 'center' }}
-                />
-              </Col>
-              <Col xs={12} md={6}>
-                <Statistic
-                  title={<span style={{ color: '#ffb399' }}>Giảng viên sử dụng</span>}
-                  value={85}
-                  suffix="+"
-                  valueStyle={{ color: '#fff', fontSize: '3rem', fontWeight: 'bold' }}
-                  style={{ textAlign: 'center' }}
-                />
-              </Col>
-              <Col xs={12} md={6}>
-                <Statistic
-                  title={<span style={{ color: '#ffb399' }}>Kiểm tra đạo văn</span>}
-                  value={3200}
-                  suffix="+"
-                  valueStyle={{ color: '#fff', fontSize: '3rem', fontWeight: 'bold' }}
-                  style={{ textAlign: 'center' }}
-                />
-              </Col>
-              <Col xs={12} md={6}>
-                <Statistic
-                  title={<span style={{ color: '#ffb399' }}>Độ chính xác</span>}
-                  value={98.5}
-                  suffix="%"
-                  valueStyle={{ color: '#fff', fontSize: '3rem', fontWeight: 'bold' }}
-                  style={{ textAlign: 'center' }}
-                />
-              </Col>
-            </Row>
-          </div>
-        </div>
 
         {/* Process Section */}
-        <div style={{ padding: '80px 24px', background: '#f9f9f9' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            <Title level={2} style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <div className="py-20 px-6 bg-gray-50">
+          <div className="max-w-6xl mx-auto">
+            <Title level={2} className="text-center mb-15">
               Quy trình làm việc
             </Title>
             <Row gutter={[32, 32]} align="middle">
               <Col xs={24} md={12}>
-                <div style={{ background: '#fff', padding: '40px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                  <Title level={4} style={{ color: '#ff6b35', marginBottom: '20px' }}>
+                <div className="bg-white p-10 rounded-lg shadow-md">
+                  <Title level={4} className="text-orange-500 mb-5">
                     Cho Giảng viên:
                   </Title>
-                  <ul style={{ fontSize: '16px', lineHeight: 2, color: '#666' }}>
+                  <ul className="text-base leading-8 text-gray-600">
                     <li>Nhận thông báo đề tài mới cần duyệt</li>
                     <li>Xem xét nội dung và tính khả thi</li>
                     <li>Kiểm tra đạo văn tự động</li>
@@ -218,11 +110,11 @@ export default function Home() {
                 </div>
               </Col>
               <Col xs={24} md={12}>
-                <div style={{ background: '#fff', padding: '40px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                  <Title level={4} style={{ color: '#ff6b35', marginBottom: '20px' }}>
+                <div className="bg-white p-10 rounded-lg shadow-md">
+                  <Title level={4} className="text-orange-500 mb-5">
                     Cho Trưởng môn:
                   </Title>
-                  <ul style={{ fontSize: '16px', lineHeight: 2, color: '#666' }}>
+                  <ul className="text-base leading-8 text-gray-600">
                     <li>Giám sát tổng thể quy trình duyệt</li>
                     <li>Xử lý các trường hợp phức tạp</li>
                     <li>Thống kê và báo cáo hiệu suất</li>
@@ -235,6 +127,7 @@ export default function Home() {
         </div>
       </Content>
 
+      <Divider className="my-0" />
       <Footer />
     </Layout>
   );

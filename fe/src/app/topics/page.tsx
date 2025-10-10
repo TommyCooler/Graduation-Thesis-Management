@@ -7,7 +7,6 @@ import {
   Button, 
   Upload, 
   Select, 
-  DatePicker, 
   Typography, 
   Space, 
   Row, 
@@ -28,8 +27,6 @@ import {
 import React, { JSX, useState } from 'react';
 import Header from '../../components/combination/Header';
 import Footer from '../../components/combination/Footer';
-import type { DatePickerProps } from 'antd';
-import dayjs from 'dayjs';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -42,9 +39,6 @@ interface TopicFormValues {
   requirements: string;
   expected_results?: string;
   field: string;
-  student_limit: number;
-  difficulty: 'easy' | 'medium' | 'hard';
-  registration_deadline: dayjs.Dayjs;
 }
 
 export default function TopicUpload(): JSX.Element {
@@ -58,8 +52,7 @@ export default function TopicUpload(): JSX.Element {
       console.log('Topic data:', {
         ...values,
         keywords,
-        attachments: fileList,
-        registration_deadline: values.registration_deadline?.format('YYYY-MM-DD')
+        attachments: fileList
       });
       message.success('Đề tài đã được tạo thành công!');
       form.resetFields();
@@ -94,28 +87,24 @@ export default function TopicUpload(): JSX.Element {
     maxCount: 5
   };
 
-  const disabledDate: DatePickerProps['disabledDate'] = (current) => {
-    // Can not select days before today
-    return current && current < dayjs().startOf('day');
-  };
 
   return (
     <Layout className="min-h-screen">
       <Header />
       
-      <Content style={{ padding: '40px 24px', background: '#f5f5f5' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+      <Content className="p-10 bg-gray-50">
+        <div className="max-w-4xl mx-auto">
           {/* Header Section */}
-          <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-            <Title level={2} style={{ color: '#ff6b35', marginBottom: '8px' }}>
+          <div className="mb-8 text-center">
+            <Title level={2} className="text-orange-500 mb-2">
               <FileOutlined /> Đăng tải đề tài mới
             </Title>
-            <Paragraph style={{ fontSize: '16px', color: '#666' }}>
+            <Paragraph className="text-base text-gray-600">
               Tạo và đăng tải đề tài luận văn tốt nghiệp cho sinh viên
             </Paragraph>
           </div>
 
-          <Card style={{ borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+          <Card className="rounded-xl shadow-lg">
             <Form<TopicFormValues>
               form={form}
               layout="vertical"
@@ -124,7 +113,7 @@ export default function TopicUpload(): JSX.Element {
             >
               <Row gutter={24}>
                 {/* Left Column */}
-                <Col xs={24} lg={14}>
+                <Col xs={24} lg={16}>
                   <Form.Item
                     label={<Text strong>Tên đề tài</Text>}
                     name="title"
@@ -132,7 +121,7 @@ export default function TopicUpload(): JSX.Element {
                   >
                     <Input 
                       placeholder="Nhập tên đề tài luận văn..."
-                      style={{ borderRadius: '8px' }}
+                      className="rounded-lg"
                       maxLength={200}
                       showCount
                     />
@@ -146,7 +135,7 @@ export default function TopicUpload(): JSX.Element {
                     <TextArea 
                       rows={4}
                       placeholder="Mô tả chi tiết về đề tài, mục tiêu, phạm vi nghiên cứu..."
-                      style={{ borderRadius: '8px' }}
+                      className="rounded-lg"
                       maxLength={1000}
                       showCount
                     />
@@ -160,7 +149,7 @@ export default function TopicUpload(): JSX.Element {
                     <TextArea 
                       rows={3}
                       placeholder="Các yêu cầu cần thiết đối với sinh viên thực hiện đề tài..."
-                      style={{ borderRadius: '8px' }}
+                      className="rounded-lg"
                       maxLength={500}
                       showCount
                     />
@@ -173,7 +162,7 @@ export default function TopicUpload(): JSX.Element {
                     <TextArea 
                       rows={3}
                       placeholder="Các kết quả, sản phẩm mong đợi từ đề tài..."
-                      style={{ borderRadius: '8px' }}
+                      className="rounded-lg"
                       maxLength={500}
                       showCount
                     />
@@ -181,7 +170,7 @@ export default function TopicUpload(): JSX.Element {
                 </Col>
 
                 {/* Right Column */}
-                <Col xs={24} lg={10}>
+                <Col xs={24} lg={8}>
                   <Form.Item
                     label={<Text strong>Lĩnh vực</Text>}
                     name="field"
@@ -189,7 +178,7 @@ export default function TopicUpload(): JSX.Element {
                   >
                     <Select 
                       placeholder="Chọn lĩnh vực nghiên cứu"
-                      style={{ borderRadius: '8px' }}
+                      className="rounded-lg"
                     >
                       <Option value="web-development">Web Development</Option>
                       <Option value="mobile-app">Mobile Application</Option>
@@ -202,53 +191,11 @@ export default function TopicUpload(): JSX.Element {
                     </Select>
                   </Form.Item>
 
-                  <Form.Item
-                    label={<Text strong>Số lượng sinh viên</Text>}
-                    name="student_limit"
-                    rules={[{ required: true, message: 'Vui lòng chọn số lượng sinh viên!' }]}
-                  >
-                    <Select 
-                      placeholder="Chọn số lượng sinh viên"
-                      style={{ borderRadius: '8px' }}
-                    >
-                      <Option value={1}>1 sinh viên</Option>
-                      <Option value={2}>2 sinh viên</Option>
-                      <Option value={3}>3 sinh viên</Option>
-                    </Select>
-                  </Form.Item>
-
-                  <Form.Item
-                    label={<Text strong>Mức độ khó</Text>}
-                    name="difficulty"
-                    rules={[{ required: true, message: 'Vui lòng chọn mức độ khó!' }]}
-                  >
-                    <Select 
-                      placeholder="Chọn mức độ khó"
-                      style={{ borderRadius: '8px' }}
-                    >
-                      <Option value="easy">Dễ</Option>
-                      <Option value="medium">Trung bình</Option>
-                      <Option value="hard">Khó</Option>
-                    </Select>
-                  </Form.Item>
-
-                  <Form.Item
-                    label={<Text strong>Hạn đăng ký</Text>}
-                    name="registration_deadline"
-                    rules={[{ required: true, message: 'Vui lòng chọn hạn đăng ký!' }]}
-                  >
-                    <DatePicker 
-                      style={{ width: '100%', borderRadius: '8px' }}
-                      placeholder="Chọn ngày hết hạn đăng ký"
-                      format="DD/MM/YYYY"
-                      disabledDate={disabledDate}
-                    />
-                  </Form.Item>
 
                   {/* Keywords Section */}
                   <Form.Item label={<Text strong>Từ khóa</Text>}>
-                    <Space direction="vertical" style={{ width: '100%' }}>
-                      <Space.Compact style={{ width: '100%' }}>
+                    <Space direction="vertical" className="w-full">
+                      <Space.Compact className="w-full">
                         <Input
                           value={inputKeyword}
                           onChange={(e) => setInputKeyword(e.target.value)}
@@ -260,30 +207,25 @@ export default function TopicUpload(): JSX.Element {
                           type="primary" 
                           icon={<PlusOutlined />}
                           onClick={addKeyword}
-                          style={{ background: '#ff6b35', borderColor: '#ff6b35' }}
+                          className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600"
                           disabled={!inputKeyword || keywords.length >= 10}
                         />
                       </Space.Compact>
                       
-                      <div style={{ minHeight: '32px' }}>
+                      <div className="min-h-8">
                         {keywords.map((keyword: string, index: number) => (
                           <Tag
                             key={index}
                             closable
                             onClose={() => removeKeyword(keyword)}
-                            style={{ 
-                              marginBottom: '8px',
-                              background: '#fff5f0',
-                              color: '#ff6b35',
-                              border: '1px solid #ff6b35'
-                            }}
+                            className="mb-2 bg-orange-50 text-orange-500 border-orange-500"
                           >
                             {keyword}
                           </Tag>
                         ))}
                       </div>
                       {keywords.length >= 10 && (
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                        <Text type="secondary" className="text-xs">
                           Tối đa 10 từ khóa
                         </Text>
                       )}
@@ -302,10 +244,10 @@ export default function TopicUpload(): JSX.Element {
                   >
                     <Upload.Dragger 
                       {...uploadProps}
-                      style={{ borderRadius: '8px' }}
+                      className="rounded-lg"
                     >
                       <p className="ant-upload-drag-icon">
-                        <UploadOutlined style={{ color: '#ff6b35', fontSize: '48px' }} />
+                        <UploadOutlined className="text-orange-500 text-5xl" />
                       </p>
                       <p className="ant-upload-text">
                         Kéo thả file vào đây hoặc click để chọn file
@@ -325,7 +267,7 @@ export default function TopicUpload(): JSX.Element {
                 <Col>
                   <Button 
                     size="large"
-                    style={{ borderRadius: '8px', minWidth: '120px' }}
+                    className="rounded-lg min-w-30"
                     onClick={() => {
                       form.resetFields();
                       setFileList([]);
@@ -340,12 +282,7 @@ export default function TopicUpload(): JSX.Element {
                     type="default"
                     size="large"
                     icon={<SaveOutlined />}
-                    style={{ 
-                      borderRadius: '8px', 
-                      minWidth: '120px',
-                      color: '#ff6b35',
-                      borderColor: '#ff6b35'
-                    }}
+                    className="rounded-lg min-w-30 text-orange-500 border-orange-500 hover:text-orange-600 hover:border-orange-600"
                     onClick={() => {
                       // Save as draft logic
                       message.info('Đã lưu nháp');
@@ -360,12 +297,7 @@ export default function TopicUpload(): JSX.Element {
                     size="large"
                     htmlType="submit"
                     icon={<SendOutlined />}
-                    style={{ 
-                      background: '#ff6b35', 
-                      borderColor: '#ff6b35',
-                      borderRadius: '8px',
-                      minWidth: '120px'
-                    }}
+                    className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600 rounded-lg min-w-30"
                   >
                     Đăng tải
                   </Button>
@@ -376,19 +308,14 @@ export default function TopicUpload(): JSX.Element {
 
           {/* Help Section */}
           <Card 
-            style={{ 
-              marginTop: '24px', 
-              borderRadius: '12px', 
-              background: '#fff5f0',
-              border: '1px solid #ff6b35'
-            }}
+            className="mt-6 rounded-xl bg-orange-50 border-orange-500"
           >
-            <Title level={4} style={{ color: '#ff6b35', marginBottom: '16px' }}>
+            <Title level={4} className="text-orange-500 mb-4">
               💡 Hướng dẫn tạo đề tài
             </Title>
             <Row gutter={24}>
               <Col xs={24} md={12}>
-                <ul style={{ color: '#666', lineHeight: 1.8 }}>
+                <ul className="text-gray-600 leading-relaxed">
                   <li>Tên đề tài nên rõ ràng, cụ thể và không quá dài</li>
                   <li>Mô tả chi tiết về mục tiêu và phạm vi nghiên cứu</li>
                   <li>Nêu rõ yêu cầu kỹ năng, kiến thức cần thiết</li>
@@ -396,11 +323,11 @@ export default function TopicUpload(): JSX.Element {
                 </ul>
               </Col>
               <Col xs={24} md={12}>
-                <ul style={{ color: '#666', lineHeight: 1.8 }}>
+                <ul className="text-gray-600 leading-relaxed">
                   <li>Chọn từ khóa phù hợp để sinh viên dễ tìm kiếm</li>
-                  <li>Đặt hạn đăng ký hợp lý (ít nhất 1 tuần)</li>
-                  <li>Xem xét kỹ số lượng sinh viên phù hợp</li>
-                  <li>Đánh giá mức độ khó phù hợp với sinh viên</li>
+                  <li>Mô tả chi tiết và rõ ràng về đề tài</li>
+                  <li>Đính kèm tài liệu tham khảo nếu có</li>
+                  <li>Kiểm tra kỹ nội dung trước khi đăng tải</li>
                 </ul>
               </Col>
             </Row>

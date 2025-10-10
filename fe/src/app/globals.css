@@ -44,3 +44,31 @@ body {
 .bg-conic-gradient-pending {
   background-image: conic-gradient(#faad14 0deg 72deg, #e8e8e8 72deg 360deg);
 }
+
+/* Force header to always be white */
+.ant-layout-header {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Override any dark theme for header */
+[data-theme="dark"] .ant-layout-header,
+.dark .ant-layout-header {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Force footer to always be black */
+.ant-layout-footer {
+  background-color: #000000;
+  color: #ffffff;
+}
+
+/* Override any theme for footer */
+[data-theme="dark"] .ant-layout-footer,
+.dark .ant-layout-footer,
+[data-theme="light"] .ant-layout-footer,
+.light .ant-layout-footer {
+  background-color: #000000;
+  color: #ffffff;
+}
