@@ -66,4 +66,26 @@ public class TopicsController {
         apiResponse.setMessage("All Topics");
         return apiResponse;
     }
+
+    @PutMapping("/approve/{id}")
+    public ApiResponse<TopicsDTOResponse> approveTopic(
+        @PathVariable Long id, 
+        @RequestParam String email) {
+        TopicsDTOResponse approved = topicsService.approveTopic(id, email);
+        ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Topic Approved by Head of Department");
+        apiResponse.setData(approved);
+        return apiResponse;
+    }
+    
+    @PutMapping("/reject/{id}")
+    public ApiResponse<TopicsDTOResponse> rejectTopic(
+        @PathVariable Long id, 
+        @RequestParam String email) {
+        TopicsDTOResponse rejected = topicsService.rejectTopic(id, email);
+        ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Topic Rejected by Head of Department");
+        apiResponse.setData(rejected);
+        return apiResponse;
+    }
 }

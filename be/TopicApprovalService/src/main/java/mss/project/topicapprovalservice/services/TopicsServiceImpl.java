@@ -8,7 +8,7 @@ import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
 import mss.project.topicapprovalservice.pojos.Topics;
-import mss.project.topicapprovalservice.repositorys.TopicsRepository;
+import mss.project.topicapprovalservice.repositories.TopicsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +17,9 @@ import java.util.List;
 
 @Service
 public class TopicsServiceImpl implements ITopicService {
+
+    @Autowired
+    private AuthorizationService authorizationService;
 
     @Autowired
     private TopicsRepository topicsRepository;
@@ -67,12 +70,45 @@ public class TopicsServiceImpl implements ITopicService {
         return null;
     }
 
+    @Override
+    public TopicsDTOResponse approveTopic(Long topicId, String email) { // Thay accountId bằng email
+        // Kiểm tra quyền truy cập
+        authorizationService.checkHeadOfDepartmentPermission(email);
+        
+        Topics existingTopic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+        
+        if (!"PENDING".equals(existingTopic.getStatus())) {
+            throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
+        }
+        
+        existingTopic.setStatus("APPROVED");
+        topicsRepository.save(existingTopic);
+        return convertToDTO(existingTopic);
+    }
+    
+    @Override
+    public TopicsDTOResponse rejectTopic(Long topicId, String email) {
+        authorizationService.checkHeadOfDepartmentPermission(email);
+        
+        Topics existingTopic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+        
+        if (!"PENDING".equals(existingTopic.getStatus())) {
+            throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
+        }
+        
+        existingTopic.setStatus("REJECTED");
+        topicsRepository.save(existingTopic);
+        return convertToDTO(existingTopic);
+    }
+
     private Topics convertToEntity(TopicsDTORequest topicsDTO){
         Topics topics = new Topics();
         topics.setTitle(topicsDTO.getTitle());
         topics.setDescription(topicsDTO.getDescription());
         topics.setSubmitedAt(LocalDateTime.parse(topicsDTO.getSubmitedAt()));
-        topics.setStatus(topicsDTO.getStatus());
+        topics.setStatus("PENDING");
         topics.setFilePathUrl(topicsDTO.getFilePathUrl());
         return topics;
     }

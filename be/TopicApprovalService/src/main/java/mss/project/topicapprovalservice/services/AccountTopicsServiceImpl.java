@@ -6,8 +6,8 @@ import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
 import mss.project.topicapprovalservice.pojos.AccountTopics;
 import mss.project.topicapprovalservice.pojos.Topics;
-import mss.project.topicapprovalservice.repositorys.AccountTopicsRepository;
-import mss.project.topicapprovalservice.repositorys.TopicsRepository;
+import mss.project.topicapprovalservice.repositories.AccountTopicsRepository;
+import mss.project.topicapprovalservice.repositories.TopicsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
