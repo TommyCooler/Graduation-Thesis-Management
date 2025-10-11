@@ -53,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
                 .secure(true)
                 .path("/")
                 .maxAge(60 * 60 * 24 * 30)
-                .sameSite("None") // <--- có hỗ trợ SameSite
+                .sameSite("None")
                 .build();
 
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
