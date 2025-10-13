@@ -25,12 +25,7 @@ interface Thesis {
 }
 
 export default function HeadOfDepartmentDashboard() {
-  const stats = {
-    totalTheses: 45,
-    pendingReview: 12,
-    approved: 28,
-    rejected: 5,
-  };
+ 
 
   const recentTheses: Thesis[] = [
     {
@@ -82,49 +77,6 @@ export default function HeadOfDepartmentDashboard() {
             </div>
           </div>
 
-          {/* Statistics Cards */}
-          <Row gutter={[24, 24]} className="mb-8">
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Tổng đề tài"
-                  value={stats.totalTheses}
-                  prefix={<FileTextOutlined className="text-[#ff6b35]" />}
-                  valueStyle={{ color: '#ff6b35' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Chờ duyệt"
-                  value={stats.pendingReview}
-                  prefix={<ClockCircleOutlined className="text-yellow-500" />}
-                  valueStyle={{ color: '#faad14' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Đã duyệt"
-                  value={stats.approved}
-                  prefix={<CheckCircleOutlined className="text-green-500" />}
-                  valueStyle={{ color: '#52c41a' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card>
-                <Statistic
-                  title="Từ chối"
-                  value={stats.rejected}
-                  prefix={<UserOutlined className="text-red-500" />}
-                  valueStyle={{ color: '#ff4d4f' }}
-                />
-              </Card>
-            </Col>
-          </Row>
 
           {/* Quick Actions */}
           <Row gutter={[24, 24]} className="mb-8">
@@ -142,7 +94,7 @@ export default function HeadOfDepartmentDashboard() {
                       className="w-full h-12 bg-[#ff6b35] border-[#ff6b35]"
                       icon={<AuditOutlined />}
                     >
-                      Duyệt đề tài ({stats.pendingReview})
+                      Duyệt đề tài
                     </Button>
                   </Link>
 
@@ -203,50 +155,6 @@ export default function HeadOfDepartmentDashboard() {
             </Col>
           </Row>
 
-          {/* Progress Overview */}
-          <Card title="Tổng quan tiến độ">
-            <Row gutter={[16, 16]}>
-              <Col xs={24} md={8}>
-                <div className="text-center">
-                  <div className="w-32 h-32 rounded-full mx-auto mb-4 flex items-center justify-center relative bg-conic-gradient">
-                    <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-lg font-bold text-[#ff6b35]">
-                      70%
-                    </div>
-                  </div>
-                  <Title level={4} className="m-0">
-                    Tỷ lệ hoàn thành
-                  </Title>
-                  <AntText type="secondary">28/40 đề tài đã được duyệt</AntText>
-                </div>
-              </Col>
-              <Col xs={24} md={8}>
-                <div className="text-center">
-                  <div className="w-32 h-32 rounded-full mx-auto mb-4 flex items-center justify-center relative bg-conic-gradient-approved">
-                    <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-lg font-bold text-green-500">
-                      50%
-                    </div>
-                  </div>
-                  <Title level={4} className="m-0">
-                    Tỷ lệ duyệt
-                  </Title>
-                  <AntText type="secondary">28/56 đề tài được duyệt</AntText>
-                </div>
-              </Col>
-              <Col xs={24} md={8}>
-                <div className="text-center">
-                  <div className="w-32 h-32 rounded-full mx-auto mb-4 flex items-center justify-center relative bg-conic-gradient-pending">
-                    <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center text-lg font-bold text-yellow-500">
-                      20%
-                    </div>
-                  </div>
-                  <Title level={4} className="m-0">
-                    Chờ xử lý
-                  </Title>
-                  <AntText type="secondary">12/60 đề tài chờ duyệt</AntText>
-                </div>
-              </Col>
-            </Row>
-          </Card>
         </div>
       </Content>
 

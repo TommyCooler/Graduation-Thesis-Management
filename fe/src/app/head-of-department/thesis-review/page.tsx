@@ -47,7 +47,6 @@ interface Thesis {
   department: string;
   submittedDate: string;
   status: 'pending' | 'approved' | 'rejected';
-  priority: 'high' | 'medium' | 'low';
   abstract: string;
   objectives: string[];
   methodology: string;
@@ -67,7 +66,6 @@ const mockTheses: Thesis[] = [
     department: 'Khoa Công nghệ thông tin',
     submittedDate: '2024-01-15',
     status: 'pending',
-    priority: 'high',
     abstract: 'Đề tài nghiên cứu về việc ứng dụng trí tuệ nhân tạo và machine learning trong việc quản lý thư viện số, giúp tự động hóa quy trình phân loại, tìm kiếm và đề xuất tài liệu cho người dùng.',
     objectives: [
       'Xây dựng hệ thống quản lý thư viện số hiện đại',
@@ -93,7 +91,6 @@ const mockTheses: Thesis[] = [
     department: 'Khoa Công nghệ thông tin',
     submittedDate: '2024-01-14',
     status: 'pending',
-    priority: 'medium',
     abstract:
       'Nghiên cứu ứng dụng công nghệ blockchain để tạo ra hệ thống minh bạch và đáng tin cậy trong quản lý chuỗi cung ứng nông sản từ sản xuất đến tiêu dùng.',
     objectives: [
@@ -120,7 +117,6 @@ const mockTheses: Thesis[] = [
     department: 'Khoa Công nghệ thông tin',
     submittedDate: '2024-01-13',
     status: 'approved',
-    priority: 'low',
     abstract:
       'Xây dựng hệ thống IoT để giám sát và điều khiển tự động các yếu tố môi trường trong nông nghiệp như độ ẩm, nhiệt độ, ánh sáng và dinh dưỡng đất.',
     objectives: [
@@ -144,7 +140,6 @@ export default function ThesisReviewPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [priorityFilter, setPriorityFilter] = useState('all');
   const [form] = Form.useForm();
 
   // Filter data based on search and filters
@@ -154,9 +149,8 @@ export default function ThesisReviewPage() {
       thesis.student.toLowerCase().includes(searchText.toLowerCase()) ||
       thesis.supervisor.toLowerCase().includes(searchText.toLowerCase());
     const matchesStatus = statusFilter === 'all' || thesis.status === statusFilter;
-    const matchesPriority = priorityFilter === 'all' || thesis.priority === priorityFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority;
+    return matchesSearch && matchesStatus;
   });
 
   const handleViewDetails = (thesis: Thesis) => {
@@ -221,17 +215,6 @@ export default function ThesisReviewPage() {
       width: '12%',
     },
     {
-      title: 'Độ ưu tiên',
-      dataIndex: 'priority',
-      key: 'priority',
-      width: '12%',
-      render: (priority: 'high' | 'medium' | 'low') => {
-        const color = priority === 'high' ? 'red' : priority === 'medium' ? 'orange' : 'green';
-        const text = priority === 'high' ? 'Cao' : priority === 'medium' ? 'Trung bình' : 'Thấp';
-        return <Tag color={color}>{text}</Tag>;
-      },
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
@@ -261,14 +244,6 @@ export default function ThesisReviewPage() {
     },
   ];
 
-  const getStatusStats = () => {
-    const pending = mockTheses.filter((t) => t.status === 'pending').length;
-    const approved = mockTheses.filter((t) => t.status === 'approved').length;
-    const rejected = mockTheses.filter((t) => t.status === 'rejected').length;
-    return { pending, approved, rejected };
-  };
-
-  const stats = getStatusStats();
 
   return (
     <Layout className="min-h-screen">
@@ -283,40 +258,6 @@ export default function ThesisReviewPage() {
             </Title>
             <Text type="secondary">Xem xét và đánh giá các đề tài khóa luận tốt nghiệp</Text>
           </div>
-
-          {/* Statistics */}
-          <Row gutter={[16, 16]} className="mb-6">
-            <Col xs={24} sm={8}>
-              <Card>
-                <Statistic
-                  title="Chờ duyệt"
-                  value={stats.pending}
-                  prefix={<ClockCircleOutlined className="text-yellow-500" />}
-                  valueStyle={{ color: '#faad14' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Card>
-                <Statistic
-                  title="Đã duyệt"
-                  value={stats.approved}
-                  prefix={<CheckCircleOutlined className="text-green-500" />}
-                  valueStyle={{ color: '#52c41a' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={8}>
-              <Card>
-                <Statistic
-                  title="Từ chối"
-                  value={stats.rejected}
-                  prefix={<CloseOutlined className="text-red-500" />}
-                  valueStyle={{ color: '#ff4d4f' }}
-                />
-              </Card>
-            </Col>
-          </Row>
 
           {/* Filters */}
           <Card className="mb-6">
@@ -342,19 +283,7 @@ export default function ThesisReviewPage() {
                   <Option value="rejected">Từ chối</Option>
                 </Select>
               </Col>
-              <Col xs={12} sm={8} md={4}>
-                <Select
-                  placeholder="Độ ưu tiên"
-                  value={priorityFilter}
-                  onChange={setPriorityFilter}
-                  className="w-full"
-                >
-                  <Option value="all">Tất cả</Option>
-                  <Option value="high">Cao</Option>
-                  <Option value="medium">Trung bình</Option>
-                  <Option value="low">Thấp</Option>
-                </Select>
-              </Col>
+            
               <Col xs={24} sm={24} md={10}>
                 <Space>
                   <Button icon={<FilterOutlined />}>Lọc nâng cao</Button>
@@ -362,7 +291,6 @@ export default function ThesisReviewPage() {
                     onClick={() => {
                       setSearchText('');
                       setStatusFilter('all');
-                      setPriorityFilter('all');
                     }}
                   >
                     Xóa bộ lọc
