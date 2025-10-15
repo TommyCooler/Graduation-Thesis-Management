@@ -1,8 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Form, Input, Button, Card, Typography, message, Divider, Select } from 'antd';
-import { UserOutlined, LockOutlined, MailOutlined, UserAddOutlined } from '@ant-design/icons';
-import Link from 'next/link';
+import { UserOutlined, LockOutlined, MailOutlined, UserAddOutlined } from '@ant-design/icons';import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 const { Title, Text } = Typography;
@@ -14,7 +13,7 @@ export default function RegisterPage() {
 
   const onFinish = async (values: any) => {
     setLoading(true);
-    
+
     try {
       // Validate email domain
       if (!values.email.endsWith('@fe.edu.vn')) {
@@ -25,13 +24,13 @@ export default function RegisterPage() {
 
       // TODO: Thay thế bằng API call thực tế
       console.log('Register attempt:', values);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       message.success('Đăng ký thành công! Vui lòng đăng nhập.');
       router.push('/auth/login');
-      
+
     } catch (error) {
       message.error('Đăng ký thất bại. Vui lòng thử lại.');
     } finally {
@@ -40,37 +39,16 @@ export default function RegisterPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #fff5f0 0%, #ffffff 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '24px'
-    }}>
+    <div className="min-h-screen bg-gradient-to-br from-[#fff5f0] to-white flex items-center justify-center p-6">
       <Card
-        style={{
-          width: '100%',
-          maxWidth: 450,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-          borderRadius: '12px'
-        }}
+        className="w-full max-w-sm shadow-xl rounded-xl"
         styles={{ body: { padding: '40px 32px' } }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            width: 64,
-            height: 64,
-            background: '#fff5f0',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 16px'
-          }}>
-            <UserAddOutlined style={{ fontSize: '32px', color: '#ff6b35' }} />
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-[#fff5f0] rounded-full flex items-center justify-center mx-auto mb-4">
+            <UserAddOutlined className="text-4xl text-[#ff6b35]" />
           </div>
-          <Title level={2} style={{ margin: 0, color: '#ff6b35' }}>
+          <Title level={2} className="m-0 text-[#ff6b35]">
             Đăng ký
           </Title>
           <Text type="secondary">
@@ -90,7 +68,7 @@ export default function RegisterPage() {
             rules={[{ required: true, message: 'Vui lòng nhập họ và tên!' }]}
           >
             <Input
-              prefix={<UserOutlined style={{ color: '#ff6b35' }} />}
+              prefix={<UserOutlined className="text-[#ff6b35]" />}
               placeholder="Nhập họ và tên đầy đủ"
             />
           </Form.Item>
@@ -101,14 +79,14 @@ export default function RegisterPage() {
             rules={[
               { required: true, message: 'Vui lòng nhập email!' },
               { type: 'email', message: 'Email không hợp lệ!' },
-              { 
-                pattern: /@fe\.edu\.vn$/, 
-                message: 'Chỉ chấp nhận email @fe.edu.vn!' 
+              {
+                pattern: /@fe\.edu\.vn$/,
+                message: 'Chỉ chấp nhận email @fe.edu.vn!'
               }
             ]}
           >
             <Input
-              prefix={<MailOutlined style={{ color: '#ff6b35' }} />}
+              prefix={<MailOutlined className="text-[#ff6b35]" />}
               placeholder="yourname@fe.edu.vn"
             />
           </Form.Item>
@@ -141,7 +119,7 @@ export default function RegisterPage() {
             ]}
           >
             <Input.Password
-              prefix={<LockOutlined style={{ color: '#ff6b35' }} />}
+              prefix={<LockOutlined className="text-[#ff6b35]" />}
               placeholder="Nhập mật khẩu"
             />
           </Form.Item>
@@ -163,7 +141,7 @@ export default function RegisterPage() {
             ]}
           >
             <Input.Password
-              prefix={<LockOutlined style={{ color: '#ff6b35' }} />}
+              prefix={<LockOutlined className="text-[#ff6b35]" />}
               placeholder="Nhập lại mật khẩu"
             />
           </Form.Item>
@@ -173,35 +151,28 @@ export default function RegisterPage() {
               type="primary"
               htmlType="submit"
               loading={loading}
-              style={{
-                width: '100%',
-                height: '48px',
-                background: '#ff6b35',
-                borderColor: '#ff6b35',
-                fontSize: '16px',
-                fontWeight: 'bold'
-              }}
+              className="w-full h-12 bg-[#ff6b35] border-[#ff6b35] text-base font-bold"
             >
               Đăng ký
             </Button>
           </Form.Item>
         </Form>
 
-        <Divider style={{ margin: '24px 0' }}>
+        <Divider className="my-6">
           <Text type="secondary">Hoặc</Text>
         </Divider>
 
-        <div style={{ textAlign: 'center' }}>
+        <div className="text-center">
           <Text type="secondary">
             Đã có tài khoản?{' '}
-            <Link href="/auth/login" style={{ color: '#ff6b35' }}>
+            <Link href="/auth/login" className="text-[#ff6b35]">
               Đăng nhập ngay
             </Link>
           </Text>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <Link href="/" style={{ color: '#666' }}>
+        <div className="text-center mt-4">
+          <Link href="/" className="text-gray-600">
             ← Quay về trang chủ
           </Link>
         </div>

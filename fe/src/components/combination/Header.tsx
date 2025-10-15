@@ -1,5 +1,5 @@
 'use client';
-import { Layout, Button, Space, Typography } from 'antd';
+import { Layout, Button, Space } from 'antd';
 import { 
   LoginOutlined, 
   UserOutlined, 
@@ -7,47 +7,43 @@ import {
   SearchOutlined
 } from '@ant-design/icons';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const { Header: AntHeader } = Layout;
-const { Title } = Typography;
 
 export default function Header() {
   return (
-    <AntHeader style={{ 
-      background: '#fff', 
-      borderBottom: '4px solid #ff6b35',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      padding: '0 24px'
-    }}>
-      <div className="flex justify-between items-center h-full">
-        <div className="flex items-center space-x-8">
-          {/* Logo */}
-          <Link href="/">
-            <div className="flex items-center space-x-3 cursor-pointer">
-              <div style={{
-                width: 50,
-                height: 40,
-                background: '#ff6b35',
-                borderRadius: 8,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <span style={{ color: 'white', fontWeight: 'bold', fontSize: '20px', fontStyle: 'italic' }}>FPT</span>
-              </div>
-              <Title level={3} style={{ margin: 0, color: '#ff6b35' }}>
-                Graduation Thesis Management
-              </Title>
-            </div>
-          </Link>
+    <AntHeader 
+      className="bg-white border-b border-gray-200 shadow-sm px-6"
+      style={{ 
+        backgroundColor: '#ffffff !important',
+        color: '#000000 !important'
+      }}
+    >
+      <div 
+        className="flex justify-between items-center h-full"
+        style={{ backgroundColor: 'transparent' }}
+      >
+        {/* Logo */}
+        <Link href="/" className="flex items-center cursor-pointer">
+          <Image 
+            src="/FPT_Education_logo.svg" 
+            alt="FPT Education" 
+            width={120} 
+            height={48}
+            className="h-12 w-auto"
+          />
+        </Link>
 
+        {/* Navigation Menu & Auth Buttons */}
+        <div className="flex items-center space-x-6">
           {/* Navigation Menu */}
-          <nav className="hidden lg:flex space-x-6">
+          <nav className="hidden lg:flex space-x-4">
             <Link href="/topics">
               <Button 
                 type="text" 
                 icon={<FileAddOutlined />}
-                style={{ color: '#666', height: '40px', padding: '0 16px' }}
+                className="text-gray-600 h-10 px-4 hover:text-orange-500"
               >
                 Đăng tải đề tài
               </Button>
@@ -56,31 +52,31 @@ export default function Header() {
               <Button 
                 type="text" 
                 icon={<SearchOutlined />}
-                style={{ color: '#666', height: '40px', padding: '0 16px' }}
+                className="text-gray-600 h-10 px-4 hover:text-orange-500"
               >
                 Kiểm tra đạo văn
               </Button>
             </Link>
           </nav>
-        </div>
 
-        {/* Auth Buttons */}
-        <Space>
-          <Link href="/auth/login">
-            <Button type="text" icon={<LoginOutlined />} style={{ color: '#666' }}>
-              Đăng nhập
-            </Button>
-          </Link>
-          <Link href="/profile">
-            <Button 
-              type="primary" 
-              icon={<UserOutlined />}
-              style={{ background: '#ff6b35', borderColor: '#ff6b35' }}
-            >
-              Tài khoản
-            </Button>
-          </Link>
-        </Space>
+          {/* Auth Buttons */}
+          <Space>
+            <Link href="/auth/login">
+              <Button type="text" icon={<LoginOutlined />} className="text-gray-600 hover:text-orange-500">
+                Đăng nhập
+              </Button>
+            </Link>
+            <Link href="/profile">
+              <Button 
+                type="primary" 
+                icon={<UserOutlined />}
+                className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600"
+              >
+                Tài khoản
+              </Button>
+            </Link>
+          </Space>
+        </div>
       </div>
     </AntHeader>
   );

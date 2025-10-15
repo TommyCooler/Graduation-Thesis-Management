@@ -1,53 +1,35 @@
 package mss.project.accountservice.controllers;
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.ResponseEntity;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import mss.project.accountservice.pojos.Account;
+import mss.project.accountservice.services.AccountService;
 
 @RestController
 @RequestMapping("/api/accounts")
 @Tag(name = "Account Service", description = "Account management operations and health checks")
 public class AccountController {
 
-    @GetMapping("/health")
-    @Operation(summary = "Account Service Health Check", description = "Returns the health status of the Account Service")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Account Service is healthy"),
-            @ApiResponse(responseCode = "503", description = "Account Service is unhealthy")
-    })
-    public ResponseEntity<Map<String, Object>> checkHealth() {
-        Map<String, Object> health = new HashMap<>();
-        health.put("status", "UP");
-        health.put("service", "Account Service");
-        health.put("message", "Account Service is running...");
-        health.put("timestamp", LocalDateTime.now());
-        health.put("port", 8081);
-        
-        return ResponseEntity.ok(health);
+    @Autowired
+    private AccountService accountService;
+
+    @GetMapping
+    public String getAccounts() {
+        return "List of accounts";
     }
 
-    @GetMapping("/info")
-    @Operation(summary = "Account Service Information", description = "Returns basic information about the Account Service")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Account Service information retrieved successfully")
-    })
-    public ResponseEntity<Map<String, Object>> getInfo() {
-        Map<String, Object> info = new HashMap<>();
-        info.put("name", "Account Service");
-        info.put("version", "1.0.0");
-        info.put("description", "Service for managing user accounts and authentication");
-        info.put("timestamp", LocalDateTime.now());
-        info.put("features", new String[]{"User Registration", "Authentication", "Authorization", "Profile Management"});
-        
-        return ResponseEntity.ok(info);
+    @GetMapping("/email/{email}")
+    public Account getAccountByEmail(@PathVariable String email) {
+        return accountService.findByEmail(email);
+    }
+    
+    @GetMapping("/{id}")
+    public boolean existsById(@PathVariable Long id) {
+        return accountService.existsById(id);
     }
 }
