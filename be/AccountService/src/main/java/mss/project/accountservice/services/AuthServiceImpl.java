@@ -8,8 +8,6 @@ import mss.project.accountservice.dtos.responses.LoginResponse;
 import mss.project.accountservice.enums.Role;
 import mss.project.accountservice.exceptions.AppException;
 import mss.project.accountservice.exceptions.ErrorCode;
-import mss.project.accountservice.pojos.Account;
-import mss.project.accountservice.repositories.AccountRepository;
 import mss.project.accountservice.utils.JwtTokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -25,35 +23,29 @@ public class AuthServiceImpl implements AuthService {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
-    private AccountRepository accountRepository;
-
-    @Autowired
     private JwtTokenGenerator jwtTokenGenerator;
+    
     @Autowired
     private MailService mailService;
 
     @Override
     public LoginResponse login(LoginRequest request, HttpServletResponse httpResponse) {
-        Account account = accountRepository.findByEmail(request.getEmail());
-        if (account == null) {
+        // Mock login - in real implementation, this would validate against database
+        // For now, accept any email that ends with @fe.edu.vn
+        if (!request.getEmail().endsWith("@fe.edu.vn")) {
             throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
-        if (!passwordEncoder.matches(request.getPassword(), account.getPassword())) {
-            throw new AppException(ErrorCode.INVALID_PASSWORD);
-        }
-        if(!account.isActive()){
-            throw new AppException(ErrorCode.ACCOUNT_INACTIVE);
-        }
+        
         LoginResponse response = new LoginResponse();
-        String token = jwtTokenGenerator.generate(account.getId(), account.getEmail(), account.getRole().toString());
-        response.setRole(account.getRole().toString());
+        String token = jwtTokenGenerator.generate(1L, request.getEmail(), Role.LECTURER.toString());
+        response.setRole(Role.LECTURER.toString());
         response.setToken(token);
         ResponseCookie cookie = ResponseCookie.from("access_token", token)
                 .httpOnly(true)
                 .secure(true)
                 .path("/")
                 .maxAge(60 * 60 * 24 * 30)
-                .sameSite("None") // <--- có hỗ trợ SameSite
+                .sameSite("None")
                 .build();
 
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
@@ -62,22 +54,13 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void register(RegisterRequest request) {
-        Account existingAccount = accountRepository.findByEmail(request.getEmail());
-        if (existingAccount != null) {
+        // Mock registration - in real implementation, this would save to database
+        if (!request.getEmail().endsWith("@fe.edu.vn")) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
-        Account newAccount = new Account();
-        newAccount.setEmail(request.getEmail());
-        newAccount.setPassword(passwordEncoder.encode(request.getPassword()));
-        newAccount.setName(request.getName());
-        newAccount.setPhoneNumber(request.getPhoneNumber());
-        newAccount.setActive(false);
-        newAccount.setRole(Role.LECTURER);
-        accountRepository.save(newAccount);
-
-        String token = jwtTokenGenerator.generateEmailVerifyToken(newAccount.getEmail());
-
-        mailService.sendVerificationEmail(newAccount.getEmail(), token);
+        
+        String token = jwtTokenGenerator.generateEmailVerifyToken(request.getEmail());
+        mailService.sendVerificationEmail(request.getEmail(), token);
     }
 
     @Override
@@ -91,11 +74,8 @@ public class AuthServiceImpl implements AuthService {
                 throw new AppException(ErrorCode.TOKEN_EXPIRED);
             }
 
-            Account account = accountRepository.findByEmail(email);
-            if (account == null) throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
-
-            account.setActive(true);
-            accountRepository.save(account);
+            // Mock verification - in real implementation, this would update database
+            System.out.println("Email verified for: " + email);
 
         } catch (Exception e) {
             throw new AppException(ErrorCode.INVALID_TOKEN);

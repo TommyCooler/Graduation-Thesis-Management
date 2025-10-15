@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: CHECK-PLAGIARISM-SERVICE
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  # Database and RabbitMQ configurations removed
+
+server:
+  port: ${SERVER_PORT:8084}
+
+# Database, RabbitMQ and Eureka configurations removed
+
+# SpringDoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Actuator Configuration for Health Check
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+# Qdrant, Gateway and AWS S3 configurations removed
+
+# Logging Configuration
+logging:
+  level:
+    mss.project.checkplagiarismservice: DEBUG
+    org.springframework.web: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
