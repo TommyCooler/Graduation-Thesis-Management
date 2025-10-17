@@ -21,7 +21,8 @@ public enum ErrorCode {
     MAX_OTP_PER_HOUR(429, "Bạn đã vượt quá số lần gửi OTP trong 1 giờ. Vui lòng thử lại sau."),
     OTP_EXPIRED(400, "Mã OTP đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu mã mới."),
     MAX_OTP_ATTEMPT(429, "Bạn đã nhập sai quá số lần cho phép. Vui lòng yêu cầu mã mới."),
-    ACCOUNT_NOT_ACTIVE(403, "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực.")
+    ACCOUNT_NOT_ACTIVE(403, "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực."),
+    INVALID_CREDENTIALS(401, "Thông tin đăng nhập không hợp lệ")
     ;
     private int code;
     private String message;

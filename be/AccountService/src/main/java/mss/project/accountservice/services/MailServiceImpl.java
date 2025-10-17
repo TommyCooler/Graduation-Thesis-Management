@@ -6,6 +6,9 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 @Service
 public class MailServiceImpl implements MailService {
     private final JavaMailSender mailSender;
@@ -111,5 +114,54 @@ public class MailServiceImpl implements MailService {
             throw new RuntimeException("Không thể gửi email OTP", e);
         }
     }
+
+    @Override
+    public void sendPasswordResetEmail(String to, String token) {
+        try {
+            final String url = "http://localhost:3000/auth/forgot-password?token="
+                    + URLEncoder.encode(token, StandardCharsets.UTF_8);
+
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "utf-8");
+
+            String html = """
+            <div style="font-family:'Segoe UI',Arial,sans-serif; max-width:600px; margin:auto;
+                        border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background:#fff;">
+              <div style="background:#ff6600; padding:16px 24px; text-align:center; color:#fff;">
+                <h2 style="margin:0; font-size:22px; font-weight:700;">ĐẶT LẠI MẬT KHẨU</h2>
+              </div>
+              <div style="padding:24px; color:#333; font-size:15px; line-height:1.6;">
+                <p>Xin chào,</p>
+                <p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>
+                <p>Nhấn vào nút bên dưới để tiếp tục đặt lại mật khẩu:</p>
+
+                <div style="text-align:center; margin:28px 0;">
+                  <a href="%s"
+                     style="background:#ff6600; color:#fff; padding:12px 24px; text-decoration:none;
+                            border-radius:6px; font-weight:700; display:inline-block; font-size:16px;">
+                    ĐẶT LẠI MẬT KHẨU
+                  </a>
+                </div>
+
+                <p>Nếu bạn không yêu cầu hành động này, hãy bỏ qua email.</p>
+                <p>Trân trọng,<br><strong>Đội ngũ Hỗ trợ</strong></p>
+              </div>
+              <div style="background:#f5f5f5; color:#777; text-align:center; padding:12px; font-size:13px;">
+                <p style="margin:4px 0;">© 2025 FPT Corporation. All rights reserved.</p>
+                <p style="margin:0;">Email tự động, vui lòng không trả lời.</p>
+              </div>
+            </div>
+        """.formatted(url);
+
+            helper.setTo(to);
+            helper.setSubject("Hướng dẫn đặt lại mật khẩu");
+            helper.setText(html, true);
+
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Không thể gửi email đặt lại mật khẩu", e);
+        }
+    }
+
 }
 

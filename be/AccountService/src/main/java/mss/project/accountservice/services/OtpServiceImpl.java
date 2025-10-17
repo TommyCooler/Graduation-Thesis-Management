@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 public class OtpServiceImpl implements OtpService {
 
     private static final int OTP_TTL_SECONDS = 300;          // 5 phút
-    private static final int SEND_WINDOW_SECONDS = 3600;      // 1 giờ
+    private static final int SEND_WINDOW_SECONDS = 360;      // 1 giờ
     private static final int MAX_SENDS_IN_WINDOW = 5;
     private static final int MAX_ATTEMPTS = 5;
 
@@ -32,7 +32,6 @@ public class OtpServiceImpl implements OtpService {
     public void sendOtpToEmail(String email) {
         var ops = redis.opsForValue();
 
-        // 1) rate-limit gửi
         String keySend = keySend(email);
         Long sends = ops.increment(keySend);
         if (sends != null && sends == 1L) {
@@ -107,4 +106,11 @@ public class OtpServiceImpl implements OtpService {
     private String keyOtp(String email)      { return "otp:" + email.toLowerCase(); }
     private String keyAttempts(String email) { return "otp:attempts:" + email.toLowerCase(); }
     private String keySend(String email)     { return "otp:send:" + email.toLowerCase(); }
+
+    public void clearOtpQuotaFor(String email) {
+        String e = email.toLowerCase();
+        redis.delete(keyOtp(e));
+        redis.delete(keyAttempts(e));
+        redis.delete(keySend(e));
+    }
 }

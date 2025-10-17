@@ -9,7 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SendOtpRequest {
+public class SendMailRequest {
     @NotBlank
     @Email
     String email;

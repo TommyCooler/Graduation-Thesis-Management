@@ -28,16 +28,18 @@ public class JwtTokenGenerator {
     }
 
     private static final Duration DEFAULT_TTL = Duration.ofDays(30);
-    public String generate(Long accountId, String email, String role) {
-        return generate(accountId, email, role, DEFAULT_TTL);
+
+    public String generate(Long accountId, String name, String email, String role) {
+        return generate(accountId, name, email, role, DEFAULT_TTL);
     }
 
-    public String generate(Long accountId, String email, String role, Duration ttl) {
+    public String generate(Long accountId, String name, String email, String role, Duration ttl) {
         try {
             Instant now = Instant.now();
             // Claims
             JWTClaimsSet claims = new JWTClaimsSet.Builder()
                     .subject(accountId.toString())
+                    .claim("name", name)
                     .claim("email", email)
                     .claim("role", role)
                     .issueTime(Date.from(now))
@@ -56,6 +58,7 @@ public class JwtTokenGenerator {
             throw new RuntimeException("Failed to sign JWT", e);
         }
     }
+
     public String generateEmailVerifyToken(String email) {
         try {
             Instant now = Instant.now();
