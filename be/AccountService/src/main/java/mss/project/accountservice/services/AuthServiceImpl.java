@@ -8,6 +8,8 @@ import mss.project.accountservice.dtos.responses.LoginResponse;
 import mss.project.accountservice.enums.Role;
 import mss.project.accountservice.exceptions.AppException;
 import mss.project.accountservice.exceptions.ErrorCode;
+import mss.project.accountservice.pojos.Account;
+import mss.project.accountservice.repositories.AccountRepository;
 import mss.project.accountservice.utils.JwtTokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -24,18 +26,26 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     private JwtTokenGenerator jwtTokenGenerator;
-    
+
     @Autowired
     private MailService mailService;
 
+    @Autowired
+    private OtpService otpService;
+
+    @Autowired
+    private AccountRepository accountRepository;
+
     @Override
     public LoginResponse login(LoginRequest request, HttpServletResponse httpResponse) {
-        // Mock login - in real implementation, this would validate against database
-        // For now, accept any email that ends with @fe.edu.vn
-        if (!request.getEmail().endsWith("@fe.edu.vn")) {
+        Account account = accountRepository.findByEmail(request.getEmail());
+        if (account == null) {
             throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
-        
+        if(!account.isActive()) {
+            throw new AppException(ErrorCode.ACCOUNT_NOT_ACTIVE);
+        }
+
         LoginResponse response = new LoginResponse();
         String token = jwtTokenGenerator.generate(1L, request.getEmail(), Role.LECTURER.toString());
         response.setRole(Role.LECTURER.toString());
@@ -54,13 +64,20 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void register(RegisterRequest request) {
-        // Mock registration - in real implementation, this would save to database
-        if (!request.getEmail().endsWith("@fe.edu.vn")) {
+        if (!request.getEmail().endsWith("")) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
-        
-        String token = jwtTokenGenerator.generateEmailVerifyToken(request.getEmail());
-        mailService.sendVerificationEmail(request.getEmail(), token);
+        Account account = new Account();
+        account.setName(request.getName());
+        account.setEmail(request.getEmail());
+        account.setPassword(passwordEncoder.encode(request.getPassword()));
+        account.setRole(Role.LECTURER);
+        account.setPhoneNumber(request.getPhoneNumber());
+        account.setActive(false);
+
+        accountRepository.save(account);
+
+        otpService.sendOtpToEmail(request.getEmail());
     }
 
     @Override
@@ -80,6 +97,16 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             throw new AppException(ErrorCode.INVALID_TOKEN);
         }
+    }
+
+    @Override
+    public void verifyOtp(String email) {
+        Account account = accountRepository.findByEmail(email);
+        if (account == null) {
+            throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+        account.setActive(true);
+        accountRepository.save(account);
     }
 
 }

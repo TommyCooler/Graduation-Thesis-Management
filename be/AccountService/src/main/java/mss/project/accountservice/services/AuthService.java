@@ -10,4 +10,6 @@ public interface AuthService {
     void register(RegisterRequest request);
     void verifyEmail(String token);
 
+    void verifyOtp(String email);
+
 }

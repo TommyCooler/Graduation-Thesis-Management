@@ -69,5 +69,47 @@ public class MailServiceImpl implements MailService {
             throw new RuntimeException("Không thể gửi email xác thực", e);
         }
     }
+
+    @Override
+    public void sendOtpEmail(String to, String code, int expiryMinutes) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, "utf-8");
+
+            String html = """
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 560px; margin:auto;
+                            border:1px solid #e0e0e0; border-radius:10px; overflow:hidden; background:#fff;">
+                  <div style="background:#ff6600; padding:16px 24px; text-align:center; color:white;">
+                    <h2 style="margin:0; font-size:20px; font-weight:700;">M&Atilde; X&Aacute;C TH&#7920;C OTP</h2>
+                  </div>
+                  <div style="padding:24px; color:#333; font-size:15px; line-height:1.6;">
+                    <p>Xin ch&agrave;o,</p>
+                    <p>M&atilde; x&aacute;c thực của bạn l&agrave;:</p>
+                    <div style="text-align:center; margin:24px 0;">
+                      <div style="display:inline-block; font-size:28px; letter-spacing:6px; 
+                                  border:1px dashed #ff6600; padding:12px 20px; border-radius:8px;">
+                        <strong>%s</strong>
+                      </div>
+                    </div>
+                    <p>M&atilde; sẽ hết hạn sau <strong>%d ph&uacute;t</strong>. 
+                       Vui l&ograve;ng kh&ocirc;ng chia sẻ m&atilde; cho bất kỳ ai.</p>
+                    <p>Nếu bạn kh&ocirc;ng yêu cầu h&agrave;nh động n&agrave;y, h&atilde;y bỏ qua email.</p>
+                    <p>Tr&acirc;n trọng,<br><strong>Đội ngũ Hỗ trợ</strong></p>
+                  </div>
+                  <div style="background:#f5f5f5; color:#777; text-align:center; padding:12px; font-size:13px;">
+                    <p style="margin:4px 0;">© 2025 FPT Corporation. All rights reserved.</p>
+                    <p style="margin:0;">Email tự động, vui l&ograve;ng kh&ocirc;ng trả lời.</p>
+                  </div>
+                </div>
+            """.formatted(code, expiryMinutes);
+
+            helper.setTo(to);
+            helper.setSubject("Mã OTP xác thực email");
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Không thể gửi email OTP", e);
+        }
+    }
 }
 
