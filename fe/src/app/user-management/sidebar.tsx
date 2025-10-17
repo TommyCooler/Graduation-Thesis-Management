@@ -14,21 +14,16 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
-  return (
-    <Sider 
+  return (    <Sider 
       width={250} 
       collapsible 
       collapsed={collapsed}
       onCollapse={(value) => setCollapsed(value)}
-      style={{ 
-        background: '#fff',
-        boxShadow: '2px 0 8px 0 rgba(29,35,41,.05)',
-        borderRight: '1px solid #f0f0f0'
-      }}
+      className="bg-white shadow-lg border-r border-gray-100"
       trigger={null}
     >
       {/* Toggle Sidebar Button */}
-      <div style={{ padding: '16px', textAlign: 'right' }}>
+      <div className="p-4 text-right">
         <Button 
           type="text" 
           icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />} 
@@ -40,7 +35,7 @@ export default function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
       <Menu
         mode="inline"
         defaultSelectedKeys={['users']}
-        style={{ borderRight: 0 }}
+        className="border-r-0"
         items={[
           {
             key: 'dashboard',

@@ -222,13 +222,16 @@ export default function CheckPlagiarismPage() {
             ),
             sorter: (a: PlagiarismMatch, b: PlagiarismMatch) => a.similarity_percentage - b.similarity_percentage,
         },
-    ];
-
+    ];    
     // Highlight text based on similarity
     const highlightText = (text: string, similarity: number) => {
-        const color = getHighlightColor(similarity);
+        let bgClass = '';
+        if (similarity > 70) bgClass = 'bg-red-100';
+        else if (similarity > 50) bgClass = 'bg-yellow-100';
+        else bgClass = 'bg-green-100';
+        
         return (
-            <span style={{ backgroundColor: color, padding: '2px 4px', borderRadius: '4px' }}>
+            <span className={`${bgClass} px-1 py-0.5 rounded`}>
                 {text}
             </span>
         );
@@ -238,47 +241,40 @@ export default function CheckPlagiarismPage() {
         <Layout className="min-h-screen">
             <Header />
             
-            <Content>
-                {/* Banner */}
-                <div style={{ 
-                    background: 'linear-gradient(135deg, #fff5f0 0%, #ffffff 100%)',
-                    padding: '40px 24px',
-                }}>
-                    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                        <Title level={1} style={{ fontSize: '2.5rem', marginBottom: '16px' }}>
-                            <span style={{ color: '#ff6b35' }}>Kiểm tra đạo văn</span>
+            <Content>                {/* Banner */}
+                <div className="bg-gradient-to-br from-orange-50 to-white py-10 px-6">
+                    <div className="max-w-6xl mx-auto">
+                        <Title level={1} className="text-4xl mb-4">
+                            <span className="text-orange-500">Kiểm tra đạo văn</span>
                         </Title>
-                        <Paragraph style={{ fontSize: '16px', color: '#666', marginBottom: '0' }}>
+                        <Paragraph className="text-base text-gray-600 mb-0">
                             Công cụ kiểm tra đạo văn hiện đại sử dụng AI và Vector Database để đảm bảo tính nguyên bản của nội dung nghiên cứu
                         </Paragraph>
                     </div>
-                </div>
-
-                {/* Main Content */}
-                <div style={{ padding: '40px 24px', background: '#f9f9f9' }}>
-                    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+                </div>                {/* Main Content */}
+                <div className="py-10 px-6 bg-gray-50">
+                    <div className="max-w-6xl mx-auto">
                         <Tabs 
                             activeKey={activeTab} 
                             onChange={setActiveTab} 
                             type="card" 
-                            style={{ marginBottom: 32 }}
+                            className="mb-8"
                             items={[
                                 {
                                     key: "1",
                                     label: (
                                         <span><UploadOutlined /> Tải tệp lên</span>
                                     ),
-                                    children: (
-                                        <Card bordered={false}>
-                                            <Paragraph style={{ marginBottom: 24 }}>
+                                    children: (                                        <Card bordered={false}>
+                                            <Paragraph className="mb-6">
                                                 Tải lên tài liệu của bạn để kiểm tra tính nguyên bản và phát hiện đạo văn. 
                                                 Hệ thống hỗ trợ các định dạng PDF, DOCX và TXT.
                                             </Paragraph>
                                             
-                                            <div style={{ marginBottom: 24 }}>
+                                            <div className="mb-6">
                                                 <Dragger {...uploadProps} disabled={uploadStatus !== 'idle' && uploadStatus !== 'error'}>
                                                     <p className="ant-upload-drag-icon">
-                                                        <InboxOutlined style={{ color: '#ff6b35' }} />
+                                                        <InboxOutlined className="text-orange-500" />
                                                     </p>
                                                     <p className="ant-upload-text">
                                                         Kéo thả file vào đây hoặc nhấp để tải lên
@@ -288,27 +284,22 @@ export default function CheckPlagiarismPage() {
                                                     </p>
                                                 </Dragger>
                                             </div>
-                                            
-                                            {(uploadStatus === 'uploading' || uploadStatus === 'scanning') && (
-                                                <div style={{ textAlign: 'center', margin: '24px 0' }}>
+                                              {(uploadStatus === 'uploading' || uploadStatus === 'scanning') && (
+                                                <div className="text-center my-6">
                                                     <Spin />
-                                                    <Paragraph style={{ marginTop: 16 }}>
+                                                    <Paragraph className="mt-4">
                                                         {uploadStatus === 'uploading' ? 'Đang tải tệp lên...' : 'Đang quét và phân tích nội dung...'}
                                                     </Paragraph>
                                                 </div>
                                             )}
                                             
-                                            <div style={{ textAlign: 'center' }}>
+                                            <div className="text-center">
                                                 <Button
                                                     type="primary"
                                                     onClick={handleUpload}
                                                     disabled={fileList.length === 0 || uploadStatus === 'uploading' || uploadStatus === 'scanning'}
                                                     loading={uploadStatus === 'uploading'}
-                                                    style={{ 
-                                                        background: '#ff6b35', 
-                                                        borderColor: '#ff6b35',
-                                                        minWidth: 150
-                                                    }}
+                                                    className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600 min-w-[150px]"
                                                 >
                                                     {uploadStatus === 'uploading' ? 'Đang tải lên' : 'Bắt đầu kiểm tra'}
                                                 </Button>
@@ -322,40 +313,37 @@ export default function CheckPlagiarismPage() {
                                         <span><FileTextOutlined /> Kết quả kiểm tra</span>
                                     ),
                                     children: (
-                                        <div>
-                                            {!results ? (
+                                        <div>                                            {!results ? (
                                                 <Card bordered={false}>
-                                                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                                        <FileTextOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
+                                                    <div className="text-center py-10">
+                                                        <FileTextOutlined className="text-5xl text-gray-300 mb-4" />
                                                         <Paragraph>
                                                             Chưa có kết quả kiểm tra nào. Vui lòng tải lên tài liệu để bắt đầu kiểm tra.
                                                         </Paragraph>
                                                     </div>
                                                 </Card>
                                             ) : (
-                                                <>
-                                                    <Card bordered={false} style={{ marginBottom: 24 }}>
+                                                <>                                                    <Card bordered={false} className="mb-6">
                                                         <Row gutter={[24, 24]} align="middle">
                                                             <Col xs={24} md={8}>
-                                                                <div style={{ textAlign: 'center' }}>
+                                                                <div className="text-center">
                                                                     <Progress
                                                                         type="dashboard"
                                                                         percent={100 - results.similarityPercentage}
                                                                         format={() => `${100 - results.similarityPercentage}%`}
                                                                         strokeColor={getProgressStrokeColor(results.similarityPercentage)}
                                                                     />
-                                                                    <Title level={4} style={{ marginTop: 16, marginBottom: 0 }}>
+                                                                    <Title level={4} className="mt-4 mb-0">
                                                                         Tính nguyên bản
                                                                     </Title>
                                                                 </div>
                                                             </Col>
-                                                            <Col xs={24} md={16}>
-                                                                <Alert
+                                                            <Col xs={24} md={16}>                                                                <Alert
                                                                     message={getAlertMessage(getSimilarityLevel(results.similarityPercentage))}
                                                                     type={getAlertType(getSimilarityLevel(results.similarityPercentage))}
                                                                     showIcon
                                                                     icon={getAlertIcon(getSimilarityLevel(results.similarityPercentage))}
-                                                                    style={{ marginBottom: 16 }}
+                                                                    className="mb-4"
                                                                 />
                                                                 
                                                                 <Row gutter={16}>
@@ -364,23 +352,21 @@ export default function CheckPlagiarismPage() {
                                                                     </Col>
                                                                     <Col span={8}>
                                                                         <Statistic title="Độ tương đồng" value={`${results.similarityPercentage}%`} />
-                                                                    </Col>
-                                                                    <Col span={8}>
+                                                                    </Col>                                                                    <Col span={8}>
                                                                         <Statistic 
                                                                             title="Trạng thái" 
                                                                             value={results.status}
-                                                                            valueStyle={{ color: '#1890ff' }}
+                                                                            className="[&_.ant-statistic-content-value]:text-blue-500"
                                                                         />
                                                                     </Col>
                                                                 </Row>
                                                             </Col>
                                                         </Row>
                                                     </Card>
-                                                    
-                                                    <Card 
+                                                      <Card 
                                                         title="Các nguồn tài liệu tương đồng" 
                                                         bordered={false} 
-                                                        style={{ marginBottom: 24 }}
+                                                        className="mb-6"
                                                     >
                                                         <Table 
                                                             dataSource={results.matches} 
@@ -393,52 +379,61 @@ export default function CheckPlagiarismPage() {
                                                     <Card 
                                                         title="Phân tích chi tiết" 
                                                         bordered={false}
-                                                        extra={
-                                                            <Button 
+                                                        extra={                                                            <Button 
                                                                 type="primary" 
                                                                 onClick={() => getDetailedAnalysis(results.reportId)}
-                                                                style={{ background: '#ff6b35', borderColor: '#ff6b35' }}
+                                                                className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600"
                                                             >
                                                                 Xem chi tiết
                                                             </Button>
                                                         }
-                                                    >
-                                                        {detailedAnalysis ? (
+                                                    >                                                        {detailedAnalysis ? (
                                                             <div>
-                                                                {detailedAnalysis.detailedAnalysis.map((chunk) => (
-                                                                    <div key={chunk.chunkIndex} style={{ 
-                                                                        marginBottom: 16, 
-                                                                        padding: 16, 
-                                                                        background: getChunkBackgroundColor(chunk.similarity * 100), 
-                                                                        borderRadius: 8,
-                                                                        border: `1px solid ${getChunkBorderColor(chunk.similarity * 100)}`
-                                                                    }}>
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                                                            <Text strong>Đoạn văn #{chunk.chunkIndex + 1}</Text>
-                                                                            <Tag color={getTagColor(chunk.similarity * 100)}>
-                                                                                {Math.round(chunk.similarity * 100)}% tương đồng
-                                                                            </Tag>
+                                                                {detailedAnalysis.detailedAnalysis.map((chunk) => {
+                                                                    const similarity = chunk.similarity * 100;
+                                                                    let bgClass = '';
+                                                                    let borderClass = '';
+                                                                    
+                                                                    if (similarity > 70) {
+                                                                        bgClass = 'bg-red-50';
+                                                                        borderClass = 'border-red-200';
+                                                                    } else if (similarity > 50) {
+                                                                        bgClass = 'bg-yellow-50';
+                                                                        borderClass = 'border-yellow-200';
+                                                                    } else {
+                                                                        bgClass = 'bg-green-50';
+                                                                        borderClass = 'border-green-200';
+                                                                    }
+                                                                    
+                                                                    return (
+                                                                        <div key={chunk.chunkIndex} className={`mb-4 p-4 rounded-lg border ${bgClass} ${borderClass}`}>
+                                                                            <div className="flex justify-between items-center mb-2">
+                                                                                <Text strong>Đoạn văn #{chunk.chunkIndex + 1}</Text>
+                                                                                <Tag color={getTagColor(chunk.similarity * 100)}>
+                                                                                    {Math.round(chunk.similarity * 100)}% tương đồng
+                                                                                </Tag>
+                                                                            </div>
+                                                                            <Paragraph className="mb-2">
+                                                                                {highlightText(chunk.text, chunk.similarity * 100)}
+                                                                            </Paragraph>
+                                                                            {chunk.matches.length > 0 && (
+                                                                                <Text type="secondary">
+                                                                                    Nguồn: {chunk.matches.map((match: any, index: number) => (
+                                                                                        <span key={`match-${chunk.chunkIndex}-${index}`}>
+                                                                                            <a href={match.payload?.url || '#'} target="_blank" rel="noreferrer">
+                                                                                                {match.payload?.url || 'Nguồn không xác định'}
+                                                                                            </a>
+                                                                                            {index < chunk.matches.length - 1 && ', '}
+                                                                                        </span>
+                                                                                    ))}
+                                                                                </Text>
+                                                                            )}
                                                                         </div>
-                                                                        <Paragraph style={{ marginBottom: 8 }}>
-                                                                            {highlightText(chunk.text, chunk.similarity * 100)}
-                                                                        </Paragraph>
-                                                                        {chunk.matches.length > 0 && (
-                                                                            <Text type="secondary">
-                                                                                Nguồn: {chunk.matches.map((match: any, index: number) => (
-                                                                                    <span key={`match-${chunk.chunkIndex}-${index}`}>
-                                                                                        <a href={match.payload?.url || '#'} target="_blank" rel="noreferrer">
-                                                                                            {match.payload?.url || 'Nguồn không xác định'}
-                                                                                        </a>
-                                                                                        {index < chunk.matches.length - 1 && ', '}
-                                                                                    </span>
-                                                                                ))}
-                                                                            </Text>
-                                                                        )}
-                                                                    </div>
-                                                                ))}
+                                                                    );
+                                                                })}
                                                             </div>
                                                         ) : (
-                                                            <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                                                            <div className="text-center py-5">
                                                                 <Text type="secondary">Nhấn "Xem chi tiết" để phân tích từng đoạn văn</Text>
                                                             </div>
                                                         )}
@@ -453,14 +448,13 @@ export default function CheckPlagiarismPage() {
                                     label: (
                                         <span><HistoryOutlined /> Lịch sử kiểm tra</span>
                                     ),
-                                    children: (
-                                        <Card bordered={false}>
-                                            <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                                <HistoryOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
+                                    children: (                                        <Card bordered={false}>
+                                            <div className="text-center py-10">
+                                                <HistoryOutlined className="text-5xl text-gray-300 mb-4" />
                                                 <Paragraph>
                                                     Lịch sử kiểm tra sẽ hiển thị ở đây sau khi bạn đăng nhập vào hệ thống.
                                                 </Paragraph>
-                                                <Button type="primary" style={{ background: '#ff6b35', borderColor: '#ff6b35' }}>
+                                                <Button type="primary" className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600">
                                                     Đăng nhập
                                                 </Button>
                                             </div>
@@ -472,13 +466,12 @@ export default function CheckPlagiarismPage() {
                                     label: (
                                         <span><SettingOutlined /> Cài đặt kiểm tra</span>
                                     ),
-                                    children: (
-                                        <Card bordered={false}>
-                                            <Paragraph style={{ marginBottom: 24 }}>
+                                    children: (                                        <Card bordered={false}>
+                                            <Paragraph className="mb-6">
                                                 Tùy chỉnh các thiết lập kiểm tra đạo văn để phù hợp với yêu cầu của bạn.
                                             </Paragraph>
                                             
-                                            <div style={{ marginBottom: 24 }}>
+                                            <div className="mb-6">
                                                 <Title level={5}>Nguồn kiểm tra</Title>
                                                 <Checkbox.Group
                                                     defaultValue={['internet', 'academic', 'journals']}
@@ -488,10 +481,9 @@ export default function CheckPlagiarismPage() {
                                                         { label: 'Tạp chí khoa học', value: 'journals' },
                                                         { label: 'Kho lưu trữ nội bộ', value: 'internal' },
                                                     ]}
-                                                />
-                                            </div>
+                                                />                                            </div>
                                             
-                                            <div style={{ marginBottom: 24 }}>
+                                            <div className="mb-6">
                                                 <Title level={5}>Ngôn ngữ</Title>
                                                 <Radio.Group defaultValue="vi">
                                                     <Radio value="vi">Tiếng Việt</Radio>
@@ -500,7 +492,7 @@ export default function CheckPlagiarismPage() {
                                                 </Radio.Group>
                                             </div>
                                             
-                                            <div style={{ marginBottom: 24 }}>
+                                            <div className="mb-6">
                                                 <Title level={5}>Ngưỡng cảnh báo</Title>
                                                 <Slider
                                                     defaultValue={20}
@@ -521,69 +513,39 @@ export default function CheckPlagiarismPage() {
                         <Divider />
                         
                         <Card bordered={false} title="Về công nghệ kiểm tra đạo văn của chúng tôi">
-                            <Row gutter={[24, 24]}>
-                                <Col xs={24} md={8}>
+                            <Row gutter={[24, 24]}>                                <Col xs={24} md={8}>
                                     <Card 
                                         bordered={false} 
-                                        style={{ height: '100%', textAlign: 'center' }}
+                                        className="h-full text-center"
                                     >
-                                        <div style={{ 
-                                            width: 64, 
-                                            height: 64, 
-                                            borderRadius: '50%', 
-                                            background: '#fff5f0', 
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            margin: '0 auto 16px'
-                                        }}>
-                                            <CheckCircleOutlined style={{ fontSize: 32, color: '#ff6b35' }} />
+                                        <div className="w-16 h-16 rounded-full bg-orange-50 flex justify-center items-center mx-auto mb-4">
+                                            <CheckCircleOutlined className="text-3xl text-orange-500" />
                                         </div>
                                         <Title level={4}>Vector Database</Title>
                                         <Paragraph>
                                             Sử dụng Qdrant Vector Database và AI để phát hiện nội dung trùng lặp với độ chính xác cao
                                         </Paragraph>
                                     </Card>
-                                </Col>
-                                <Col xs={24} md={8}>
+                                </Col>                                <Col xs={24} md={8}>
                                     <Card 
                                         bordered={false} 
-                                        style={{ height: '100%', textAlign: 'center' }}
+                                        className="h-full text-center"
                                     >
-                                        <div style={{ 
-                                            width: 64, 
-                                            height: 64, 
-                                            borderRadius: '50%', 
-                                            background: '#fff5f0', 
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            margin: '0 auto 16px'
-                                        }}>
-                                            <DatabaseOutlined style={{ fontSize: 32, color: '#ff6b35' }} />
+                                        <div className="w-16 h-16 rounded-full bg-orange-50 flex justify-center items-center mx-auto mb-4">
+                                            <DatabaseOutlined className="text-3xl text-orange-500" />
                                         </div>
                                         <Title level={4}>AWS S3 Storage</Title>
                                         <Paragraph>
                                             Lưu trữ tài liệu an toàn trên AWS S3 với khả năng mở rộng và bảo mật cao
                                         </Paragraph>
                                     </Card>
-                                </Col>
-                                <Col xs={24} md={8}>
+                                </Col>                                <Col xs={24} md={8}>
                                     <Card 
                                         bordered={false} 
-                                        style={{ height: '100%', textAlign: 'center' }}
+                                        className="h-full text-center"
                                     >
-                                        <div style={{ 
-                                            width: 64, 
-                                            height: 64, 
-                                            borderRadius: '50%', 
-                                            background: '#fff5f0', 
-                                            display: 'flex',
-                                            justifyContent: 'center',
-                                            alignItems: 'center',
-                                            margin: '0 auto 16px'
-                                        }}>
-                                            <LockOutlined style={{ fontSize: 32, color: '#ff6b35' }} />
+                                        <div className="w-16 h-16 rounded-full bg-orange-50 flex justify-center items-center mx-auto mb-4">
+                                            <LockOutlined className="text-3xl text-orange-500" />
                                         </div>
                                         <Title level={4}>Bảo mật tối đa</Title>
                                         <Paragraph>

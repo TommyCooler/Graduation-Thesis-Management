@@ -12,18 +12,10 @@ import Image from 'next/image';
 const { Header: AntHeader } = Layout;
 
 export default function Header() {
-  return (
-    <AntHeader 
+  return (    <AntHeader 
       className="bg-white border-b border-gray-200 shadow-sm px-6"
-      style={{ 
-        backgroundColor: '#ffffff !important',
-        color: '#000000 !important'
-      }}
     >
-      <div 
-        className="flex justify-between items-center h-full"
-        style={{ backgroundColor: 'transparent' }}
-      >
+      <div className="flex justify-between items-center h-full bg-transparent">
         {/* Logo */}
         <Link href="/" className="flex items-center cursor-pointer">
           <Image 

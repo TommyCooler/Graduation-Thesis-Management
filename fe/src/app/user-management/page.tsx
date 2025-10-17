@@ -50,8 +50,7 @@ export default function UserManagementPage() {
       title: 'Email',
       dataIndex: 'email',
       key: 'email',
-    },
-    {
+    },    {
       title: 'Vai trò',
       dataIndex: 'role',
       key: 'role',
@@ -59,14 +58,13 @@ export default function UserManagementPage() {
         { text: 'Giảng viên', value: 'Giảng viên' },
         { text: 'Trưởng môn', value: 'Trưởng môn' },
       ],
-      onFilter: (value: string, record: User) => record.role.indexOf(value) === 0,
+      onFilter: (value, record: User) => record.role.indexOf(value as string) === 0,
       render: (role: string) => (
         <Tag color={role === 'Trưởng môn' ? 'orange' : 'blue'}>
           {role}
         </Tag>
       ),
-    },
-    {
+    },    {
       title: 'Khoa',
       dataIndex: 'department',
       key: 'department',
@@ -75,7 +73,7 @@ export default function UserManagementPage() {
         { text: 'Quản trị kinh doanh', value: 'Quản trị kinh doanh' },
         { text: 'Ngôn ngữ Anh', value: 'Ngôn ngữ Anh' },
       ],
-      onFilter: (value: string, record: User) => record.department.indexOf(value) === 0,
+      onFilter: (value, record: User) => record.department.indexOf(value as string) === 0,
     },
     {
       title: 'Trạng thái',
@@ -157,39 +155,31 @@ export default function UserManagementPage() {
       
       <Layout>
         {/* Sử dụng component Sidebar */}
-        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />
-
-        {/* Main Content */}
-        <Layout style={{ padding: '0 0 24px' }}>
+        <Sidebar collapsed={collapsed} setCollapsed={setCollapsed} />        {/* Main Content */}
+        <Layout className="pb-6">
           <Content>
             {/* Banner */}
-            <div style={{ 
-              background: 'linear-gradient(135deg, #fff5f0 0%, #ffffff 100%)',
-              padding: '40px 24px',
-            }}>
-              <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-                <Title level={1} style={{ fontSize: '2.5rem', marginBottom: '16px' }}>
-                  Quản lý <span style={{ color: '#ff6b35' }}>Người dùng</span>
+            <div className="bg-gradient-to-br from-orange-50 to-white py-10 px-6">
+              <div className="max-w-6xl mx-auto">
+                <Title level={1} className="text-4xl mb-4">
+                  Quản lý <span className="text-orange-500">Người dùng</span>
                 </Title>
-                <Paragraph style={{ fontSize: '16px', color: '#666', marginBottom: '0' }}>
+                <Paragraph className="text-base text-gray-600 mb-0">
                   Quản lý tài khoản giảng viên, trưởng môn và phân quyền hệ thống
                 </Paragraph>
               </div>
-            </div>
-
-            {/* Main Content */}
-            <div style={{ padding: '40px 24px', background: '#f9f9f9' }}>
-              <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+            </div>            {/* Main Content */}
+            <div className="py-10 px-6 bg-gray-50">
+              <div className="max-w-6xl mx-auto">
                 <Card bordered={false}>
                   {/* Search and Actions */}
-                  <Row gutter={16} style={{ marginBottom: 20 }} align="middle">
+                  <Row gutter={16} className="mb-5" align="middle">
                     <Col xs={24} md={16} lg={18}>
-                      <Space size="large">
-                        <Input.Search 
+                      <Space size="large">                        <Input.Search 
                           placeholder="Tìm kiếm theo tên hoặc email" 
                           allowClear 
                           enterButton={<SearchOutlined />}
-                          style={{ width: 300 }} 
+                          className="w-80" 
                           value={searchText}
                           onChange={(e) => setSearchText(e.target.value)}
                         />
@@ -197,16 +187,12 @@ export default function UserManagementPage() {
                           Bộ lọc
                         </Button>
                       </Space>
-                    </Col>
-                    <Col xs={24} md={8} lg={6} style={{ textAlign: 'right' }}>
+                    </Col>                    <Col xs={24} md={8} lg={6} className="text-right">
                       <Button 
                         type="primary" 
                         icon={<UserAddOutlined />} 
                         onClick={handleAddNew}
-                        style={{ 
-                          background: '#ff6b35', 
-                          borderColor: '#ff6b35'
-                        }}
+                        className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600"
                       >
                         Thêm người dùng
                       </Button>
@@ -237,10 +223,9 @@ export default function UserManagementPage() {
         title={form.getFieldValue('id') ? "Chỉnh sửa người dùng" : "Thêm người dùng mới"}
         open={isModalVisible}
         onOk={handleModalOk}
-        onCancel={() => setIsModalVisible(false)}
-        okText={form.getFieldValue('id') ? "Cập nhật" : "Thêm mới"}
+        onCancel={() => setIsModalVisible(false)}        okText={form.getFieldValue('id') ? "Cập nhật" : "Thêm mới"}
         cancelText="Hủy"
-        okButtonProps={{ style: { background: '#ff6b35', borderColor: '#ff6b35' } }}
+        okButtonProps={{ className: 'bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600' }}
       >
         <Form form={form} layout="vertical">
           <Form.Item name="id" hidden>
@@ -265,15 +250,14 @@ export default function UserManagementPage() {
           >
             <Input />
           </Form.Item>
-          
-          <Form.Item
+            <Form.Item
             name="role"
             label="Vai trò"
             rules={[{ required: true, message: 'Vui lòng chọn vai trò!' }]}
           >
             <Input.Group compact>
               <Form.Item name="role" noStyle>
-                <select className="ant-select-selection-item" style={{ width: '100%', padding: '4px 11px', borderRadius: '6px' }}>
+                <select className="w-full px-3 py-1 rounded-md border border-gray-300 focus:border-orange-500 focus:outline-none">
                   <option value="">Chọn vai trò</option>
                   <option value="Giảng viên">Giảng viên</option>
                   <option value="Trưởng môn">Trưởng môn</option>
@@ -281,15 +265,14 @@ export default function UserManagementPage() {
               </Form.Item>
             </Input.Group>
           </Form.Item>
-          
-          <Form.Item
+            <Form.Item
             name="department"
             label="Khoa/Bộ môn"
             rules={[{ required: true, message: 'Vui lòng chọn khoa/bộ môn!' }]}
           >
             <Input.Group compact>
               <Form.Item name="department" noStyle>
-                <select className="ant-select-selection-item" style={{ width: '100%', padding: '4px 11px', borderRadius: '6px' }}>
+                <select className="w-full px-3 py-1 rounded-md border border-gray-300 focus:border-orange-500 focus:outline-none">
                   <option value="">Chọn khoa/bộ môn</option>
                   <option value="Công nghệ thông tin">Công nghệ thông tin</option>
                   <option value="Quản trị kinh doanh">Quản trị kinh doanh</option>
@@ -298,15 +281,14 @@ export default function UserManagementPage() {
               </Form.Item>
             </Input.Group>
           </Form.Item>
-          
-          <Form.Item
+            <Form.Item
             name="status"
             label="Trạng thái"
             initialValue="active"
           >
             <Input.Group compact>
               <Form.Item name="status" noStyle>
-                <select className="ant-select-selection-item" style={{ width: '100%', padding: '4px 11px', borderRadius: '6px' }}>
+                <select className="w-full px-3 py-1 rounded-md border border-gray-300 focus:border-orange-500 focus:outline-none">
                   <option value="active">Đang hoạt động</option>
                   <option value="inactive">Tạm khóa</option>
                 </select>
