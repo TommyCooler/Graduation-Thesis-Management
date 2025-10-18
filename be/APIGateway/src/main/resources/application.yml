@@ -1,0 +1,24 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    display-request-duration: true
+    urls:
+      - name: Account Service
+        url: /account-service/v3/api-docs
+      - name: Subject Service
+        url: /subject-service/v3/api-docs
+      - name: Topic Approval Service
+        url: /topic-approval-service/v3/api-docs
+      - name: Plagiarism Service
+        url: /plagiarism-service/v3/api-docs

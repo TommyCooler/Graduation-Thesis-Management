@@ -1,43 +1,127 @@
 'use client';
-import { Layout, Button, Space, Typography } from 'antd';
-import { LoginOutlined } from '@ant-design/icons';
+import { useEffect, useState } from 'react';
+import { Layout, Button, Space, Dropdown } from 'antd';
+import {
+  LoginOutlined,
+  UserOutlined,
+  FileAddOutlined,
+  SearchOutlined,
+  LogoutOutlined,
+} from '@ant-design/icons';
 import Link from 'next/link';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { jwtDecode } from 'jwt-decode';
 
 const { Header: AntHeader } = Layout;
-const { Title } = Typography;
+
+type Claims = {
+  sub?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  exp?: number;
+  iat?: number;
+};
 
 export default function Header() {
+  const router = useRouter();
+  const [claims, setClaims] = useState<Claims | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      setClaims(null);
+      return;
+    }
+    try {
+      const decoded = jwtDecode<Claims>(token);
+      setClaims(decoded);
+    } catch {
+      setClaims(null);
+    }
+  }, []);
+
+  const onLogout = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('role');
+    setClaims(null);
+    router.push('/auth/login');
+  };
+
+  const menu = {
+    items: [
+      { key: 'profile', label: <Link href="/profile">Hồ sơ</Link>, icon: <UserOutlined /> },
+      { type: 'divider' as const },
+      {
+        key: 'logout',
+        label: <span onClick={onLogout}>Đăng xuất</span>,
+        icon: <LogoutOutlined />,
+      },
+    ],
+  };
+
   return (
-    <AntHeader style={{ 
-      background: '#fff', 
-      borderBottom: '4px solid #ff6b35',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-      padding: '0 24px'
-    }}>
+    <AntHeader className="bg-white border-b border-gray-200 shadow-sm px-6">
       <div className="flex justify-between items-center h-full">
-        <div className="flex items-center space-x-3">
-          <div style={{
-            width: 50,
-            height: 40,
-            background: '#ff6b35',
-            borderRadius: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <span style={{ color: 'white', fontWeight: 'bold', fontSize: '20px', fontStyle: 'italic' }}>FPT</span>
-          </div>
-          <Title level={3} style={{ margin: 0, color: '#ff6b35' }}>
-            Graduation Thesis Management
-          </Title>
+        {/* Logo */}
+        <Link href="/" className="flex items-center cursor-pointer">
+          <Image
+            src="/FPT_Education_logo.svg"
+            alt="FPT Education"
+            width={120}
+            height={48}
+            className="h-12 w-auto"
+          />
+        </Link>
+
+        <div className="flex items-center space-x-6">
+          {/* Navigation */}
+          <nav className="hidden lg:flex space-x-4">
+            <Link href="/topics">
+              <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                Đăng tải đề tài
+              </Button>
+            </Link>
+            <Link href="/check-plagiarism">
+              <Button type="text" icon={<SearchOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                Kiểm tra đạo văn
+              </Button>
+            </Link>
+          </nav>
+
+          {/* Auth section */}
+          <Space>
+            {!claims ? (
+              <>
+                <Link href="/auth/login">
+                  <Button type="text" icon={<LoginOutlined />} className="text-gray-600 hover:text-orange-500">
+                    Đăng nhập
+                  </Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button
+                    type="primary"
+                    icon={<UserOutlined />}
+                    className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600"
+                  >
+                    Đăng ký
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <Dropdown menu={menu} placement="bottomRight" trigger={['click']}>
+                <Button
+                  type="primary"
+                  className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600"
+                  icon={<UserOutlined />}
+                >
+                  {claims.name}
+                </Button>
+              </Dropdown>
+            )}
+          </Space>
         </div>
-        <Space>
-          <Link href="/login">
-            <Button type="text" icon={<LoginOutlined />} style={{ color: '#666' }}>
-              Đăng nhập
-            </Button>
-          </Link>
-        </Space>
       </div>
     </AntHeader>
   );
