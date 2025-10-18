@@ -19,8 +19,9 @@ export default function RegisterPage() {
     form.setFields([{ name: 'email', errors: [] }]);
 
     if (!values.email?.toLowerCase().endsWith('@fpt.edu.vn')) {
+      const msg = 'Chỉ chấp nhận email @fpt.edu.vn';
+      form.setFields([{ name: 'email', errors: [msg] }]);
       toast.warn('Vui lòng dùng email @fpt.edu.vn');
-      form.setFields([{ name: 'email', errors: ['Chỉ chấp nhận email @fpt.edu.vn'] }]);
       return;
     }
 
@@ -31,33 +32,53 @@ export default function RegisterPage() {
       phoneNumber: values.phoneNumber?.trim(),
     };
 
+    // Promise sẽ REJECT nếu API không ok -> toast.promise sẽ vào nhánh error và KHÔNG redirect
+    type ApiError = { code: number; message: string };
+
+    const doRegister = async () => {
+      const res = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const raw = await res.text();
+      console.log(res)
+      let body: any = null;
+      try { body = raw ? JSON.parse(raw) : null; } catch { /* không phải JSON */ }
+
+      if (!res.ok) {
+        const code = (body?.code) as number;
+        const message = (body?.message ?? `Đăng ký thất bại (HTTP ${res.status})`) as string;
+
+        if (code === 400) {
+          form.setFields([{ name: 'email', errors: [message] }]);
+        }
+
+        throw { code, message } as ApiError;
+      }
+
+      return body;
+    };
+
     setLoading(true);
     try {
       await toast.promise(
-        (async () => {
-          const res = await fetch(`${API_BASE}/api/auth/register`, {
-            method: 'POST',
-            headers: { accept: '*/*', 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          const text = await res.text();
-          let parsed: any = {};
-          try { parsed = text ? JSON.parse(text) : {}; } catch {}
-
-          if (!res.ok) {
-            const msg = parsed?.message || text || `Đăng ký thất bại (HTTP ${res.status})`;
-            if (/email.+đã.+sử dụng/i.test(msg) || /Email đã được sử dụng/i.test(msg)) {
-              form.setFields([{ name: 'email', errors: [msg] }]);
-            }
-          }
-          router.push(`/auth/otp?email=${encodeURIComponent(values.email)}`);
-        })(),
+        doRegister(),
         {
           pending: 'Đang tạo tài khoản...',
           success: 'Đăng ký thành công! Vui lòng kiểm tra email để nhập OTP.',
-          error: { render({ data }: any) { return data?.message || 'Đăng ký thất bại.'; } },
+          error: {
+            render({ data }: { data?: ApiError }) {
+              if (data?.code === 400) {
+                return 'Email đã được sử dụng!';
+              }
+              return 'Có lỗi xảy ra, vui lòng thử lại sau.';
+            }
+          }
         }
       );
+      router.push(`/auth/otp?email=${encodeURIComponent(values.email)}`);
     } finally {
       setLoading(false);
     }
