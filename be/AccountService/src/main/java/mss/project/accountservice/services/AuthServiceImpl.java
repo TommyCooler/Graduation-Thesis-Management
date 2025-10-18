@@ -18,6 +18,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 
@@ -73,40 +75,34 @@ public class AuthServiceImpl implements AuthService {
         final String email = request.getEmail().trim().toLowerCase();
 
         Account existing = accountRepository.findByEmail(email);
-
         if (existing != null && existing.isActive()) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         Account acc = (existing != null) ? existing : new Account();
-        acc.setName(request.getName());
         acc.setEmail(email);
+        acc.setName(request.getName());
         acc.setPassword(passwordEncoder.encode(request.getPassword()));
-        acc.setRole(Role.LECTURER);
         acc.setPhoneNumber(request.getPhoneNumber());
+        acc.setRole(Role.LECTURER);
         acc.setActive(false);
 
         try {
-            accountRepository.save(acc);
-
+            accountRepository.saveAndFlush(acc);
         } catch (DataIntegrityViolationException e) {
-            Account again = accountRepository.findByEmail(email);
-            if (again != null && again.isActive()) {
-                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
-            }
-            if (again != null) {
-                again.setName(request.getName());
-                again.setPassword(passwordEncoder.encode(request.getPassword()));
-                again.setPhoneNumber(request.getPhoneNumber());
-                again.setActive(false);
-                accountRepository.save(again);
-            } else {
-                throw e;
-            }
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    otpService.sendOtpToEmail(email);
+                }
+            });
+        } else {
             otpService.sendOtpToEmail(email);
-
+        }
     }
 
     @Override
