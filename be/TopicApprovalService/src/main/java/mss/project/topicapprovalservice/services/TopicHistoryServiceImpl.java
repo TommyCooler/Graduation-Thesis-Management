@@ -1,4 +1,4 @@
-package mss.project.topicapprovalservice.services.impl;
+package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.TopicHistoryDTOResponse;
@@ -8,7 +8,6 @@ import mss.project.topicapprovalservice.pojos.TopicHistory;
 import mss.project.topicapprovalservice.pojos.Topics;
 import mss.project.topicapprovalservice.repositories.TopicHistoryRepository;
 import mss.project.topicapprovalservice.repositories.TopicsRepository;
-import mss.project.topicapprovalservice.services.TopicHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

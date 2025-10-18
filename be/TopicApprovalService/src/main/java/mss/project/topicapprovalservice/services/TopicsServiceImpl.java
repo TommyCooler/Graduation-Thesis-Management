@@ -1,4 +1,4 @@
-package mss.project.topicapprovalservice.services.impl;
+package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
@@ -6,8 +6,6 @@ import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
 import mss.project.topicapprovalservice.pojos.Topics;
 import mss.project.topicapprovalservice.repositories.TopicsRepository;
-import mss.project.topicapprovalservice.services.AuthorizationService;
-import mss.project.topicapprovalservice.services.TopicService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

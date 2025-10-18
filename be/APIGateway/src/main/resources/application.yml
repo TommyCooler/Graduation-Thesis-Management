@@ -5,6 +5,42 @@ spring:
   application:
     name: api-gateway
 
+  cloud:
+    gateway:
+      # Bắt đầu thay đổi từ đây
+      server:
+        webflux:
+          routes:
+            # Các routes của bạn giữ nguyên, chỉ cần lùi vào 2 bậc
+            - id: account-service
+              uri: http://localhost:8081
+              predicates:
+                - Path=/account-service/**
+              filters:
+                - RewritePath=/account-service/(?<segment>.*), /$\{segment}
+
+            - id: subject-service
+              uri: http://localhost:8082
+              predicates:
+                - Path=/subject-service/**
+              filters:
+                - RewritePath=/subject-service/(?<segment>.*), /$\{segment}
+
+            - id: topic-approval-service
+              uri: http://localhost:8083
+              predicates:
+                - Path=/topic-approval-service/**
+              filters:
+                - RewritePath=/topic-approval-service/(?<segment>.*), /$\{segment}
+
+            - id: plagiarism-service
+              uri: http://localhost:8084
+              predicates:
+                - Path=/plagiarism-service/**
+              filters:
+                - RewritePath=/plagiarism-service/(?<segment>.*), /$\{segment}
+      # Kết thúc thay đổi
+
 springdoc:
   api-docs:
     enabled: true

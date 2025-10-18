@@ -1,6 +1,4 @@
-package mss.project.topicapprovalservice.services.impl;
-
-
+package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
@@ -8,12 +6,10 @@ import mss.project.topicapprovalservice.pojos.AccountTopics;
 import mss.project.topicapprovalservice.pojos.Topics;
 import mss.project.topicapprovalservice.repositories.AccountTopicsRepository;
 import mss.project.topicapprovalservice.repositories.TopicsRepository;
-import mss.project.topicapprovalservice.services.AccountService;
-import mss.project.topicapprovalservice.services.AccountTopicsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-@Service
+@Service("accountTopicsServiceImpl")
 public class AccountTopicsServiceImpl implements AccountTopicsService {
 
     @Autowired
