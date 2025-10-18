@@ -1,4 +1,4 @@
-package mss.project.topicapprovalservice.services;
+package mss.project.topicapprovalservice.services.impl;
 
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
@@ -6,6 +6,8 @@ import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
 import mss.project.topicapprovalservice.pojos.Topics;
 import mss.project.topicapprovalservice.repositories.TopicsRepository;
+import mss.project.topicapprovalservice.services.AuthorizationService;
+import mss.project.topicapprovalservice.services.TopicService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,7 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class TopicsServiceImpl implements ITopicService {
+public class TopicsServiceImpl implements TopicService {
 
     @Autowired
     private AuthorizationService authorizationService;

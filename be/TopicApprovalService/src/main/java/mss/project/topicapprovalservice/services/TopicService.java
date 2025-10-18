@@ -7,7 +7,7 @@ import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 
 import java.util.List;
 
-public interface ITopicService {
+public interface TopicService {
 
     TopicsDTOResponse getTopicbById(Long topicId);
     TopicsDTOResponse createTopic(TopicsDTORequest topicsDTO);

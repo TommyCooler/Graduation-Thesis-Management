@@ -1,4 +1,4 @@
-package mss.project.topicapprovalservice.services;
+package mss.project.topicapprovalservice.services.impl;
 
 
 
@@ -8,11 +8,13 @@ import mss.project.topicapprovalservice.pojos.AccountTopics;
 import mss.project.topicapprovalservice.pojos.Topics;
 import mss.project.topicapprovalservice.repositories.AccountTopicsRepository;
 import mss.project.topicapprovalservice.repositories.TopicsRepository;
+import mss.project.topicapprovalservice.services.AccountService;
+import mss.project.topicapprovalservice.services.AccountTopicsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AccountTopicsServiceImpl implements IAccountTopicsService {
+public class AccountTopicsServiceImpl implements AccountTopicsService {
 
     @Autowired
     private TopicsRepository topicsRepository;
