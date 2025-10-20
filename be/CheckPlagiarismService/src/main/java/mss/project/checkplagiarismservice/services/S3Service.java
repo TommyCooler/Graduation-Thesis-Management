@@ -12,6 +12,8 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
+import java.net.URL;
+import java.util.Objects;
 
 @Service
 public class S3Service {
@@ -29,6 +31,7 @@ public class S3Service {
                 .key(prefix + file.getOriginalFilename())
                 .build(), RequestBody.fromBytes(file.getBytes()));
 
+
     }
 
     public byte[] downloadFile(String key) {
@@ -38,6 +41,28 @@ public class S3Service {
                 .key(key)
                 .build());
         return responseBytes.asByteArray();
+    }
+
+    public String uploadFileAndGetUrl(MultipartFile file, String prefix) throws IOException {
+        // đảm bảo có dấu "/"
+        String safePrefix = (prefix == null || prefix.isBlank()) ? "" :
+                (prefix.endsWith("/") ? prefix : prefix + "/");
+
+        String fileName = Objects.requireNonNullElse(file.getOriginalFilename(), "file.bin");
+        String key = safePrefix + fileName; // ví dụ: "topic/356924.356930.pdf"
+
+        s3Client.putObject(
+                PutObjectRequest.builder()
+                        .bucket(bucketName)
+                        .key(key)
+                        .contentType(file.getContentType())
+                        .build(),
+                RequestBody.fromBytes(file.getBytes())
+        );
+
+        // Lấy URL cố định (sẽ truy cập được nếu object public)
+        URL url = s3Client.utilities().getUrl(b -> b.bucket(bucketName).key(key));
+        return url.toString(); // ví dụ: https://mss-file.s3.ap-southeast-2.amazonaws.com/topic/356924.356930.pdf
     }
 
 }
