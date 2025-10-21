@@ -29,6 +29,7 @@ export default function LoginPage() {
             method: 'POST',
             headers: { accept: '*/*', 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: values.email.trim(), password: values.password }),
+            credentials: 'include',
           });
 
           const text = await res.text();
