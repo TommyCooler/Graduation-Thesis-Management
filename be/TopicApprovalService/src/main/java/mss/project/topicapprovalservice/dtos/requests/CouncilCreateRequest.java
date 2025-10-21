@@ -9,8 +9,5 @@ public class CouncilCreateRequest {
 
 
     private String semester;
-
-    private LocalDate date;
-
     private Long topicId;
 }

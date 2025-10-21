@@ -1,5 +1,6 @@
 package mss.project.topicapprovalservice.services;
 
+import jakarta.transaction.Transactional;
 import mss.project.topicapprovalservice.dtos.requests.CouncilCreateRequest;
 import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 import mss.project.topicapprovalservice.dtos.responses.CouncilMemberResponse;
@@ -64,6 +65,7 @@ public class CouncilService implements ICouncilService {
                 .toList();
     }
 
+    @Transactional
     @Override
     public CouncilResponse addCouncil(CouncilCreateRequest councilCreateRequest) {
         Topics topic = topicsRepository.findById(councilCreateRequest.getTopicId())
@@ -74,7 +76,7 @@ public class CouncilService implements ICouncilService {
         council.setStatus(Status.PLANNED);
         council.setTopic(topic);
 
-        LocalDate  startDate = getDateFromSemester(councilCreateRequest.getSemester());
+        LocalDate startDate = getDateFromSemester(councilCreateRequest.getSemester());
 
         int dayOffset = new Random().nextInt(5); // 0 -> 4
         LocalDate defenseDate = startDate.plusDays(dayOffset);
@@ -88,9 +90,9 @@ public class CouncilService implements ICouncilService {
             throw new AppException(ErrorCode.NOT_ENOUGH_LECTURERS);
         }
 
-        Collections.shuffle(availableLecturers);
-        List<AccountDTO> selectedMembers = availableLecturers.subList(0,4);
-
+        List<AccountDTO> modifiableList = new ArrayList<>(availableLecturers);
+        Collections.shuffle(modifiableList);
+        List<AccountDTO> selectedMembers = modifiableList.subList(0, 4);
         List<CouncilMember> members = new ArrayList<>();
         for(int i =0;i<selectedMembers.size();i++){
             AccountDTO acc = selectedMembers.get(i);
@@ -118,6 +120,9 @@ public class CouncilService implements ICouncilService {
         List<CouncilMemberResponse> memberResponses = new ArrayList<>();
         for(CouncilMember member : members){
             AccountDTO acc = accountFeignClient.getAccountById(member.getAccountId());
+            if (acc == null) {
+                throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
+            }
             CouncilMemberResponse memberResponse = new CouncilMemberResponse();
             memberResponse.setId(member.getId());
             memberResponse.setAccountId(acc.getId());
@@ -126,6 +131,7 @@ public class CouncilService implements ICouncilService {
             memberResponse.setRole(member.getRole());
             memberResponses.add(memberResponse);
         }
+        councilResponse.setCouncilMembers(memberResponses);
         return councilResponse;
     }
 
