@@ -1,5 +1,6 @@
 package mss.project.accountservice.controllers;
 
+import mss.project.accountservice.dtos.responses.AccountResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,7 +32,7 @@ public class AccountController {
     }
     
     @GetMapping("/{id}")
-    public Account existsById(@PathVariable Long id) {
+    public AccountResponse existsById(@PathVariable Long id) {
         return accountService.findById(id);
     }
 

@@ -1,5 +1,6 @@
 package mss.project.accountservice.services;
 
+import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.exceptions.AppException;
 import mss.project.accountservice.exceptions.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +46,15 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public Account findById(Long id) {
-        return accountRepository.findById(id)
+    public AccountResponse findById(Long id) {
+        Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+        AccountResponse response = new AccountResponse();
+        response.setId(account.getId());
+        response.setName(account.getName());
+        response.setEmail(account.getEmail());
+        response.setPhoneNumber(account.getPhoneNumber());
+        response.setRole(account.getRole().toString());
+        return response;
     }
 }
