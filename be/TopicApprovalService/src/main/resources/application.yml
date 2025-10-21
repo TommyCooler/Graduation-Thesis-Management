@@ -7,21 +7,15 @@ spring:
     url: ${TOPIC_DB_URL}
     username: ${TOPIC_DB_USERNAME}
     password: ${TOPIC_DB_PASSWORD}
-
     hikari:
-<<<<<<< Updated upstream
-      # Dọn trạng thái kết nối khi mượn từ pool (xoá prepared stmts…)
-=======
       maximum-pool-size: 5
       minimum-idle: 2
       idle-timeout: 30000
       max-lifetime: 1800000
       connection-timeout: 20000
->>>>>>> Stashed changes
       connection-init-sql: DISCARD ALL
       data-source-properties:
         preferQueryMode: simple   # hoặc thay bằng prepareThreshold: 0
-
   jpa:
     hibernate:
       ddl-auto: update
@@ -29,13 +23,6 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-<<<<<<< Updated upstream
-        # Nếu bạn không cần Hibernate truy vấn metadata khi boot
-=======
-        # N?u b?n kh�ng c?n Hibernate truy v?n metadata khi boot
->>>>>>> Stashed changes
-        # boot:
-        #   allow_jdbc_metadata_access: false
 
 server:
   port: 8083
