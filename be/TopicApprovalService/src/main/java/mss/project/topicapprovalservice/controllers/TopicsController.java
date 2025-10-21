@@ -4,26 +4,31 @@ import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 import mss.project.topicapprovalservice.services.AccountTopicsServiceImpl;
-import mss.project.topicapprovalservice.services.TopicsServiceImpl;
+import mss.project.topicapprovalservice.services.TopicService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Controller
-@RequestMapping
-@RestController("/api/topics")
+@RequestMapping("/api/topics")
+@RestController
 public class TopicsController {
 
     @Autowired
-    private TopicsServiceImpl topicsService;
+    private TopicService topicsService;
 
     @Autowired
     private AccountTopicsServiceImpl accountTopicsService;
 
     @PostMapping("/create")
-    public ApiResponse<TopicsDTOResponse> createTopic(@RequestBody TopicsDTORequest topicsDTO, @RequestParam Long accountId) {
+    public ApiResponse<TopicsDTOResponse> createTopic(@RequestBody TopicsDTORequest topicsDTO, @AuthenticationPrincipal Jwt jwt) {
         TopicsDTOResponse saved = topicsService.createTopic(topicsDTO);
-        accountTopicsService.assignTopicToAccount(1L, saved.getId());
+        Long accountId = jwt.getSubject() != null ? Long.parseLong(jwt.getSubject()) : null;
+        accountTopicsService.assignTopicToAccount(accountId, saved.getId());
          ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
          apiResponse.setMessage("Topic Created");
          apiResponse.setData(saved);
@@ -58,9 +63,11 @@ public class TopicsController {
     }
 
     @GetMapping("/all")
-    public ApiResponse<TopicsDTOResponse> getAllTopics() {
-        ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+    public ApiResponse<List<TopicsDTOResponse>> getAllTopics() {
+        List<TopicsDTOResponse> topicsDTOResponses = topicsService.getAllTopics();
+        ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("All Topics");
+        apiResponse.setData(topicsDTOResponses);
         return apiResponse;
     }
 

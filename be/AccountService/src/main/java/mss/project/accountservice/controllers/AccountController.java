@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import mss.project.accountservice.pojos.Account;
 import mss.project.accountservice.services.AccountService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/accounts")
 @Tag(name = "Account Service", description = "Account management operations and health checks")
@@ -18,9 +20,9 @@ public class AccountController {
     @Autowired
     private AccountService accountService;
 
-    @GetMapping
-    public String getAccounts() {
-        return "List of accounts";
+    @GetMapping("/all")
+    public List<Account> getAccounts() {
+        return accountService.getAllAccounts();
     }
 
     @GetMapping("/email/{email}")
@@ -29,8 +31,8 @@ public class AccountController {
     }
     
     @GetMapping("/{id}")
-    public boolean existsById(@PathVariable Long id) {
-        return accountService.existsById(id);
+    public Account existsById(@PathVariable Long id) {
+        return accountService.findById(id);
     }
 
     @GetMapping("/{id}/details")

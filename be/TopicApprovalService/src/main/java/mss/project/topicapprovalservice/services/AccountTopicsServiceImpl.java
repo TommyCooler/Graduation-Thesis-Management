@@ -25,7 +25,7 @@ public class AccountTopicsServiceImpl implements AccountTopicsService {
     public void assignTopicToAccount(Long accountId, Long topicId) {
         Topics topic = topicsRepository.findById(topicId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
-        if(!accountService.existsById(accountId)){
+        if(accountService.getAccountById(accountId) == null) {
             throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
         AccountTopics accountTopics = new AccountTopics();

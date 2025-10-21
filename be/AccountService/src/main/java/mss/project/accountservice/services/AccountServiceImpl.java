@@ -10,6 +10,10 @@ import mss.project.accountservice.repositories.AccountRepository;
 
 import java.util.Optional;
 
+import java.util.List;
+
+import java.util.List;
+
 @Service
 public class AccountServiceImpl implements AccountService {
 
@@ -33,5 +37,16 @@ public class AccountServiceImpl implements AccountService {
             throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
         return accountOpt.get();
+    }
+
+    @Override
+    public List<Account> getAllAccounts() {
+        return accountRepository.findAll();
+    }
+
+    @Override
+    public Account findById(Long id) {
+        return accountRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
     }
 }
