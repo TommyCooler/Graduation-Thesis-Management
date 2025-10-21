@@ -1,6 +1,28 @@
 spring:
   application:
     name: CHECK-PLAGIARISM-SERVICE
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${PLAGIARISM_DB_URL}
+    username: ${PLAGIARISM_DB_USERNAME}
+    password: ${PLAGIARISM_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 2
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+
   servlet:
     multipart:
       max-file-size: 50MB
@@ -32,6 +54,17 @@ management:
 
 # Qdrant, Gateway and AWS S3 configurations removed
 
+plagiarism:
+ qdrant:
+  url: ${QDRANT_URL}
+  apiKey: ${QDRANT_API_KEY}         # nếu bật auth
+  collection: plagiarism_docs
+  vectorSize: 768
+  distance: Cosine
+ google:
+  apiKey: ${GOOGLE_API_KEY}
+  embeddingModel: ${GOOGLE_EMBEDDING_MODEL}
+
 # Logging Configuration
 logging:
   level:
@@ -40,3 +73,29 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${ACCESS_KEY}
+      secret-key: ${SECRET_KEY}
+    region:
+      static: ${REGION}
+
+aws:
+  bucket:
+    name: ${BUCKET_NAME}
+
+
+account:
+  service:
+    url: ${ACCOUNT_SERVICE_URL}
+
+topic:
+  service:
+    url: ${TOPIC_SERVICE_URL}
+
+folder:
+  prefix: ${FOLDER_PREFIX}
+
+
