@@ -10,5 +10,5 @@ import java.util.List;
 @Repository
 public interface ReviewCouncilMemberRepository extends JpaRepository<ReviewCouncilMembers, Long> {
     ReviewCouncilMembers findByProgressReviewCouncilAndAccountID(ProgressReviewCouncils council, Long accountID);
-    List<Long> findAllByProgressReviewCouncil(List<Long> councilList);
+    List<ReviewCouncilMembers> findAllByProgressReviewCouncil(ProgressReviewCouncils council);
 }

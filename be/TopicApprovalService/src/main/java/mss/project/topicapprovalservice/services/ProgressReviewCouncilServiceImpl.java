@@ -19,8 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 
 @Service
@@ -66,6 +65,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
         council.setMilestone(request.getMilestone());
         council.setReviewDate(request.getReviewDate());
         council.setStatus(Status.PLANNED);
+//        council.setOverallComments("");
         council.setCreatedAt(LocalDateTime.now());
         progressReviewCouncilRepository.save(council);
 
@@ -115,30 +115,47 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
     }
 
     private void validateForWeek4(Topics topic, List<Long> memberIDs) {
-        Long supervisorID = accountTopicsRepository.findAccountIdByTopics(topic.getId());
+        Long supervisorID = accountTopicsRepository.findAccountIdByTopics(topic);
         if (memberIDs.contains(supervisorID)) {
             throw new AppException(ErrorCode.MEMBER_CANNOT_BE_SUPERVISOR);
         }
     }
 
     private void validateForWeek8AndWeek12(Topics topic, List<Long> memberIDs) {
-        List<Long> oldCouncilOfTopic = progressReviewCouncilRepository.findAllCouncilIDByTopic(topic.getId());
+        List<ProgressReviewCouncils> oldCouncilOfTopic = progressReviewCouncilRepository.findAllByTopic(topic);
         int size = oldCouncilOfTopic.size();
         int count = 0;
         if (size < 1) {
             throw new AppException(ErrorCode.PREVIOUS_REVIEW_COUNCIL_NOT_FOUND);
         }
-        List<Long> oldCouncilMembers = reviewCouncilMembersRepository.findAllByProgressReviewCouncil(oldCouncilOfTopic);
-        for(int i = 0; i < size; i++) {
-            Long oldLecturerID = oldCouncilMembers.get(i);
-            if (memberIDs.contains(oldLecturerID)) {
+        List<Long> oldCouncilIDs = new ArrayList<>();
+        oldCouncilOfTopic.forEach(council -> {
+            oldCouncilIDs.add(council.getCouncilID());
+        });
+
+        Set<Long> oldCouncilMemberIDs = new HashSet<>();
+        oldCouncilOfTopic.forEach(council -> {
+            List<ReviewCouncilMembers> members = reviewCouncilMembersRepository.findAllByProgressReviewCouncil(council);
+            members.forEach(member -> {
+                oldCouncilMemberIDs.add(member.getAccountID());
+            });
+        });
+        for(Long id : memberIDs) {
+            if(oldCouncilMemberIDs.contains(id)) {
                 count++;
             }
         }
+
+//        for(int i = 0; i < size; i++) {
+//            Long oldLecturerID = oldCouncilMemberIDs.get(i);
+//            if (memberIDs.contains(oldLecturerID)) {
+//                count++;
+//            }
+//        }
         if(count == 2 || count < 1) {
             throw new AppException(ErrorCode.MEMBER_NOT_VALID);
         }
-        Long supervisorID = accountTopicsRepository.findAccountIdByTopics(topic.getId());
+        Long supervisorID = accountTopicsRepository.findAccountIdByTopics(topic);
         if (memberIDs.contains(supervisorID)) {
             throw new AppException(ErrorCode.MEMBER_CANNOT_BE_SUPERVISOR);
         }

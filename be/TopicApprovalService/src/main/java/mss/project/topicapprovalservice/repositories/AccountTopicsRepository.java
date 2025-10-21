@@ -9,5 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Repository
 public interface AccountTopicsRepository extends JpaRepository<AccountTopics, Long> {
-    Long findAccountIdByTopics(Long topicId);
+    Long findAccountIdByTopics(Topics topic);
 }

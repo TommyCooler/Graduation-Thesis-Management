@@ -35,7 +35,7 @@ public class ProgressReviewCouncils {
     @Column(nullable=false)
     private Status status;
 
-    @Column(nullable=false, length=500)
+    @Column(nullable=true, length=500)
     private String overallComments;
 
     @Column(nullable=false)
