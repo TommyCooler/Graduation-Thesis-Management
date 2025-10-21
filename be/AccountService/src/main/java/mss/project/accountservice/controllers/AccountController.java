@@ -32,4 +32,10 @@ public class AccountController {
     public boolean existsById(@PathVariable Long id) {
         return accountService.existsById(id);
     }
+
+    @GetMapping("/{id}/details")
+    public Account getAccountById(@PathVariable Long id) {
+        return accountService.getAccountById(id);
+    }
+
 }

@@ -1,0 +1,87 @@
+#spring.application.name=TOPIC-APPROVAL-SERVICE
+#
+#spring.datasource.driver-class-name=org.postgresql.Driver
+#spring.datasource.url=${TOPIC_DB_URL}
+#spring.datasource.username=${TOPIC_DB_USERNAME}
+#spring.datasource.password=${TOPIC_DB_PASSWORD}
+#
+#
+## Database, RabbitMQ and Eureka configurations removed
+#spring.jpa.hibernate.ddl-auto=update
+#spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+#spring.jpa.show-sql=true
+#server.port=8083
+#
+## SpringDoc OpenAPI Configuration
+#springdoc.swagger-ui.operationsSorter=method
+#
+## Actuator Configuration for Health Check
+#management.endpoints.web.exposure.include=health,info
+#management.endpoint.health.show-details=always
+#management.info.env.enabled=true
+#
+## Datasource
+##spring.datasource.driver-class-name=org.postgresql.Driver
+##spring.datasource.url=${TOPIC_DB_URL}
+##spring.datasource.username=${TOPIC_DB_USERNAME}
+##spring.datasource.password=${TOPIC_DB_PASSWORD}
+#
+## HikariCP settings
+#spring.datasource.hikari.maximum-pool-size=5
+#spring.datasource.hikari.minimum-idle=2
+#spring.datasource.hikari.idle-timeout=30000
+#spring.datasource.hikari.max-lifetime=1800000
+#spring.datasource.hikari.connection-timeout=20000
+#
+### JPA / Hibernate
+##spring.jpa.hibernate.ddl-auto=update
+##spring.jpa.show-sql=true
+##spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+#
+spring:
+  application:
+    name: TOPIC-APPROVAL-SERVICE
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${TOPIC_DB_URL}
+    username: ${TOPIC_DB_USERNAME}
+    password: ${TOPIC_DB_PASSWORD}
+    hikari:
+      # D?n tr?ng thái k?t n?i khi m??n t? pool (xoá prepared stmts?)
+      connection-init-sql: DISCARD ALL
+      data-source-properties:
+        preferQueryMode: simple   # ho?c thay b?ng prepareThreshold: 0
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        # N?u b?n không c?n Hibernate truy v?n metadata khi boot
+        # boot:
+        #   allow_jdbc_metadata_access: false
+
+server:
+  port: 8083
+
+springdoc:
+  swagger-ui:
+    operationsSorter: method
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+app:
+  jwt:
+    secret-base64 : ${BASE-64}

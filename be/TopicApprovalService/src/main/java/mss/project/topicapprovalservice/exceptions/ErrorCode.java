@@ -24,6 +24,7 @@ public enum ErrorCode {
     PREVIOUS_REVIEW_COUNCIL_NOT_FOUND(805, "Không tìm thấy hội đồng review trước đó"),
     MEMBER_NOT_VALID(806, "Thành viên hội đồng không hợp lệ"),
     REVIEW_COUNCIL_NOT_FOUND(807, "Không tìm thấy hội đồng review"),
+    REVIEW_COUNCIL_MEMBERS_NOT_FOUND(808, "Không tìm thấy thành viên hội đồng review"),
     ;
     private int code;
     private String message;

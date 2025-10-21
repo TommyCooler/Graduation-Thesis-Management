@@ -5,4 +5,5 @@ import mss.project.accountservice.pojos.Account;
 public interface AccountService {
     Account findByEmail(String email);
     boolean existsById(Long id);
+    Account getAccountById(Long id);
 }

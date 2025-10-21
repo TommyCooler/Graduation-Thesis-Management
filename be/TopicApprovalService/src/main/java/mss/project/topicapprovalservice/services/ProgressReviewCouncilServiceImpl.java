@@ -4,6 +4,7 @@ import mss.project.topicapprovalservice.dtos.requests.CreateReviewCouncilRequest
 import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 import mss.project.topicapprovalservice.dtos.responses.CreateReviewCouncilResponse;
 import mss.project.topicapprovalservice.dtos.responses.GetAllReviewCouncilResponse;
+import mss.project.topicapprovalservice.dtos.responses.GetMemberOfReviewCouncilResponse;
 import mss.project.topicapprovalservice.enums.Status;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
@@ -105,13 +106,30 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
     }
 
     @Override
-    public List<AccountDTO> getMembersOfCouncil(Long councilId) {
+    public List<GetMemberOfReviewCouncilResponse> getMembersOfCouncil(Long councilId) {
         ProgressReviewCouncils council = progressReviewCouncilRepository.findByCouncilID(councilId);
         if(council == null) {
            throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
         }
-
-        return List.of();
+        List<ReviewCouncilMembers> members = reviewCouncilMembersRepository.findAllByProgressReviewCouncil(council);
+        if(members.isEmpty()) {
+            throw new AppException(ErrorCode.REVIEW_COUNCIL_MEMBERS_NOT_FOUND);
+        }
+        List<Long> memberAccountIDs = new ArrayList<>();
+        members.forEach(member -> {
+            memberAccountIDs.add(member.getAccountID());
+        });
+        List<AccountDTO> memberAccounts = new ArrayList<>();
+        memberAccountIDs.forEach(accountID -> {
+            AccountDTO accountDTO = accountService.getAccountById(accountID);
+            memberAccounts.add(accountDTO);
+        });
+        return memberAccounts.stream().map(account ->
+                GetMemberOfReviewCouncilResponse.builder()
+                        .accountID(account.getId())
+                        .accountName(account.getName())
+                        .build()
+        ).toList();
     }
 
     private void validateForWeek4(Topics topic, List<Long> memberIDs) {

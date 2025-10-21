@@ -6,6 +6,7 @@ import mss.project.topicapprovalservice.dtos.requests.CreateReviewCouncilRequest
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
 import mss.project.topicapprovalservice.dtos.responses.CreateReviewCouncilResponse;
 import mss.project.topicapprovalservice.dtos.responses.GetAllReviewCouncilResponse;
+import mss.project.topicapprovalservice.dtos.responses.GetMemberOfReviewCouncilResponse;
 import mss.project.topicapprovalservice.services.IProgressReviewCouncilService;
 import mss.project.topicapprovalservice.services.ProgressReviewCouncilServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +38,16 @@ public class ProgressReviewCouncilController {
         return ApiResponse.<List<GetAllReviewCouncilResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Fetched all Progress Review Councils successfully")
+                .data(result)
+                .build();
+    }
+
+    @GetMapping("/{councilId}/members" )
+    public ApiResponse<List<GetMemberOfReviewCouncilResponse>> getMembersOfReviewCouncil(@PathVariable Long councilId) {
+        List<GetMemberOfReviewCouncilResponse> result = progressReviewCouncilService.getMembersOfCouncil(councilId);
+        return ApiResponse.<List<GetMemberOfReviewCouncilResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Fetched members of Progress Review Council successfully")
                 .data(result)
                 .build();
     }
