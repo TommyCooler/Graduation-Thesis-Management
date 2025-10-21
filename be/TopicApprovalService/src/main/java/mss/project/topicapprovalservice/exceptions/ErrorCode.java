@@ -28,7 +28,15 @@ public enum ErrorCode {
     INVALID_SEMESTER(400, "Invalid semester"),
     NOT_ENOUGH_LECTURERS(400, "Not enough lecturers to approve the topic"),
 
-    ACCOUNT_SERVICE_ERROR(500, "Account service error")
+    ACCOUNT_SERVICE_ERROR(500, "Account service error"),
+
+    // New error codes for review council
+    TOPIC_NOT_FOUND(404, "Topic not found"),
+    COUNCIL_NOT_FOUND(404, "Council not found"),
+    CREATOR_CANNOT_JOIN_COUNCIL(403, "Người tạo đề tài không thể tham gia hội đồng duyệt"),
+    COUNCIL_FULL(400, "Hội đồng đã đủ 2 thành viên"),
+    ALREADY_JOINED_COUNCIL(400, "Bạn đã tham gia hội đồng này rồi"),
+    NOT_COUNCIL_MEMBER(400, "Bạn không phải thành viên của hội đồng này"),
     ;
     private int code;
     private String message;

@@ -43,7 +43,8 @@ export interface TopicUpdateRequest {
 export interface TopicApiResponse {
   code: number;
   message: string;
-  result: TopicResponse | TopicResponse[];
+  result?: TopicResponse | TopicResponse[]; // Old format (keep for compatibility)
+  data?: TopicResponse | TopicResponse[]; // New format from TopicApprovalService
 }
 
 // Filter types

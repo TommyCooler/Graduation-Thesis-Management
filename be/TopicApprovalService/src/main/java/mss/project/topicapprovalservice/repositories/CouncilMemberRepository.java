@@ -18,4 +18,10 @@ public interface CouncilMemberRepository extends JpaRepository<CouncilMember, Lo
         JOIN cm.council c
         WHERE c.date = :date AND c.slot = :slot""")
     List<Long> findBusyLecturers(@Param("date") LocalDate date, @Param("slot") int slot);
+    
+    @Query("SELECT cm FROM CouncilMember cm WHERE cm.council.id = :councilId")
+    List<CouncilMember> findByCouncilId(@Param("councilId") Long councilId);
+    
+    @Query("SELECT cm FROM CouncilMember cm WHERE cm.council.id = :councilId AND cm.accountId = :accountId")
+    java.util.Optional<CouncilMember> findByCouncilIdAndAccountId(@Param("councilId") Long councilId, @Param("accountId") Long accountId);
 }

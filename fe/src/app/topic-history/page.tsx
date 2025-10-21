@@ -23,6 +23,8 @@ import {
   Alert,
   Spin,
   message,
+  Collapse,
+  Dropdown,
 } from 'antd';
 import {
   SearchOutlined,
@@ -37,6 +39,8 @@ import {
   ReloadOutlined,
   InfoCircleOutlined,
   FileTextOutlined,
+  DownOutlined,
+  MoreOutlined,
 } from '@ant-design/icons';
 import Header from '../../components/combination/Header';
 import Footer from '../../components/combination/Footer';
@@ -46,6 +50,16 @@ import topicHistoryService from '../../services/topicHistoryService';
 const { Content } = Layout;
 const { Title, Text } = Typography;
 const { Option } = Select;
+const { Panel } = Collapse;
+
+// Type cho grouped topic history
+type GroupedTopicHistory = {
+  topicId: number;
+  topicName: string;
+  latestChange: TopicHistory;
+  allChanges: TopicHistory[];
+  changeCount: number;
+};
 
 // Mock data cho lịch sử thay đổi đề tài
 const mockTopicHistory: TopicHistory[] = [
@@ -293,6 +307,7 @@ export default function TopicHistoryPage() {
   const [userFilter, setUserFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const [topicHistory, setTopicHistory] = useState<TopicHistory[]>([]);
+  const [groupedHistory, setGroupedHistory] = useState<GroupedTopicHistory[]>([]);
   const [stats, setStats] = useState({
     totalChanges: 0,
     createCount: 0,
@@ -302,6 +317,31 @@ export default function TopicHistoryPage() {
     uniqueUsers: [] as string[],
   });
 
+  // Function to group topic history by topicId
+  const groupTopicHistoryByTopicId = (data: TopicHistory[]): GroupedTopicHistory[] => {
+    const grouped = data.reduce((acc, history) => {
+      const topicId = history.topicId;
+      if (!acc[topicId]) {
+        acc[topicId] = {
+          topicId,
+          topicName: history.topicName,
+          allChanges: [],
+          changeCount: 0,
+        };
+      }
+      acc[topicId].allChanges.push(history);
+      acc[topicId].changeCount++;
+      return acc;
+    }, {} as Record<number, Omit<GroupedTopicHistory, 'latestChange'>>);
+
+    // Sort changes by date and set latest change
+    return Object.values(grouped).map(group => ({
+      ...group,
+      allChanges: group.allChanges.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
+      latestChange: group.allChanges[0],
+    }));
+  };
+
   // Load data on component mount
   useEffect(() => {
     loadTopicHistory();
@@ -310,7 +350,35 @@ export default function TopicHistoryPage() {
   const loadTopicHistory = async (filters?: TopicHistoryFilters) => {
     setLoading(true);
     try {
-      // Sử dụng mock data thay vì gọi API
+      // Gọi API thực từ backend
+      const data = await topicHistoryService.getAllTopicHistory(filters);
+      
+      setTopicHistory(data);
+      
+      // Group data by topicId
+      const grouped = groupTopicHistoryByTopicId(data);
+      setGroupedHistory(grouped);
+      
+      // Calculate stats
+      const uniqueTopics = new Set(data.map(h => h.topicId)).size;
+      const uniqueUsers = Array.from(new Set(data.map(h => h.updatedBy)));
+      const createCount = data.filter(h => h.actionType === 'CREATE').length;
+      const updateCount = data.filter(h => h.actionType === 'UPDATE').length;
+      const deleteCount = data.filter(h => h.actionType === 'DELETE').length;
+      
+      setStats({
+        totalChanges: data.length,
+        createCount,
+        updateCount,
+        deleteCount,
+        uniqueTopics,
+        uniqueUsers,
+      });
+    } catch (error) {
+      console.error('Error loading topic history:', error);
+      message.error('Có lỗi xảy ra khi tải dữ liệu lịch sử thay đổi');
+      
+      // Fallback to mock data if API fails
       let data = [...mockTopicHistory];
       
       // Apply filters
@@ -331,8 +399,9 @@ export default function TopicHistoryPage() {
       }
       
       setTopicHistory(data);
+      const grouped = groupTopicHistoryByTopicId(data);
+      setGroupedHistory(grouped);
       
-      // Calculate stats
       const uniqueTopics = new Set(data.map(h => h.topicId)).size;
       const uniqueUsers = Array.from(new Set(data.map(h => h.updatedBy)));
       const createCount = data.filter(h => h.actionType === 'CREATE').length;
@@ -347,16 +416,13 @@ export default function TopicHistoryPage() {
         uniqueTopics,
         uniqueUsers,
       });
-    } catch (error) {
-      console.error('Error loading topic history:', error);
-      message.error('Có lỗi xảy ra khi tải dữ liệu lịch sử thay đổi');
     } finally {
       setLoading(false);
     }
   };
 
-  // Sử dụng dữ liệu đã được filter từ loadTopicHistory
-  const filteredHistory = topicHistory;
+  // Sử dụng dữ liệu đã được group từ loadTopicHistory
+  const filteredHistory = groupedHistory;
 
   const handleViewDetails = (history: TopicHistory) => {
     setSelectedHistory(history);
@@ -412,97 +478,107 @@ export default function TopicHistoryPage() {
     }
   };
 
-  const columns = [
-    {
-      title: 'Đề tài',
-      dataIndex: 'topicName',
-      key: 'topicName',
-      width: 180,
-      fixed: 'left' as const,
-      render: (text: string, record: TopicHistory) => (
-        <div>
-          <Text strong className="text-xs sm:text-sm">{text}</Text>
-          <br />
-          <Text type="secondary" className="text-xs">
-            ID: {record.topicId}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Nội dung thay đổi',
-      dataIndex: 'changedContent',
-      key: 'changedContent',
-      width: 280,
-      fixed: 'left' as const,
-      render: (text: string) => (
-        <div className="whitespace-normal break-words">
-          <Text className="text-xs sm:text-sm leading-relaxed">
-            {text}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Người cập nhật',
-      dataIndex: 'updatedBy',
-      key: 'updatedBy',
-      width: 120,
-      render: (text: string) => (
-        <div className="flex items-center">
-          <Avatar size="small" icon={<UserOutlined />} className="mr-1" />
-          <Text className="text-xs sm:text-sm">{text}</Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Thời gian',
-      dataIndex: 'updatedAt',
-      key: 'updatedAt',
-      width: 100,
-      render: (text: string) => (
-        <div>
-          <Text className="text-xs">{text.split('T')[0]}</Text>
-          <br />
-          <Text type="secondary" className="text-xs">
-            {text.split('T')[1]?.split('.')[0]}
-          </Text>
-        </div>
-      ),
-    },
-    {
-      title: 'Hành động',
-      dataIndex: 'actionType',
-      key: 'actionType',
-      width: 80,
-      render: (actionType: string) => (
-        <Tag 
-          color={getActionColor(actionType)} 
-          icon={getActionIcon(actionType)}
-          className="text-xs"
-        >
-          {getActionText(actionType)}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      width: 60,
-      fixed: 'right' as const,
-      render: (_: any, record: TopicHistory) => (
-        <Button
-          type="primary"
-          icon={<EyeOutlined />}
-          size="small"
-          onClick={() => handleViewDetails(record)}
-          className="text-xs"
-        >
-          <span className="hidden sm:inline">Xem</span>
-        </Button>
-      ),
-    },
-  ];
+  // Component để hiển thị collapsed topic history
+  const CollapsedTopicHistory = ({ groupedData }: { groupedData: GroupedTopicHistory[] }) => {
+    return (
+      <div className="space-y-4">
+        {groupedData.map((group) => (
+          <Card key={group.topicId} size="small" className="collapsed-topic-card shadow-sm">
+            {/* Header với thông tin mới nhất */}
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <div className="flex items-center mb-2">
+                  <Text strong className="text-base text-[#ff6b35]">
+                    {group.topicName}
+                  </Text>
+                  <Badge 
+                    count={group.changeCount} 
+                    style={{ backgroundColor: '#ff6b35', marginLeft: 8 }}
+                    title={`${group.changeCount} thay đổi`}
+                  />
+                </div>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center">
+                    <Avatar size="small" icon={<UserOutlined />} className="mr-1" />
+                    <Text>{group.latestChange.updatedBy}</Text>
+                  </div>
+                  <div className="flex items-center">
+                    <ClockCircleOutlined className="mr-1" />
+                    <Text>{topicHistoryService.formatDateTime(group.latestChange.updatedAt)}</Text>
+                  </div>
+                  <Tag 
+                    color={getActionColor(group.latestChange.actionType)} 
+                    icon={getActionIcon(group.latestChange.actionType)}
+                    className="text-xs"
+                  >
+                    {getActionText(group.latestChange.actionType)}
+                  </Tag>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  type="primary"
+                  icon={<EyeOutlined />}
+                  size="small"
+                  onClick={() => handleViewDetails(group.latestChange)}
+                >
+                  Xem chi tiết
+                </Button>
+                {group.changeCount > 1 && (
+                  <Dropdown
+                    menu={{
+                      items: group.allChanges.slice(1).map((change, index) => ({
+                        key: change.id,
+                        label: (
+                          <div className="py-2">
+                            <div className="flex items-center justify-between">
+                              <Text strong className="text-sm">
+                                {getActionText(change.actionType)}
+                              </Text>
+                              <Tag 
+                                color={getActionColor(change.actionType)}
+                                className="text-xs"
+                              >
+                                {change.actionType}
+                              </Tag>
+                            </div>
+                            <Text type="secondary" className="text-xs block mt-1">
+                              {change.updatedBy} - {topicHistoryService.formatDateTime(change.updatedAt)}
+                            </Text>
+                            <Text className="text-xs block mt-1" style={{ maxWidth: 300 }}>
+                              {change.changedContent.length > 100 
+                                ? `${change.changedContent.substring(0, 100)}...` 
+                                : change.changedContent
+                              }
+                            </Text>
+                          </div>
+                        ),
+                        onClick: () => handleViewDetails(change),
+                      })),
+                    }}
+                    trigger={['click']}
+                    placement="bottomRight"
+                  >
+                    <Button size="small" icon={<MoreOutlined />}>
+                      Xem thêm ({group.changeCount - 1})
+                    </Button>
+                  </Dropdown>
+                )}
+              </div>
+            </div>
+            
+            {/* Nội dung thay đổi mới nhất */}
+            <div className="topic-content-preview p-3 rounded">
+              <Text className="text-sm">
+                {group.latestChange.changedContent}
+              </Text>
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
+  };
+
 
   // Thống kê từ state
   const { totalChanges, createCount, updateCount, deleteCount, uniqueTopics, uniqueUsers } = stats;
@@ -510,52 +586,42 @@ export default function TopicHistoryPage() {
   return (
     <Layout className="min-h-screen">
       <style jsx global>{`
-        .topic-history-table .ant-table-tbody > tr > td {
-          vertical-align: top;
-          padding: 6px 8px;
+        /* Collapsed topic history styles */
+        .collapsed-topic-card {
+          transition: all 0.3s ease;
         }
         
-        .topic-history-table .ant-table-tbody > tr > td:nth-child(2) {
-          max-width: 280px;
-          word-wrap: break-word;
-          white-space: normal;
+        .collapsed-topic-card:hover {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+          transform: translateY(-1px);
         }
         
-        .topic-history-table .ant-table-tbody > tr > td:nth-child(1),
-        .topic-history-table .ant-table-tbody > tr > td:nth-child(2) {
-          background-color: #fafafa;
-        }
-        
-        .topic-history-table .ant-table-tbody > tr:hover > td:nth-child(1),
-        .topic-history-table .ant-table-tbody > tr:hover > td:nth-child(2) {
-          background-color: #f0f0f0;
-        }
-        
-        .topic-history-table .ant-table-thead > tr > th:nth-child(1),
-        .topic-history-table .ant-table-thead > tr > th:nth-child(2) {
-          background-color: #f5f5f5;
-          font-weight: 600;
+        .topic-content-preview {
+          background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+          border-left: 3px solid #ff6b35;
         }
         
         /* Mobile responsive */
         @media (max-width: 768px) {
-          .topic-history-table .ant-table-tbody > tr > td {
-            padding: 4px 6px;
+          .collapsed-topic-card .ant-card-body {
+            padding: 12px;
           }
           
-          .topic-history-table .ant-table-tbody > tr > td:nth-child(2) {
-            max-width: 200px;
+          .collapsed-topic-card .flex {
+            flex-direction: column;
+            align-items: flex-start;
           }
           
-          .topic-history-table .ant-table-thead > tr > th {
-            padding: 8px 6px;
-            font-size: 12px;
+          .collapsed-topic-card .space-x-4 {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
           }
         }
         
         @media (max-width: 576px) {
-          .topic-history-table .ant-table-tbody > tr > td:nth-child(2) {
-            max-width: 150px;
+          .collapsed-topic-card .ant-card-body {
+            padding: 8px;
           }
         }
         
@@ -590,9 +656,9 @@ export default function TopicHistoryPage() {
 
           {/* Mock Data Notice */}
           <Alert
-            message="Đang sử dụng dữ liệu mẫu"
-            description="Trang này đang hiển thị dữ liệu mẫu để demo. Khi tích hợp với backend, dữ liệu sẽ được lấy từ API thực tế."
-            type="info"
+            message="Dữ liệu lịch sử thực tế"
+            description="Trang này hiển thị lịch sử thay đổi đề tài từ backend. Mỗi khi bạn chỉnh sửa topic, lịch sử sẽ tự động được lưu lại."
+            type="success"
             showIcon
             className="mb-4 sm:mb-6"
             closable
@@ -716,25 +782,10 @@ export default function TopicHistoryPage() {
             </Row>
           </Card>
 
-          {/* Table */}
+          {/* Collapsed Topic History */}
           <Card size="small">
             <Spin spinning={loading}>
-              <Table
-                columns={columns}
-                dataSource={filteredHistory}
-                rowKey="id"
-                scroll={{ x: 800, y: 500 }}
-                pagination={{
-                  pageSize: 8,
-                  showSizeChanger: true,
-                  showQuickJumper: false,
-                  showTotal: (total, range) => `${range[0]}-${range[1]} của ${total}`,
-                  size: 'small',
-                  responsive: true,
-                }}
-                size="small"
-                className="topic-history-table"
-              />
+              <CollapsedTopicHistory groupedData={filteredHistory} />
             </Spin>
           </Card>
         </div>

@@ -8,7 +8,9 @@ import lombok.Getter;
 public enum Status {
     PLANNED("Đã lập"),
     COMPLETED("Hoàn thành"),
-    CANCELLED("Đã hủy");
+    CANCELLED("Đã hủy"),
+    PENDING("Đang chờ"),
+    APPROVED("Đã duyệt");
 
     private String value;
 }

@@ -124,8 +124,13 @@ export const useTopic = (): UseTopicReturn => {
       const newTopic = await topicService.createTopic(data);
       message.success('Tạo đề tài thành công');
       
-      // Refresh topics list
-      await refreshTopics();
+      // Refresh topics list after successful creation
+      try {
+        await refreshTopics();
+      } catch (refreshError) {
+        console.warn('Could not refresh topics list:', refreshError);
+        // Don't throw error if refresh fails
+      }
       
       return newTopic;
     } catch (error) {
@@ -335,10 +340,11 @@ export const useTopic = (): UseTopicReturn => {
     setCurrentTopic(null);
   }, []);
 
-  // Load initial data
+  // Load initial data on component mount
   useEffect(() => {
-    fetchTopics();
-    fetchStats();
+    // Silently load data, don't show errors to user
+    fetchTopics().catch(err => console.warn('Initial topics load failed:', err));
+    fetchStats().catch(err => console.warn('Initial stats load failed:', err));
   }, [fetchTopics, fetchStats]);
 
   return {

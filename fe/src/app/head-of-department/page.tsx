@@ -165,12 +165,9 @@ const mockApprovedTheses: ApprovedThesis[] = [
 export default function HeadOfDepartmentPage() {
   const [selectedThesis, setSelectedThesis] = useState<ApprovedThesis | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isParticipationModalVisible, setIsParticipationModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [participationFilter, setParticipationFilter] = useState('all');
-  const [form] = Form.useForm();
-  const [participationForm] = Form.useForm();
 
   // Filter data based on search and filters
   const filteredTheses = mockApprovedTheses.filter((thesis) => {
@@ -192,34 +189,57 @@ export default function HeadOfDepartmentPage() {
     setIsModalVisible(true);
   };
 
-  const handleJoinThesis = (thesis: ApprovedThesis) => {
-    setSelectedThesis(thesis);
-    setIsParticipationModalVisible(true);
-    participationForm.setFieldsValue({
-      role: thesis.hodParticipation.role || '',
-      notes: thesis.hodParticipation.notes || '',
-    });
-  };
-
-  const handleParticipationSubmit = async (values: any) => {
+  const handleJoinThesis = async (thesis: ApprovedThesis) => {
     try {
-      // TODO: API call để tham gia đề tài
-      console.log('Joining thesis:', selectedThesis?.id, values);
-      message.success('Đã tham gia đề tài thành công!');
-      setIsParticipationModalVisible(false);
-      participationForm.resetFields();
-    } catch (error) {
-      message.error('Có lỗi xảy ra khi tham gia đề tài!');
+      const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
+      const token = localStorage.getItem('access_token');
+      
+      const res = await fetch(`${API_BASE}/topic-approval-service/api/review-councils/join`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          topicId: thesis.id,
+        }),
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok || data.code !== 200) {
+        throw new Error(data.message || 'Có lỗi xảy ra');
+      }
+
+      message.success('Đã tham gia hội đồng duyệt thành công!');
+      // TODO: Refresh data
+    } catch (error: any) {
+      message.error(error.message || 'Có lỗi xảy ra khi tham gia hội đồng!');
     }
   };
 
   const handleLeaveThesis = async (thesisId: number) => {
     try {
-      // TODO: API call để rời khỏi đề tài
-      console.log('Leaving thesis:', thesisId);
-      message.success('Đã rời khỏi đề tài!');
-    } catch (error) {
-      message.error('Có lỗi xảy ra khi rời khỏi đề tài!');
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+      const token = localStorage.getItem('access_token');
+      
+      const res = await fetch(`${API_BASE}/topic-approval-service/api/review-councils/leave/${thesisId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await res.json();
+      
+      if (!res.ok || data.code !== 200) {
+        throw new Error(data.message || 'Có lỗi xảy ra');
+      }
+
+      message.success('Đã rời khỏi hội đồng duyệt!');
+      // TODO: Refresh data
+    } catch (error: any) {
+      message.error(error.message || 'Có lỗi xảy ra khi rời khỏi hội đồng!');
     }
   };
 
@@ -303,15 +323,23 @@ export default function HeadOfDepartmentPage() {
             Xem chi tiết
           </Button>
           {record.hodParticipation.isParticipating ? (
-            <Button
-              type="default"
-              danger
-              icon={<UserOutlined />}
-              size="small"
-              onClick={() => handleLeaveThesis(record.id)}
-            >
-              Rời khỏi
-            </Button>
+          <Button
+            type="default"
+            danger
+            icon={<UserOutlined />}
+            size="small"
+            onClick={() => {
+              Modal.confirm({
+                title: 'Xác nhận rời khỏi hội đồng',
+                content: 'Bạn có chắc muốn rời khỏi hội đồng duyệt này?',
+                okText: 'Rời khỏi',
+                cancelText: 'Hủy',
+                onOk: () => handleLeaveThesis(record.id),
+              });
+            }}
+          >
+            Rời khỏi
+          </Button>
           ) : (
             <Button
               type="primary"
@@ -586,77 +614,6 @@ export default function HeadOfDepartmentPage() {
               <Title level={5}>Kết quả mong đợi</Title>
               <Text>{selectedThesis.expectedResults}</Text>
             </Card>
-          </div>
-        )}
-      </Modal>
-
-      {/* Modal tham gia đề tài */}
-      <Modal
-        title={
-          <div className="flex items-center">
-            <UserAddOutlined className="text-[#ff6b35] mr-2" />
-            <span>Tham gia đề tài</span>
-          </div>
-        }
-        open={isParticipationModalVisible}
-        onCancel={() => {
-          setIsParticipationModalVisible(false);
-          participationForm.resetFields();
-        }}
-        width={600}
-        footer={null}
-      >
-        {selectedThesis && (
-          <div>
-            <Card size="small" className="mb-4">
-              <Title level={5}>{selectedThesis.title}</Title>
-              <Text type="secondary">
-                Sinh viên: {selectedThesis.student} ({selectedThesis.studentId})
-              </Text>
-            </Card>
-
-            <Form form={participationForm} layout="vertical">
-              <Form.Item
-                name="role"
-                label="Vai trò tham gia"
-                rules={[{ required: true, message: 'Vui lòng nhập vai trò!' }]}
-              >
-                <Select placeholder="Chọn vai trò tham gia">
-                  <Option value="Cố vấn chuyên môn">Cố vấn chuyên môn</Option>
-                  <Option value="Giám sát dự án">Giám sát dự án</Option>
-                  <Option value="Hỗ trợ kỹ thuật">Hỗ trợ kỹ thuật</Option>
-                  <Option value="Đánh giá chất lượng">Đánh giá chất lượng</Option>
-                  <Option value="Khác">Khác</Option>
-                </Select>
-              </Form.Item>
-
-              <Form.Item
-                name="notes"
-                label="Ghi chú"
-                rules={[{ required: true, message: 'Vui lòng nhập ghi chú!' }]}
-              >
-                <TextArea 
-                  rows={4} 
-                  placeholder="Mô tả chi tiết về vai trò và mức độ tham gia của bạn trong đề tài này..."
-                />
-              </Form.Item>
-
-              <div className="text-right">
-                <Space>
-                  <Button onClick={() => setIsParticipationModalVisible(false)}>
-                    Hủy
-                  </Button>
-                  <Button
-                    type="primary"
-                    icon={<UserAddOutlined />}
-                    onClick={() => participationForm.validateFields().then(handleParticipationSubmit)}
-                    className="bg-[#ff6b35] border-[#ff6b35]"
-                  >
-                    Tham gia đề tài
-                  </Button>
-                </Space>
-              </div>
-            </Form>
           </div>
         )}
       </Modal>

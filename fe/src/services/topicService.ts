@@ -9,7 +9,7 @@ import {
   TopicPagination
 } from '../types/topic';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8083';
+const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
 
 class TopicService {
   private baseUrl: string;
@@ -65,12 +65,33 @@ class TopicService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: PaginatedTopicResponse = await response.json();
+      const apiResponse = await response.json();
+      console.log('Get all topics response:', apiResponse); // Debug log
       
-      return {
-        topics: this.mapToTopics(data.result.content),
-        pagination: data.result.pagination
-      };
+      const data = this.extractResponseData(apiResponse);
+      
+      // Backend returns array of topics directly, not paginated
+      if (Array.isArray(data)) {
+        return {
+          topics: this.mapToTopics(data),
+          pagination: {
+            page: page,
+            size: size,
+            total: data.length,
+            totalPages: Math.ceil(data.length / size)
+          }
+        };
+      }
+      
+      // If backend returns paginated response
+      if (data.content && data.pagination) {
+        return {
+          topics: this.mapToTopics(data.content),
+          pagination: data.pagination
+        };
+      }
+      
+      throw new Error('Invalid response structure');
     } catch (error) {
       console.error('Error fetching topics:', error);
       throw error;
@@ -95,8 +116,9 @@ class TopicService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: TopicApiResponse = await response.json();
-      return this.mapToTopics([data.result as any])[0];
+      const apiResponse = await response.json();
+      const data = this.extractResponseData(apiResponse);
+      return this.mapToTopics([data])[0];
     } catch (error) {
       console.error('Error fetching topic by ID:', error);
       throw error;
@@ -121,8 +143,11 @@ class TopicService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: TopicApiResponse = await response.json();
-      return this.mapToTopics([data.result as any])[0];
+      const apiResponse = await response.json();
+      console.log('Create topic response:', apiResponse); // Debug log
+      
+      const data = this.extractResponseData(apiResponse);
+      return this.mapToTopics([data])[0];
     } catch (error) {
       console.error('Error creating topic:', error);
       throw error;
@@ -409,6 +434,21 @@ class TopicService {
       createdAt: item.createdAt || new Date().toISOString(),
       updatedAt: item.updatedAt || new Date().toISOString(),
     }));
+  }
+
+  /**
+   * Extract data from API response (handles both 'result' and 'data' fields)
+   */
+  private extractResponseData(response: any): any {
+    // TopicApprovalService uses 'data' field
+    if (response.data !== undefined) {
+      return response.data;
+    }
+    // Other services might use 'result' field
+    if (response.result !== undefined) {
+      return response.result;
+    }
+    throw new Error('Invalid API response structure');
   }
 
   /**

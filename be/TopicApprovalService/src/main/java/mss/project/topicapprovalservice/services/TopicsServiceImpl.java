@@ -104,8 +104,29 @@ public class TopicsServiceImpl implements TopicService {
         Topics topics = new Topics();
         topics.setTitle(topicsDTO.getTitle());
         topics.setDescription(topicsDTO.getDescription());
-        topics.setSubmitedAt(LocalDateTime.parse(topicsDTO.getSubmitedAt()));
-        topics.setStatus("PENDING");
+        
+        // Parse submitedAt with null check and ISO format support
+        if (topicsDTO.getSubmitedAt() != null && !topicsDTO.getSubmitedAt().isEmpty()) {
+            try {
+                // Handle ISO 8601 format (e.g., "2025-10-21T10:30:00.000Z")
+                String dateStr = topicsDTO.getSubmitedAt().replace("Z", "");
+                if (dateStr.contains(".")) {
+                    dateStr = dateStr.substring(0, dateStr.indexOf("."));
+                }
+                topics.setSubmitedAt(LocalDateTime.parse(dateStr));
+            } catch (Exception e) {
+                // If parsing fails, use current time
+                topics.setSubmitedAt(LocalDateTime.now());
+            }
+        } else {
+            // If no submitedAt provided, use current time
+            topics.setSubmitedAt(LocalDateTime.now());
+        }
+        
+        // Set status from DTO if provided, otherwise default to PENDING
+        topics.setStatus(topicsDTO.getStatus() != null && !topicsDTO.getStatus().isEmpty() 
+            ? topicsDTO.getStatus() 
+            : "PENDING");
         topics.setFilePathUrl(topicsDTO.getFilePathUrl());
         return topics;
     }
@@ -115,11 +136,11 @@ public class TopicsServiceImpl implements TopicService {
         topicsDTO.setId(topics.getId());
         topicsDTO.setTitle(topics.getTitle());
         topicsDTO.setDescription(topics.getDescription());
-        topicsDTO.setSubmitedAt(topics.getSubmitedAt().toString());
+        topicsDTO.setSubmitedAt(topics.getSubmitedAt() != null ? topics.getSubmitedAt().toString() : null);
         topicsDTO.setStatus(topics.getStatus());
         topicsDTO.setFilePathUrl(topics.getFilePathUrl());
-        topicsDTO.setCreatedAt(topics.getCreatedAt().toString());
-        topicsDTO.setUpdatedAt(topics.getUpdatedAt().toString());
+        topicsDTO.setCreatedAt(topics.getCreatedAt() != null ? topics.getCreatedAt().toString() : null);
+        topicsDTO.setUpdatedAt(topics.getUpdatedAt() != null ? topics.getUpdatedAt().toString() : null);
         return topicsDTO;
     }
 }

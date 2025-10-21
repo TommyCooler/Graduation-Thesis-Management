@@ -7,6 +7,7 @@ import {
   FileAddOutlined,
   SearchOutlined,
   LogoutOutlined,
+  UnorderedListOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -78,6 +79,11 @@ export default function Header() {
         <div className="flex items-center space-x-6">
           {/* Navigation */}
           <nav className="hidden lg:flex space-x-4">
+            <Link href="/topics/list">
+              <Button type="text" icon={<UnorderedListOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                Danh sách đề tài
+              </Button>
+            </Link>
             <Link href="/topics">
               <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
                 Đăng tải đề tài

@@ -23,7 +23,8 @@ export interface TopicHistoryResponse {
 export interface TopicHistoryApiResponse {
   code: number;
   message: string;
-  result: TopicHistoryResponse[];
+  result?: TopicHistoryResponse[];
+  data?: TopicHistoryResponse[];
 }
 
 // Filter types

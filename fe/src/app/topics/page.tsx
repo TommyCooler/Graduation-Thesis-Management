@@ -56,12 +56,12 @@ export default function TopicUpload(): JSX.Element {
       const topicData: TopicCreateRequest = {
         title: values.title,
         description: descriptionWithKeywords,
-        status: values.status || TOPIC_STATUS.PENDING,
+        status: TOPIC_STATUS.PENDING, // Luôn là PENDING khi đăng tải
         submitedAt: values.submitedAt
           ? (typeof values.submitedAt.toISOString === 'function'
               ? values.submitedAt.toISOString()
               : new Date(values.submitedAt).toISOString())
-          : undefined,
+          : new Date().toISOString(), // Tự động lấy thời gian hiện tại nếu không có
         filePathUrl: values.filePathUrl || '',
       };
 
@@ -127,7 +127,7 @@ console.error('Error saving draft:', error);
               <FileOutlined /> Đăng tải đề tài mới
             </Title>
             <Paragraph className="text-base text-gray-600">
-              Tạo đề tài với các trường: title, description, submitedAt, status, filePathUrl
+              Điền thông tin để tạo đề tài mới. Đề tài sẽ được nộp với trạng thái PENDING.
             </Paragraph>
           </div>
 
@@ -160,23 +160,9 @@ console.error('Error saving draft:', error);
                   </Col>
 
                   <Col xs={24} lg={8}>
-                    <Form.Item
-                      label={<Text strong>Trạng thái</Text>}
-                      name="status"
-                      initialValue={TOPIC_STATUS.PENDING}
-                    >
-                      <Select>
-                        <Option value={TOPIC_STATUS.PENDING}>PENDING</Option>
-                        <Option value={TOPIC_STATUS.DRAFT}>DRAFT</Option>
-                        <Option value={TOPIC_STATUS.APPROVED}>APPROVED</Option>
-                        <Option value={TOPIC_STATUS.REJECTED}>REJECTED</Option>
-                      </Select>
-                    </Form.Item>
-
                     <Form.Item label={<Text strong>Ngày nộp (submitedAt)</Text>} name="submitedAt">
                       <DatePicker showTime className="w-full" />
-</Form.Item>
-
+                    </Form.Item>
                     <Form.Item label={<Text strong>File path URL</Text>} name="filePathUrl">
                       <Input placeholder="Đường dẫn file (nếu có)" />
                     </Form.Item>
