@@ -10,4 +10,5 @@ import java.util.List;
 public interface TopicHistoryRepository extends JpaRepository<TopicHistory, Long> {
     List<TopicHistory> findByTopicIdOrderByUpdatedAtDesc(Long topicId);
     List<TopicHistory> findByUpdatedByOrderByUpdatedAtDesc(String updatedBy);
+    List<TopicHistory> findAllByOrderByUpdatedAtDesc();
 }

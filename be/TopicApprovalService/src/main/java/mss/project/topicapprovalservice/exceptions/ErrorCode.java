@@ -27,7 +27,7 @@ public enum ErrorCode {
     REVIEW_COUNCIL_MEMBERS_NOT_FOUND(808, "Không tìm thấy thành viên hội đồng review"),
     INVALID_SEMESTER(400, "Invalid semester"),
     NOT_ENOUGH_LECTURERS(400, "Not enough lecturers to approve the topic"),
-
+    USER_ALREADY_JOINED_TOPIC(4001, "User has already joined this topic"),
     ACCOUNT_SERVICE_ERROR(500, "Account service error"),
 
     // New error codes for review council

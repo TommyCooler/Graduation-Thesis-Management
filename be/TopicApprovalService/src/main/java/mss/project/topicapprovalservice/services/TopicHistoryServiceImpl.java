@@ -61,6 +61,14 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
                 .collect(Collectors.toList());
     }
     
+    @Override
+    public List<TopicHistoryDTOResponse> getAllTopicHistory() {
+        List<TopicHistory> histories = topicHistoryRepository.findAllByOrderByUpdatedAtDesc();
+        return histories.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+    
     private TopicHistoryDTOResponse convertToDTO(TopicHistory history) {
         TopicHistoryDTOResponse dto = new TopicHistoryDTOResponse();
         dto.setId(history.getId());

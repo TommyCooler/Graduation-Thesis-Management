@@ -19,6 +19,9 @@ public interface  AccountService {
     @GetMapping("/api/accounts/email/{email}")
     AccountDTO getAccountByEmail(@PathVariable String email);
 
+    @GetMapping("/api/accounts/username/{username}")
+    AccountDTO getAccountByUsername(@PathVariable String username);
+
     @GetMapping("/api/accounts/all")
     List<AccountDTO> getAllAccounts();
 

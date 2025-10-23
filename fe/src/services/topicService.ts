@@ -59,6 +59,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -110,6 +111,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -134,8 +136,8 @@ class TopicService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          credentials: 'include'
         },
+        credentials: 'include', // Move credentials out of headers
         body: JSON.stringify(topicData),
       });
 
@@ -181,6 +183,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: JSON.stringify(requestData),
       });
 
@@ -221,6 +224,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: JSON.stringify(topicData),
       });
 
@@ -248,6 +252,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -271,6 +276,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -297,6 +303,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -323,6 +330,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: JSON.stringify({ reason }),
       });
 
@@ -350,6 +358,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -379,6 +388,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: formData,
       });
 
@@ -406,6 +416,7 @@ class TopicService {
           // Add authorization header if needed
           // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {

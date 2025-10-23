@@ -1,12 +1,13 @@
 import { TopicHistory, TopicHistoryApiResponse, TopicHistoryFilters } from '../types/topic-history';
 
+// Use the same base URL as topicService
 const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
 
 class TopicHistoryService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/topic-approval-service/api/topic-history`;
+    this.baseUrl = `${API_BASE_URL}/api/topic-history`;
   }
 
   /**
@@ -18,7 +19,10 @@ class TopicHistoryService {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -45,7 +49,10 @@ class TopicHistoryService {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -93,7 +100,10 @@ class TopicHistoryService {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -125,7 +135,10 @@ class TopicHistoryService {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -155,7 +168,10 @@ class TopicHistoryService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Add authorization header if needed
+          // 'Authorization': `Bearer ${token}`
         },
+        credentials: 'include',
         body: JSON.stringify(historyData),
       });
 

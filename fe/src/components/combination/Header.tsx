@@ -8,6 +8,8 @@ import {
   SearchOutlined,
   LogoutOutlined,
   UnorderedListOutlined,
+  HistoryOutlined,
+  CalendarOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -87,6 +89,16 @@ export default function Header() {
             <Link href="/topics">
               <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
                 Đăng tải đề tài
+              </Button>
+            </Link>
+            <Link href="/topic-history">
+              <Button type="text" icon={<HistoryOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                Lịch sử đề tài
+              </Button>
+            </Link>
+            <Link href="/calendar">
+              <Button type="text" icon={<CalendarOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                Lịch công việc
               </Button>
             </Link>
             <Link href="/check-plagiarism">
