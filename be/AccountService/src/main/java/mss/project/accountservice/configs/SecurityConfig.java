@@ -1,7 +1,12 @@
 package mss.project.accountservice.configs;
 
+import lombok.RequiredArgsConstructor;
 import mss.project.accountservice.exceptions.CustomAuthHandlers;
+import mss.project.accountservice.services.CustomOAuth2UserService;
 import mss.project.accountservice.utils.CookieOrHeaderBearerTokenResolver;
+import mss.project.accountservice.utils.OAuth2AuthenticationFailureHandler;
+import mss.project.accountservice.utils.OAuth2AuthenticationSuccessHandler;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -20,7 +25,13 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, CustomAuthHandlers handlers) throws Exception {
         http
@@ -35,6 +46,11 @@ public class SecurityConfig {
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .bearerTokenResolver(new CookieOrHeaderBearerTokenResolver("access_token"))
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+                )
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(u -> u.userService(customOAuth2UserService))
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                        .failureHandler(oAuth2AuthenticationFailureHandler)
                 )
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(handlers.authenticationEntryPoint())
