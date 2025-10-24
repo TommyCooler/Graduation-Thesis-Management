@@ -7,47 +7,49 @@ import {
   FileAddOutlined,
   SearchOutlined,
   LogoutOutlined,
-  UnorderedListOutlined,
-  HistoryOutlined,
-  CalendarOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { jwtDecode } from 'jwt-decode';
 
 const { Header: AntHeader } = Layout;
 
 type Claims = {
-  sub?: string;
   name?: string;
   email?: string;
   role?: string;
-  exp?: number;
-  iat?: number;
 };
 
 export default function Header() {
   const router = useRouter();
   const [claims, setClaims] = useState<Claims | null>(null);
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
 
+  // Lấy user info bằng cookie
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setClaims(null);
-      return;
-    }
-    try {
-      const decoded = jwtDecode<Claims>(token);
-      setClaims(decoded);
-    } catch {
-      setClaims(null);
-    }
-  }, []);
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/me`, {
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          setClaims(null);
+          return;
+        }
+        const data = await res.json();
+        setClaims(data?.data || null);
+      } catch {
+        setClaims(null);
+      }
+    };
+    fetchUser();
+  }, [API_BASE]);
 
-  const onLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('role');
+  const onLogout = async () => {
+    await fetch(`${API_BASE}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
     setClaims(null);
     router.push('/auth/login');
   };
@@ -56,49 +58,22 @@ export default function Header() {
     items: [
       { key: 'profile', label: <Link href="/profile">Hồ sơ</Link>, icon: <UserOutlined /> },
       { type: 'divider' as const },
-      {
-        key: 'logout',
-        label: <span onClick={onLogout}>Đăng xuất</span>,
-        icon: <LogoutOutlined />,
-      },
+      { key: 'logout', label: <span onClick={onLogout}>Đăng xuất</span>, icon: <LogoutOutlined /> },
     ],
   };
 
   return (
     <AntHeader className="bg-white border-b border-gray-200 shadow-sm px-6">
       <div className="flex justify-between items-center h-full">
-        {/* Logo */}
         <Link href="/" className="flex items-center cursor-pointer">
-          <Image
-            src="/FPT_Education_logo.svg"
-            alt="FPT Education"
-            width={120}
-            height={48}
-            className="h-12 w-auto"
-          />
+          <Image src="/FPT_Education_logo.svg" alt="FPT Education" width={120} height={48} className="h-12 w-auto" />
         </Link>
 
         <div className="flex items-center space-x-6">
-          {/* Navigation */}
           <nav className="hidden lg:flex space-x-4">
-            <Link href="/topics/list">
-              <Button type="text" icon={<UnorderedListOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                Danh sách đề tài
-              </Button>
-            </Link>
             <Link href="/topics">
               <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
                 Đăng tải đề tài
-              </Button>
-            </Link>
-            <Link href="/topic-history">
-              <Button type="text" icon={<HistoryOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                Lịch sử đề tài
-              </Button>
-            </Link>
-            <Link href="/calendar">
-              <Button type="text" icon={<CalendarOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                Lịch công việc
               </Button>
             </Link>
             <Link href="/check-plagiarism">
@@ -108,7 +83,6 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Auth section */}
           <Space>
             {!claims ? (
               <>
