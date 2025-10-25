@@ -38,10 +38,7 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       BASE_64: ${BASE_64}
     ports:
-      # Nếu app listen 8080 bên trong (mặc định Spring Boot):
-      - "8081:8080"
-      # Nếu bạn đã đổi server.port=8081 trong app, hãy dùng:
-      # - "8081:8081"
+      - "8081:8081"
     restart: unless-stopped
 
   pgbackups:
