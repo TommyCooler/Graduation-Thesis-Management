@@ -17,21 +17,42 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: spring_app
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
-      # Nếu app dùng SPRING_* → map từ .env:
+      # Database config
       SPRING_DATASOURCE_URL: ${ACCOUNT_DB_URL}
       SPRING_DATASOURCE_USERNAME: ${ACCOUNT_DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${ACCOUNT_DB_PASSWORD}
 
-      # Nếu app cần các biến dưới, bạn có thể truyền thêm:
+      # Redis config (bạn cần dùng trong Spring Boot)
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
+      # Các config khác
       APP_EMAIL: ${APP_EMAIL}
       APP_PASSWORD: ${APP_PASSWORD}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
@@ -39,15 +60,14 @@ services:
       BASE_64: ${BASE_64}
     ports:
       - "8081:8081"
-    restart: unless-stopped
 
   pgbackups:
     image: prodrigestivill/postgres-backup-local:16
     container_name: pg_backups
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_DB: ${ACCOUNT_DB_NAME}
@@ -64,3 +84,4 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
