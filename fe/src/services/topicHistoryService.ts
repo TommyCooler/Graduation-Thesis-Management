@@ -11,17 +11,32 @@ class TopicHistoryService {
   }
 
   /**
+   * Helper function to get auth headers
+   */
+  private getAuthHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Get token from localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    
+    return headers;
+  }
+
+  /**
    * Lấy lịch sử thay đổi của một đề tài cụ thể
    */
   async getTopicHistory(topicId: number): Promise<TopicHistory[]> {
     try {
       const response = await fetch(`${this.baseUrl}/topic/${topicId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -47,11 +62,7 @@ class TopicHistoryService {
     try {
       const response = await fetch(`${this.baseUrl}/user/${username}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -98,11 +109,7 @@ class TopicHistoryService {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -133,11 +140,7 @@ class TopicHistoryService {
     try {
       const response = await fetch(`${this.baseUrl}/stats`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
         credentials: 'include',
       });
 
@@ -166,11 +169,7 @@ class TopicHistoryService {
     try {
       const response = await fetch(`${this.baseUrl}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
         credentials: 'include',
         body: JSON.stringify(historyData),
       });

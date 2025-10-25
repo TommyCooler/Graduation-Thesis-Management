@@ -81,7 +81,7 @@ export default function LoginPage() {
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
               Quản lý<br />đồ án sinh viên<br />dễ dàng hơn.
             </h1>
-            <p className="mt-4 text-white/90">
+            <p className="mt-4 text-white/90 font-medium">
               Hỗ trợ giảng viên theo dõi, đánh giá và quản lý tiến độ đồ án một cách trực quan, hiệu quả và thông minh.
             </p>
           </div>
@@ -105,7 +105,7 @@ export default function LoginPage() {
         <div className="px-6 md:px-10 py-10 flex items-center">
           <div className="w-full max-w-md mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <span className="font-semibold text-4xl text-orange-500">FPT EDUCATION</span>
+              <span className="font-bold text-4xl text-orange-500">FPT EDUCATION</span>
             </div>
 
             <Title level={2} className="!m-0 !leading-none">Welcome Back</Title>
@@ -151,7 +151,7 @@ export default function LoginPage() {
                 type="primary"
                 htmlType="submit"
                 loading={loading}
-                className="w-full h-12 rounded-2xl text-base font-semibold border-0
+                className="w-full h-12 rounded-2xl text-base font-bold border-0
                            bg-orange-500 hover:bg-orange-600"
               >
                 Login
@@ -174,8 +174,8 @@ export default function LoginPage() {
             </div>
 
             <div className="text-center mt-6">
-              <Text type="secondary">Don’t have an account? </Text>
-              <Link href="/auth/register" className="text-orange-500 font-medium">Signup</Link>
+              <Text type="secondary">Don't have an account? </Text>
+              <Link href="/auth/register" className="text-orange-500 font-semibold">Signup</Link>
             </div>
           </div>
         </div>
