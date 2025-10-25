@@ -81,7 +81,7 @@ export default function RegisterPage() {
             <h1 className="text-4xl md:text-5xl font-extrabold leading-tight">
               Quản lý<br />đồ án sinh viên<br />nhanh & hiệu quả.
             </h1>
-            <p className="mt-4 text-white/90">
+            <p className="mt-4 text-white/90 font-medium">
               Dành cho giảng viên: theo dõi tiến độ nhóm, duyệt mốc, chấm điểm và phản hồi
               ngay trên một hệ thống tập trung.
             </p>
@@ -97,11 +97,11 @@ export default function RegisterPage() {
         <div className="px-6 md:px-10 py-10 flex items-center">
           <div className="w-full max-w-md mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <span className="font-semibold text-4xl text-orange-500">FPT EDUCATION</span>
+              <span className="font-bold text-4xl text-orange-500">FPT EDUCATION</span>
             </div>
 
             <h2 className="text-3xl font-bold m-0 leading-none text-black mb-2">Create Account</h2>
-            <p className="text-gray-500">Tham gia hệ thống quản lý đồ án sinh viên</p>
+            <p className="text-gray-500 font-medium">Tham gia hệ thống quản lý đồ án sinh viên</p>
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
               <input
@@ -156,7 +156,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full h-12 rounded-2xl text-base font-semibold transition-all duration-300 ${loading
+                className={`w-full h-12 rounded-2xl text-base font-bold transition-all duration-300 ${loading
                   ? 'bg-orange-300 cursor-not-allowed'
                   : 'bg-orange-500 hover:bg-orange-600 text-white shadow-md'
                   }`}
@@ -167,7 +167,7 @@ export default function RegisterPage() {
 
             <div className="text-center mt-6 text-sm text-gray-600">
               Đã có tài khoản?{' '}
-              <a href="/auth/login" className="text-orange-500 font-medium hover:underline">
+              <a href="/auth/login" className="text-orange-500 font-semibold hover:underline">
                 Đăng nhập ngay
               </a>
             </div>
