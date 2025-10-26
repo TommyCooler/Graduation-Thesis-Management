@@ -1,10 +1,7 @@
 package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.dtos.requests.CreateReviewCouncilRequest;
-import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
-import mss.project.topicapprovalservice.dtos.responses.CreateReviewCouncilResponse;
-import mss.project.topicapprovalservice.dtos.responses.GetAllReviewCouncilResponse;
-import mss.project.topicapprovalservice.dtos.responses.GetMemberOfReviewCouncilResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.enums.Status;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
@@ -131,6 +128,23 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                         .accountName(account.getName())
                         .build()
         ).toList();
+    }
+
+    @Override
+    public List<GetAllLecturerResponse> getAllLecturer() {
+        List<AccountDTO> accountDTOList = accountService.getAllAccounts();
+        List<AccountDTO> lecturerList = new ArrayList<>();
+        accountDTOList.forEach(account -> {
+            if(account.getRole().equals("LECTURER")) {
+                lecturerList.add(account);
+            }
+        });
+        return lecturerList.stream().map(lecturer ->
+                GetAllLecturerResponse.builder()
+                        .accountID(lecturer.getId())
+                        .accountName(lecturer.getName())
+                        .build()
+                ).toList();
     }
 
     private void validateForWeek4(Topics topic, List<Long> memberIDs) {

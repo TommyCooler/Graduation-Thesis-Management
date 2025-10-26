@@ -3,10 +3,7 @@ package mss.project.topicapprovalservice.controllers;
 import jakarta.validation.Valid;
 import lombok.Getter;
 import mss.project.topicapprovalservice.dtos.requests.CreateReviewCouncilRequest;
-import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
-import mss.project.topicapprovalservice.dtos.responses.CreateReviewCouncilResponse;
-import mss.project.topicapprovalservice.dtos.responses.GetAllReviewCouncilResponse;
-import mss.project.topicapprovalservice.dtos.responses.GetMemberOfReviewCouncilResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.services.IProgressReviewCouncilService;
 import mss.project.topicapprovalservice.services.ProgressReviewCouncilServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,6 +46,16 @@ public class ProgressReviewCouncilController {
                 .code(HttpStatus.OK.value())
                 .message("Fetched members of Progress Review Council successfully")
                 .data(result)
+                .build();
+    }
+
+    @GetMapping("/lecturers")
+    public ApiResponse<List<GetAllLecturerResponse>> getAllLecturers() {
+        List<GetAllLecturerResponse> result = progressReviewCouncilService.getAllLecturer();
+        return ApiResponse.<List<GetAllLecturerResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Fetched all lecturers successfully")
+                .data((result))
                 .build();
     }
 
