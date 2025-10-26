@@ -21,19 +21,6 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${APP_EMAIL}
-    password: ${APP_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-    default-encoding: UTF-8
   data:
     redis:
       host: localhost
@@ -53,7 +40,9 @@ spring:
 
 server:
   port: 8081
-
+resend:
+  apiKey: ${RESEND_KEY}
+  from: "MSS301 <noreply@foundershub.nducky.id.vn>"
 app:
   jwt:
     secret-base64: ${BASE-64}
