@@ -96,6 +96,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                     .councilID(council.getCouncilID())
                     .councilName(council.getCouncilName())
                     .topicID(council.getTopic().getId())
+                    .topicTitle(council.getTopic().getTitle())
                     .milestone(council.getMilestone())
                     .reviewDate(council.getReviewDate())
                     .status(council.getStatus().getValue())
