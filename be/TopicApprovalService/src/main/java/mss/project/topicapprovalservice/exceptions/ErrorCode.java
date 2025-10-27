@@ -25,6 +25,10 @@ public enum ErrorCode {
     MEMBER_NOT_VALID(806, "Thành viên hội đồng không hợp lệ"),
     REVIEW_COUNCIL_NOT_FOUND(807, "Không tìm thấy hội đồng review"),
     REVIEW_COUNCIL_MEMBERS_NOT_FOUND(808, "Không tìm thấy thành viên hội đồng review"),
+    REVIEW_DATE_FOR_WEEK_4_NOT_FOUND(809,"Ngày review cho tuần 4 không được để trống"),
+    REVIEW_DATE_FOR_WEEK_8_12_IS_AUTO_CALCULATED(809,"Ngày review cho tuần 8 và tuần 12 được tính tự động"),
+    REVIEW_COUNIL_FOR_THIS_WEEK_ALREADY_EXIST(810, "Hội đồng review cho tuần này đã tồn tại"),
+    NAME_OF_REVIEW_COUNCIL_ALREADY_EXIST(811,"Tên hội đồng đã tồn tại"),
     INVALID_SEMESTER(400, "Invalid semester"),
     NOT_ENOUGH_LECTURERS(400, "Not enough lecturers to approve the topic"),
 

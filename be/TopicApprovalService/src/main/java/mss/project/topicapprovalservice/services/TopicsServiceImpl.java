@@ -1,6 +1,7 @@
 package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
+import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
@@ -98,6 +99,17 @@ public class TopicsServiceImpl implements TopicService {
         existingTopic.setStatus("REJECTED");
         topicsRepository.save(existingTopic);
         return convertToDTO(existingTopic);
+    }
+
+    @Override
+    public List<GetAllApprovedTopicsResponse> getApprovedTopics() {
+        List<Topics> topicsList = topicsRepository.findByStatus("APPROVED");
+        return topicsList.stream().map(topic ->
+                GetAllApprovedTopicsResponse.builder()
+                        .topicID(topic.getId())
+                        .topicTitle(topic.getTitle())
+                        .description(topic.getDescription())
+                        .build()).toList();
     }
 
     private Topics convertToEntity(TopicsDTORequest topicsDTO){

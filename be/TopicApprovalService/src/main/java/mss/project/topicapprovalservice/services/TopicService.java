@@ -3,6 +3,7 @@ package mss.project.topicapprovalservice.services;
 
 
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
+import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 
 import java.util.List;
@@ -16,4 +17,5 @@ public interface TopicService {
     List<TopicsDTOResponse> getAllTopics();
     TopicsDTOResponse approveTopic(Long topicId, String email); // Thay accountId bằng email
     TopicsDTOResponse rejectTopic(Long topicId, String email);
+    List<GetAllApprovedTopicsResponse> getApprovedTopics();
 }

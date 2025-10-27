@@ -2,11 +2,13 @@ package mss.project.topicapprovalservice.controllers;
 
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
+import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 import mss.project.topicapprovalservice.services.AccountTopicsServiceImpl;
 import mss.project.topicapprovalservice.services.TopicService;
 import mss.project.topicapprovalservice.services.TopicHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Controller;
@@ -126,5 +128,15 @@ public class TopicsController {
         apiResponse.setMessage("Topic Rejected by Head of Department");
         apiResponse.setData(rejected);
         return apiResponse;
+    }
+
+    @GetMapping("/approved")
+    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics() {
+        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics();
+        return ApiResponse.<List<GetAllApprovedTopicsResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Fetch all approved topics successfully")
+                .data(result)
+                .build();
     }
 }

@@ -19,9 +19,9 @@ public class ProgressReviewCouncilController {
     @Autowired
     private IProgressReviewCouncilService progressReviewCouncilService;
 
-    @PostMapping
-    public ApiResponse<CreateReviewCouncilResponse> createProgressReviewCouncil(@Valid @RequestBody CreateReviewCouncilRequest request) {
-        CreateReviewCouncilResponse result = progressReviewCouncilService.createReviewCouncil(request);
+    @PostMapping("/{topicID}")
+    public ApiResponse<CreateReviewCouncilResponse> createProgressReviewCouncil(@Valid @RequestBody CreateReviewCouncilRequest request, @PathVariable Long topicID) {
+        CreateReviewCouncilResponse result = progressReviewCouncilService.createReviewCouncil(topicID, request);
         return ApiResponse.<CreateReviewCouncilResponse>builder()
                 .code(HttpStatus.CREATED.value())
                 .message("Progress Review Council created successfully")
@@ -29,9 +29,9 @@ public class ProgressReviewCouncilController {
                 .build();
     }
 
-    @GetMapping
-    public ApiResponse<List<GetAllReviewCouncilResponse>> getAllProgressReviewCouncils() {
-        List<GetAllReviewCouncilResponse> result = progressReviewCouncilService.getAllReviewCouncil();
+    @GetMapping("/{topicID}")
+    public ApiResponse<List<GetAllReviewCouncilResponse>> getAllProgressReviewCouncils(@PathVariable Long topicID) {
+        List<GetAllReviewCouncilResponse> result = progressReviewCouncilService.getAllReviewCouncil(topicID);
         return ApiResponse.<List<GetAllReviewCouncilResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Fetched all Progress Review Councils successfully")
@@ -58,5 +58,7 @@ public class ProgressReviewCouncilController {
                 .data((result))
                 .build();
     }
+
+
 
 }

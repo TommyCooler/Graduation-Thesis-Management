@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface IProgressReviewCouncilService {
 
-    CreateReviewCouncilResponse createReviewCouncil(CreateReviewCouncilRequest request);
-    List<GetAllReviewCouncilResponse> getAllReviewCouncil();
+    CreateReviewCouncilResponse createReviewCouncil(Long topicID, CreateReviewCouncilRequest request);
+    List<GetAllReviewCouncilResponse> getAllReviewCouncil(Long topicID);
     List<GetMemberOfReviewCouncilResponse> getMembersOfCouncil(Long councilId);
     List<GetAllLecturerResponse> getAllLecturer();
 }

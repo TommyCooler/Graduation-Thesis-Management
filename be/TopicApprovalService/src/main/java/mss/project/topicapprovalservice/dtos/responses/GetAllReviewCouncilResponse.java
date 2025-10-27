@@ -24,7 +24,7 @@
         private LocalDateTime reviewDate;
         private String status;
         private LocalDateTime createdAt;
-        private String overallComment;
+//        private String overallComment;
     //    private List<Lecturer> lecturers;
     
     //    @Data

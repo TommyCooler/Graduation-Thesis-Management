@@ -20,7 +20,7 @@ public interface AccountTopicsRepository extends JpaRepository<AccountTopics, Lo
         WHERE at.topics.id = :topicId
     """)
     List<Long> findAccountIdsByTopicId(@Param("topicId") Long topicId);
-    Long findAccountIdByTopics(Topics topic);
+    AccountTopics findByTopics(Topics topic);
     
     boolean existsByTopicsIdAndAccountId(Long topicsId, Long accountId);
 }

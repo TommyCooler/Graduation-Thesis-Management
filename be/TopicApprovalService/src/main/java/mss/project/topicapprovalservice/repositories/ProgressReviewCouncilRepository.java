@@ -1,5 +1,6 @@
 package mss.project.topicapprovalservice.repositories;
 
+import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.pojos.ProgressReviewCouncils;
 import mss.project.topicapprovalservice.pojos.Topics;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,8 @@ import java.util.List;
 public interface ProgressReviewCouncilRepository extends JpaRepository<ProgressReviewCouncils, Long> {
     List<ProgressReviewCouncils> findAllByTopic(Topics topic);
     ProgressReviewCouncils findByCouncilID(Long councilID);
+    ProgressReviewCouncils findByTopicAndMilestone(Topics topic, Milestone milestone);
+    ProgressReviewCouncils findByCouncilName(String councilName);
 
 
 }
