@@ -68,6 +68,12 @@ export interface TopicStats {
   recentSubmissions: number;
 }
 
+export interface ApprovedTopic {
+  topicID: number;
+  topicTitle: string;
+  description: string;
+}
+
 // Status constants
 export const TOPIC_STATUS = {
   DRAFT: 'DRAFT',
