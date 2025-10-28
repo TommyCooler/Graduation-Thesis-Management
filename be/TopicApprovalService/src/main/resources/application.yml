@@ -4,9 +4,9 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${TOPIC_LOCALDB_URL}
-    username: ${TOPIC_LOCALDB_USERNAME}
-    password: ${TOPIC_LOCALDB_PASSWORD}
+    url: ${TOPIC_DB_URL}
+    username: ${TOPIC_DB_USERNAME}
+    password: ${TOPIC_DB_PASSWORD}
     hikari:
       maximum-pool-size: 5
       minimum-idle: 2
