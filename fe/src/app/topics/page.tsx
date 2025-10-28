@@ -23,6 +23,7 @@ import {
   PlusOutlined
 } from '@ant-design/icons';
 import React, { JSX, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '../../components/combination/Header';
 import Footer from '../../components/combination/Footer';
 import { useTopic } from '../../hooks/useTopic';
@@ -42,6 +43,7 @@ interface TopicFormValues {
 }
 
 export default function TopicUpload(): JSX.Element {
+  const router = useRouter();
   const [form] = Form.useForm<TopicFormValues>();
   const [keywords, setKeywords] = useState<string[]>([]);
   const [inputKeyword, setInputKeyword] = useState<string>('');
@@ -68,10 +70,15 @@ export default function TopicUpload(): JSX.Element {
       const newTopic = await createTopic(topicData);
 
       if (newTopic) {
-        message.success('Tạo đề tài thành công');
+        message.success('Tạo đề tài thành công! Chuyển đến danh sách...');
         form.resetFields();
         setKeywords([]);
         setInputKeyword('');
+        
+        // Redirect to topics list page after 1 second
+        setTimeout(() => {
+          router.push('/topics/list');
+        }, 1000);
       }
     } catch (error) {
       console.error('Error creating topic:', error);
@@ -94,13 +101,18 @@ export default function TopicUpload(): JSX.Element {
 
       const newTopic = await createTopic(topicData);
       if (newTopic) {
-        message.success('Đã lưu nháp thành công!');
+        message.success('Đã lưu nháp thành công! Chuyển đến danh sách...');
         form.resetFields();
         setKeywords([]);
         setInputKeyword('');
+        
+        // Redirect to topics list page after 1 second
+        setTimeout(() => {
+          router.push('/topics/list');
+        }, 1000);
       }
     } catch (error) {
-console.error('Error saving draft:', error);
+      console.error('Error saving draft:', error);
       message.error('Lưu nháp thất bại');
     }
   };

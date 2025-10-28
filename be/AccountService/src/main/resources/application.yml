@@ -21,27 +21,31 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${APP_EMAIL}
-    password: ${APP_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-    default-encoding: UTF-8
   data:
     redis:
       host: localhost
       port: 6379
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
 
 server:
   port: 8081
-
+resend:
+  apiKey: ${RESEND_KEY}
+  from: "MSS301 <noreply@foundershub.nducky.id.vn>"
 app:
   jwt:
     secret-base64: ${BASE-64}
+  oauth2:
+    success-redirect: http://localhost:3000
+    failure-redirect: http://localhost:3000/auth/oauth2/fail

@@ -7,9 +7,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.web.bind.annotation.RestController;
+
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AccountTopicsRepository extends JpaRepository<AccountTopics, Long> {
@@ -22,5 +23,9 @@ public interface AccountTopicsRepository extends JpaRepository<AccountTopics, Lo
     List<Long> findAccountIdsByTopicId(@Param("topicId") Long topicId);
     AccountTopics findByTopics(Topics topic);
     
+    Long findAccountIdByTopics(Topics topic);
+    List<AccountTopics> findByTopicsId(Long topicId);
+    Optional<AccountTopics> findByTopicsIdAndAccountId(Long topicId, Long accountId);
     boolean existsByTopicsIdAndAccountId(Long topicsId, Long accountId);
+    void deleteByTopicsId(Long topicId);
 }

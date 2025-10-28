@@ -16,4 +16,6 @@ public interface AuthService {
 
     void resetPassword(String token, String newPassword);
 
+    void logout(HttpServletResponse response);
+
 }

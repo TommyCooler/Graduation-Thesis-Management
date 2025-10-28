@@ -31,6 +31,9 @@ public class Topics {
     @Column(name = "file_path_url")
     private String filePathUrl;
 
+    @Column(name = "created_by")
+    private String createdBy;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

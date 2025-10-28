@@ -77,6 +77,8 @@ export default function TopicsList(): JSX.Element {
         {
           searchText: searchText || undefined,
           status: statusFilter || undefined,
+          sortBy: 'createdAt',
+          sortOrder: 'desc', // Mới nhất ở đầu
         },
         currentPage - 1,
         pageSize
@@ -105,6 +107,8 @@ export default function TopicsList(): JSX.Element {
       {
         searchText: searchText || undefined,
         status: statusFilter || undefined,
+        sortBy: 'createdAt',
+        sortOrder: 'desc', // Mới nhất ở đầu
       },
       page - 1,
       size || pageSize
@@ -133,16 +137,17 @@ export default function TopicsList(): JSX.Element {
     try {
       const values = await form.validateFields();
       const token = getToken();
-      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+      const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
 
       const response = await fetch(
-        `${API_BASE}/topic-approval-service/api/topics/update/${editingTopic?.id}`,
+        `${API_BASE}/api/topics/update/${editingTopic?.id}`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`,
           },
+          credentials: 'include', // Send cookies with request
           body: JSON.stringify({
             title: values.title,
             description: values.description,
@@ -167,9 +172,10 @@ export default function TopicsList(): JSX.Element {
   };
 
   const isTopicOwner = (topic: Topic): boolean => {
-    // TODO: Cần kiểm tra topic.accountId hoặc creatorId
-    // Tạm thời return true nếu user đã login
-    return isAuthenticated && currentUserId !== null;
+    // Tạm thời cho phép tất cả user đã login có thể chỉnh sửa
+    // Để test TopicHistoryService ghi nhận thay đổi
+    // TODO: Sau này sẽ kiểm tra topic.createdBy === currentUserId
+    return isAuthenticated;
   };
 
   const formatDate = (dateString: string | null): string => {
@@ -267,6 +273,7 @@ export default function TopicsList(): JSX.Element {
         <Text type="secondary">{formatDate(date)}</Text>
       ),
       sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      defaultSortOrder: 'descend', // Mặc định sắp xếp mới nhất ở đầu
     },
     {
       title: 'Hành động',

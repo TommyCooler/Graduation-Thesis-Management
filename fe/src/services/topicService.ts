@@ -20,6 +20,25 @@ class TopicService {
   }
 
   /**
+   * Helper function to get auth headers
+   */
+  private getAuthHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Get token from localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    
+    return headers;
+  }
+
+  /**
    * Lấy tất cả đề tài với phân trang và bộ lọc
    */
   async getAllTopics(filters?: TopicFilters, page: number = 0, size: number = 10): Promise<{
@@ -55,11 +74,8 @@ class TopicService {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -106,11 +122,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/${id}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -133,10 +146,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/create`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          credentials: 'include'
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(topicData),
       });
 
@@ -177,11 +188,8 @@ class TopicService {
 
       const response = await fetch(`${this.baseUrl}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(requestData),
       });
 
@@ -217,11 +225,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/${id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(topicData),
       });
 
@@ -244,11 +249,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -267,11 +269,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/${id}/submit`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -293,11 +292,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/${id}/approve`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -319,11 +315,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/${id}/reject`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({ reason }),
       });
 
@@ -346,11 +339,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/stats`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -373,13 +363,14 @@ class TopicService {
       const formData = new FormData();
       formData.append('file', file);
 
+      // Get auth headers but remove Content-Type for FormData
+      const headers = this.getAuthHeaders();
+      delete (headers as any)['Content-Type'];
+
       const response = await fetch(`${this.baseUrl}/${id}/upload`, {
         method: 'POST',
-        // Don't set Content-Type for FormData
-        headers: {
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: headers,
+        credentials: 'include',
         body: formData,
       });
 
@@ -402,11 +393,8 @@ class TopicService {
     try {
       const response = await fetch(`${this.baseUrl}/available`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          // Add authorization header if needed
-          // 'Authorization': `Bearer ${token}`
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {

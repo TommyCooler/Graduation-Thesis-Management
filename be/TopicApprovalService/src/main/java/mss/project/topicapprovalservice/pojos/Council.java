@@ -10,6 +10,7 @@ import mss.project.topicapprovalservice.enums.Status;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -39,9 +40,9 @@ public class Council {
     @Column(name ="slot")
     private int slot;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "council", cascade = CascadeType.ALL)
     @JsonManagedReference
-    private List<CouncilMember> councilMembers;
+    private List<CouncilMember> councilMembers= new ArrayList<>();;
 
     @OneToOne
     @JoinColumn(name = "topic_id")
