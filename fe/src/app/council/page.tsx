@@ -1,666 +1,474 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Layout, Typography, Card, Form, Input, Button, DatePicker, Select, Table, Tag, Row, Col, Space, Modal, message, Divider } from 'antd';
-import { 
-  PlusOutlined, 
-  CalendarOutlined, 
-  BookOutlined, 
-  TeamOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined
-} from '@ant-design/icons';
+
+import React, { useState, useEffect } from 'react';
+import { Layout, Card, Row, Col, Typography, Button, Input, message, Pagination, Divider, Form, Tag, Spin, Modal, Descriptions, Badge } from 'antd';
+import { TeamOutlined, BookOutlined, CheckCircleOutlined, FileTextOutlined, UserOutlined, CalendarOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { Topic } from '../../types/topic';
+import { CouncilCreateRequest, CouncilResponse } from '../../types/council';
+import { topicService } from '../../services/topicService';
+import { councilService } from '../../services/councilService';
 import Header from '../../components/combination/Header';
 import Footer from '../../components/combination/Footer';
-import dayjs from 'dayjs';
-import type { TableProps } from 'antd/es/table';
 
 const { Content } = Layout;
-const { Title, Paragraph, Text } = Typography;
-const { Option } = Select;
+const { Title, Paragraph } = Typography;
 
-// Interface for Council Create Request (matches your backend)
-interface CouncilCreateRequest {
-  semester: string;
-  date: string;
-  topicId: number;
-}
-
-// Interface for Council Member Response
-interface CouncilMemberResponse {
-  id: number;
-  name: string;
-  role: string;
-  email: string;
-}
-
-// Interface for Topic (for dropdown selection)
-interface Topic {
-  id: number;
-  title: string;
-  studentName: string;
-  studentId: string;
-  supervisorName: string;
-  status: string;
-}
-
-// Interface for Council Response (matches your backend)
-interface CouncilResponse {
-  id: number;
-  councilName: string;
-  semester: string;
-  date: string;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  slot: number;
-  councilMembers: CouncilMemberResponse[];
-  topicName: string;
-}
-
-// API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-// API Service functions
-const councilService = {
-  // Create new council
-  createCouncil: async (councilData: CouncilCreateRequest): Promise<CouncilResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/councils`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization header if needed
-        // 'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(councilData)
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  },
-
-  // Get all councils
-  getAllCouncils: async (): Promise<CouncilResponse[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/councils`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization header if needed
-        // 'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  },
-
-  // Delete council
-  deleteCouncil: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/councils/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization header if needed
-        // 'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-  },
-
-  // Get available topics for council creation
-  getAvailableTopics: async (): Promise<Topic[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/topics/available`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add authorization header if needed
-        // 'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    return response.json();
-  }
-};
-
-export default function CouncilPage() {
+const CouncilPage: React.FC = () => {
   const [form] = Form.useForm();
-  const [isModalVisible, setIsModalVisible] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [councils, setCouncils] = useState<CouncilResponse[]>([]);
+  const [semester, setSemester] = useState('');
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [selectedCouncil, setSelectedCouncil] = useState<CouncilResponse | null>(null);
-
-  // Mock data for topics
-  const mockTopics: Topic[] = [
-    {
-      id: 1,
-      title: "Nghiên cứu và phát triển hệ thống quản lý đồ án tốt nghiệp",
-      studentName: "Nguyễn Văn A",
-      studentId: "SE140001",
-      supervisorName: "TS. Trần Văn B",
-      status: "APPROVED"
-    },
-    {
-      id: 2,
-      title: "Xây dựng ứng dụng mobile quản lý thư viện",
-      studentName: "Lê Thị C",
-      studentId: "SE140002",
-      supervisorName: "ThS. Phạm Văn D",
-      status: "APPROVED"
-    },
-    {
-      id: 3,
-      title: "Phát triển hệ thống e-commerce với ReactJS",
-      studentName: "Hoàng Văn E",
-      studentId: "SE140003",
-      supervisorName: "TS. Nguyễn Thị F",
-      status: "APPROVED"
-    }
-  ];
-  // Mock data for councils
-  const mockCouncils: CouncilResponse[] = [
-    {
-      id: 1,
-      councilName: "Hội đồng bảo vệ khóa luận - Đợt 1",
-      semester: "Fall 2024",
-      date: "2024-12-15",
-      status: "SCHEDULED",
-      slot: 1,
-      councilMembers: [
-        { id: 1, name: "TS. Trần Văn A", role: "Chủ tịch", email: "trana@fpt.edu.vn" },
-        { id: 2, name: "ThS. Nguyễn Văn B", role: "Thành viên", email: "nguyenb@fpt.edu.vn" },
-        { id: 3, name: "ThS. Lê Thị C", role: "Thư ký", email: "lec@fpt.edu.vn" }
-      ],
-      topicName: "Nghiên cứu và phát triển hệ thống quản lý đồ án tốt nghiệp"
-    },
-    {
-      id: 2,
-      councilName: "Hội đồng bảo vệ khóa luận - Đợt 2",
-      semester: "Fall 2024", 
-      date: "2024-12-16",
-      status: "COMPLETED",
-      slot: 2,
-      councilMembers: [
-        { id: 4, name: "TS. Phạm Văn D", role: "Chủ tịch", email: "phamd@fpt.edu.vn" },
-        { id: 5, name: "ThS. Hoàng Văn E", role: "Thành viên", email: "hoange@fpt.edu.vn" },
-        { id: 6, name: "ThS. Trần Thị F", role: "Thư ký", email: "tranf@fpt.edu.vn" }
-      ],
-      topicName: "Xây dựng ứng dụng mobile quản lý thư viện"
-    }
-  ];
-
-  // Load initial data
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [messageApi, contextHolder] = message.useMessage();  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalItems, setTotalItems] = useState(0);
+  const [createdCouncil, setCreatedCouncil] = useState<CouncilResponse | null>(null);
+  const [showCouncilDetails, setShowCouncilDetails] = useState(false);
+  // Fetch topics when component mounts
   useEffect(() => {
-    setTopics(mockTopics);
-    setCouncils(mockCouncils);
-  }, []);  // Handle form submission
-  const handleCreateCouncil = async (values: CouncilCreateRequest) => {
+    fetchTopics();
+  }, [currentPage]);
+
+  const fetchTopics = async () => {
     setLoading(true);
-    try {
-      // Actual API call (uncomment when backend is ready)
-      // const newCouncil = await councilService.createCouncil(values);
-      // setCouncils([...councils, newCouncil]);
-      
-      // Mock implementation for development
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const selectedTopic = topics.find(topic => topic.id === values.topicId);
-      if (!selectedTopic) {
-        message.error('Không tìm thấy đề tài!');
-        return;
-      }
-
-      const newCouncil: CouncilResponse = {
-        id: councils.length + 1,
-        councilName: `Hội đồng bảo vệ khóa luận - ${selectedTopic.studentName}`,
-        semester: values.semester,
-        date: values.date,
-        status: 'SCHEDULED',
-        slot: councils.length + 1,
-        councilMembers: [],
-        topicName: selectedTopic.title
-      };
-
-      setCouncils([...councils, newCouncil]);
-      setIsModalVisible(false);
-      form.resetFields();
-      message.success('Tạo hội đồng khóa luận thành công!');
+    try {      const response = await topicService.getAllTopics({}, currentPage - 1, 10);
+      setTopics(response.topics);
+      setTotalPages(response.pagination.totalPages);
+      setTotalItems(response.pagination.total);
     } catch (error) {
-      console.error('Error creating council:', error);
-      message.error('Có lỗi xảy ra khi tạo hội đồng!');
+      console.error('Error fetching topics:', error);
+      messageApi.error('Không thể tải danh sách đề tài');
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle delete council
-  const handleDeleteCouncil = (id: number) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa hội đồng',
-      content: 'Bạn có chắc chắn muốn xóa hội đồng này?',
-      okText: 'Xóa',
-      okButtonProps: { danger: true },
-      cancelText: 'Hủy',
-      onOk: () => {
-        setCouncils(councils.filter(council => council.id !== id));
-        message.success('Xóa hội đồng thành công!');
-      }
-    });
-  };
+  const handleSubmit = async (values: { semester: string }) => {
+    if (!selectedTopicId) {
+      messageApi.error('Vui lòng chọn đề tài');
+      return;
+    }
 
-  // Get status color
-  const getStatusColor = (status: string): string => {
-    switch (status) {
-      case 'SCHEDULED': return 'blue';
-      case 'IN_PROGRESS': return 'orange';
-      case 'COMPLETED': return 'green';
-      case 'CANCELLED': return 'red';
-      default: return 'default';
+    setCreating(true);
+    try {      const request: CouncilCreateRequest = {
+        semester: values.semester,
+        topicId: selectedTopicId
+      };
+
+      const council = await councilService.createCouncil(request);
+      setCreatedCouncil(council);
+      setShowCouncilDetails(true);
+      messageApi.success('Thành lập hội đồng thành công!');
+      
+      // Reset form
+      form.resetFields();
+      setSelectedTopicId(null);
+    } catch (error) {
+      console.error('Error creating council:', error);
+      messageApi.error('Có lỗi xảy ra khi thành lập hội đồng');
+    } finally {
+      setCreating(false);
     }
   };
 
-  // Get status text
-  const getStatusText = (status: string): string => {
+  const handleTopicSelect = (topicId: number) => {
+    setSelectedTopicId(topicId);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'SCHEDULED': return 'Đã lên lịch';
-      case 'IN_PROGRESS': return 'Đang diễn ra';
-      case 'COMPLETED': return 'Hoàn thành';
-      case 'CANCELLED': return 'Đã hủy';
-      default: return status;
+      case 'APPROVED':
+        return 'green';
+      case 'PENDING':
+        return 'orange';
+      case 'REJECTED':
+        return 'red';
+      default:
+        return 'default';
     }
   };
-  // Table columns
-  const columns: TableProps<CouncilResponse>['columns'] = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 60,
-    },
-    {
-      title: 'Tên hội đồng',
-      dataIndex: 'councilName',
-      key: 'councilName',
-      render: (councilName: string) => (
-        <div className="font-medium text-gray-900">{councilName}</div>
-      ),
-    },
-    {
-      title: 'Học kỳ',
-      dataIndex: 'semester',
-      key: 'semester',
-      render: (semester: string) => (
-        <Tag color="purple">{semester}</Tag>
-      ),
-    },
-    {
-      title: 'Ngày bảo vệ',
-      dataIndex: 'date',
-      key: 'date',
-      render: (date: string) => (
-        <Space>
-          <CalendarOutlined />
-          {dayjs(date).format('DD/MM/YYYY')}
-        </Space>
-      ),
-    },
-    {
-      title: 'Đề tài',
-      dataIndex: 'topicName',
-      key: 'topicName',
-      render: (topicName: string) => (
-        <div className="font-medium text-gray-900">{topicName}</div>
-      ),
-    },
-    {
-      title: 'Slot',
-      dataIndex: 'slot',
-      key: 'slot',
-      render: (slot: number) => (
-        <Tag color="blue">Slot {slot}</Tag>
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color={getStatusColor(status)}>
-          {getStatusText(status)}
-        </Tag>
-      ),
-    },
-    {
-      title: 'Thành viên',
-      dataIndex: 'councilMembers',
-      key: 'councilMembers',
-      render: (members: CouncilMemberResponse[]) => (
-        <div>
-          {members.length} thành viên
-        </div>
-      ),
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_, record: CouncilResponse) => (
-        <Space>
-          <Button 
-            type="text" 
-            icon={<EyeOutlined />} 
-            size="small"
-            onClick={() => setSelectedCouncil(record)}
-          />
-          <Button 
-            type="text" 
-            icon={<EditOutlined />} 
-            size="small"
-          />
-          <Button 
-            type="text" 
-            icon={<DeleteOutlined />} 
-            size="small"
-            danger
-            onClick={() => handleDeleteCouncil(record.id)}
-          />
-        </Space>
-      ),
-    },
-  ];
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'APPROVED':
+        return 'Đã duyệt';
+      case 'PENDING':
+        return 'Chờ duyệt';
+      case 'REJECTED':
+        return 'Từ chối';
+      default:
+        return status;
+    }
+  };
   return (
     <Layout className="min-h-screen">
+      {contextHolder}
       <Header />
       
       <Content>
-        {/* Banner */}
-        <div className="bg-gradient-to-br from-blue-50 to-white py-10 px-6">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-orange-50 to-white py-20 px-6 text-center">
           <div className="max-w-6xl mx-auto">
-            <Title level={1} className="text-4xl mb-4">
-              Quản lý <span className="text-blue-600">Hội đồng khóa luận</span>
+            <div className="w-20 h-20 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <TeamOutlined className="text-4xl text-white" />
+            </div>
+            <Title level={1} className="text-5xl mb-6">
+              Thành lập <span className="text-orange-500">Hội đồng</span> Bảo vệ
             </Title>
-            <Paragraph className="text-base text-gray-600 mb-0">
-              Tạo và quản lý hội đồng bảo vệ khóa luận tốt nghiệp
+            <Paragraph className="text-xl text-gray-600 mb-10 max-w-4xl mx-auto">
+              Tạo hội đồng bảo vệ luận văn tốt nghiệp với quy trình chuyên nghiệp
             </Paragraph>
           </div>
         </div>
 
         {/* Main Content */}
-        <div className="py-10 px-6 bg-gray-50">
+        <div className="py-20 px-6 bg-white">
           <div className="max-w-6xl mx-auto">
-            {/* Statistics Cards */}
-            <Row gutter={[24, 24]} className="mb-8">
-              <Col xs={24} sm={12} lg={6}>
-                <Card bordered={false} className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 flex justify-center items-center mx-auto mb-3">
-                    <TeamOutlined className="text-2xl text-blue-600" />
-                  </div>
-                  <Text className="text-2xl font-bold text-gray-900">{councils.length}</Text>
-                  <div className="text-gray-500">Tổng hội đồng</div>
+            <Row gutter={[32, 32]}>
+              {/* Form Section */}
+              <Col xs={24} lg={10}>
+                <Card
+                  title={
+                    <div className="flex items-center">
+                      <FileTextOutlined className="text-orange-500 mr-2" />
+                      <span>Thông tin Hội đồng</span>
+                    </div>
+                  }
+                  className="h-full"
+                  styles={{ body: { padding: '24px' } }}
+                >
+                  <Form
+                    form={form}
+                    layout="vertical"
+                    onFinish={handleSubmit}
+                    className="space-y-4"
+                  >
+                    <Form.Item
+                      name="semester"
+                      label="Học kỳ"
+                      rules={[{ required: true, message: 'Vui lòng nhập học kỳ!' }]}
+                    >
+                      <Input
+                        placeholder="VD: Fall 2024, Spring 2025..."
+                        size="large"
+                      />
+                    </Form.Item>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Đề tài được chọn <span className="text-red-500">*</span>
+                      </label>
+                      <Card
+                        size="small"
+                        className={selectedTopicId ? 'border-orange-200 bg-orange-50' : 'border-gray-200 bg-gray-50'}
+                        styles={{ body: { padding: '12px' } }}
+                      >
+                        {selectedTopicId ? (
+                          <div>
+                            <div className="flex items-center mb-2">
+                              <CheckCircleOutlined className="text-orange-500 mr-2" />
+                              <span className="font-medium text-orange-600">
+                                ID: {selectedTopicId}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700">
+                              {topics.find(t => t.id === selectedTopicId)?.title || 'Đang tải...'}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 italic text-center py-2">
+                            Chưa chọn đề tài - Vui lòng chọn từ danh sách bên phải
+                          </p>
+                        )}
+                      </Card>
+                    </div>
+
+                    <Form.Item className="mt-6">
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        loading={creating}
+                        disabled={!selectedTopicId}
+                        size="large"
+                        className="w-full bg-orange-500 hover:bg-orange-600 border-orange-500 hover:border-orange-600"
+                      >
+                        {creating ? 'Đang thành lập...' : 'Thành lập Hội đồng'}
+                      </Button>
+                    </Form.Item>
+                  </Form>
                 </Card>
               </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Card bordered={false} className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-orange-100 flex justify-center items-center mx-auto mb-3">
-                    <CalendarOutlined className="text-2xl text-orange-600" />
-                  </div>
-                  <Text className="text-2xl font-bold text-gray-900">
-                    {councils.filter(c => c.status === 'SCHEDULED').length}
-                  </Text>
-                  <div className="text-gray-500">Đã lên lịch</div>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Card bordered={false} className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex justify-center items-center mx-auto mb-3">
-                    <BookOutlined className="text-2xl text-green-600" />
-                  </div>
-                  <Text className="text-2xl font-bold text-gray-900">
-                    {councils.filter(c => c.status === 'COMPLETED').length}
-                  </Text>
-                  <div className="text-gray-500">Hoàn thành</div>
-                </Card>
-              </Col>
-              <Col xs={24} sm={12} lg={6}>
-                <Card bordered={false} className="text-center">
-                  <div className="w-12 h-12 rounded-full bg-red-100 flex justify-center items-center mx-auto mb-3">
-                    <DeleteOutlined className="text-2xl text-red-600" />
-                  </div>
-                  <Text className="text-2xl font-bold text-gray-900">
-                    {topics.length - councils.length}
-                  </Text>
-                  <div className="text-gray-500">Chưa có hội đồng</div>
+
+              {/* Topics List Section */}
+              <Col xs={24} lg={14}>
+                <Card
+                  title={
+                    <div className="flex items-center">
+                      <BookOutlined className="text-orange-500 mr-2" />
+                      <span>Danh sách Đề tài</span>
+                    </div>
+                  }
+                  className="h-full"
+                  styles={{ body: { padding: '24px' } }}
+                >
+                  {loading ? (
+                    <div className="flex justify-center py-16">
+                      <Spin size="large" />
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {topics.length > 0 ? (
+                        topics.map((topic) => (
+                          <Card
+                            key={topic.id}
+                            size="small"
+                            hoverable
+                            onClick={() => handleTopicSelect(topic.id)}
+                            className={`cursor-pointer transition-all duration-200 ${
+                              selectedTopicId === topic.id
+                                ? 'border-orange-400 shadow-md bg-orange-50'
+                                : 'border-gray-200 hover:border-orange-300 hover:shadow-sm'
+                            }`}
+                            styles={{ body: { padding: '16px' } }}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-2">
+                                  <Title level={5} className="mb-0 text-gray-800">
+                                    {topic.title}
+                                  </Title>
+                                  {selectedTopicId === topic.id && (
+                                    <CheckCircleOutlined className="text-orange-500 text-lg" />
+                                  )}
+                                </div>
+                                <Paragraph
+                                  className="text-gray-600 mb-3"
+                                  ellipsis={{ rows: 2 }}
+                                >
+                                  {topic.description}
+                                </Paragraph>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded">
+                                    ID: {topic.id}
+                                  </span>
+                                  <Tag color={getStatusColor(topic.status)}>
+                                    {getStatusText(topic.status)}
+                                  </Tag>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))
+                      ) : (
+                        <div className="text-center py-16">
+                          <BookOutlined className="text-6xl text-gray-300 mb-4" />
+                          <Title level={4} className="text-gray-500">
+                            Không có đề tài nào
+                          </Title>
+                          <Paragraph className="text-gray-400">
+                            Hiện tại chưa có đề tài nào trong hệ thống
+                          </Paragraph>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center mt-8">
+                      <Pagination
+                        current={currentPage}
+                        total={totalItems}
+                        pageSize={10}
+                        onChange={handlePageChange}
+                        showSizeChanger={false}
+                        showQuickJumper
+                        showTotal={(total, range) => 
+                          `${range[0]}-${range[1]} của ${total} đề tài`
+                        }
+                      />
+                    </div>
+                  )}
                 </Card>
               </Col>
             </Row>
-
-            {/* Action Button */}
-            <Card bordered={false} className="mb-6">
-              <Row justify="space-between" align="middle">
-                <Col>
-                  <Title level={3} className="mb-2">Danh sách hội đồng khóa luận</Title>
-                  <Paragraph className="text-gray-600 mb-0">
-                    Quản lý và theo dõi các hội đồng bảo vệ khóa luận
-                  </Paragraph>
-                </Col>
-                <Col>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    size="large"
-                    onClick={() => setIsModalVisible(true)}
-                    className="bg-blue-600 border-blue-600 hover:bg-blue-700 hover:border-blue-700"
-                  >
-                    Tạo hội đồng mới
-                  </Button>
-                </Col>
-              </Row>
-            </Card>
-
-            {/* Councils Table */}
-            <Card bordered={false}>
-              <Table
-                columns={columns}
-                dataSource={councils}
-                rowKey="id"
-                pagination={{
-                  defaultPageSize: 10,
-                  showSizeChanger: true,
-                  pageSizeOptions: ['10', '20', '50'],
-                  showTotal: (total) => `Tổng số: ${total} hội đồng`
-                }}
-              />
-            </Card>
           </div>
         </div>
-      </Content>
 
-      {/* Create Council Modal */}
+        {/* Info Section */}
+        <div className="py-20 px-6 bg-gray-50">
+          <div className="max-w-6xl mx-auto">
+            <Title level={2} className="text-center mb-15">
+              Quy trình thành lập Hội đồng
+            </Title>
+            <Row gutter={[32, 32]}>
+              <Col xs={24} md={8}>
+                <Card 
+                  hoverable
+                  className="text-center h-full"
+                  styles={{ body: { padding: '40px 24px' } }}
+                >
+                  <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <CheckCircleOutlined className="text-3xl text-orange-500" />
+                  </div>
+                  <Title level={4} className="mb-4">
+                    Chọn học kỳ
+                  </Title>
+                  <Paragraph className="text-gray-600">
+                    Xác định học kỳ cần thành lập hội đồng bảo vệ luận văn
+                  </Paragraph>
+                </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <Card 
+                  hoverable
+                  className="text-center h-full"
+                  styles={{ body: { padding: '40px 24px' } }}
+                >
+                  <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <BookOutlined className="text-3xl text-orange-500" />
+                  </div>
+                  <Title level={4} className="mb-4">
+                    Chọn đề tài
+                  </Title>
+                  <Paragraph className="text-gray-600">
+                    Lựa chọn đề tài cần thành lập hội đồng từ danh sách có sẵn
+                  </Paragraph>
+                </Card>
+              </Col>
+              <Col xs={24} md={8}>
+                <Card 
+                  hoverable
+                  className="text-center h-full"
+                  styles={{ body: { padding: '40px 24px' } }}
+                >
+                  <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <TeamOutlined className="text-3xl text-orange-500" />
+                  </div>
+                  <Title level={4} className="mb-4">
+                    Thành lập hội đồng
+                  </Title>
+                  <Paragraph className="text-gray-600">
+                    Hệ thống tự động tạo hội đồng với các thành viên phù hợp
+                  </Paragraph>
+                </Card>
+              </Col>
+            </Row>
+          </div>
+        </div>
+      </Content>      <Divider className="my-0" />
+      <Footer />
+
+      {/* Council Details Modal */}
       <Modal
         title={
           <div className="flex items-center">
-            <TeamOutlined className="mr-2 text-blue-600" />
-            Tạo hội đồng khóa luận mới
+            <TeamOutlined className="text-orange-500 mr-2" />
+            <span>Chi tiết Hội đồng vừa tạo</span>
           </div>
         }
-        open={isModalVisible}
-        onCancel={() => {
-          setIsModalVisible(false);
-          form.resetFields();
-        }}
-        footer={null}
-        width={600}
-      >
-        <Divider />
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleCreateCouncil}
-          size="large"
-        >
-          <Form.Item
-            name="semester"
-            label="Học kỳ"
-            rules={[{ required: true, message: 'Vui lòng chọn học kỳ!' }]}
-          >
-            <Select placeholder="Chọn học kỳ">
-              <Option value="Spring 2024">Spring 2024</Option>
-              <Option value="Summer 2024">Summer 2024</Option>
-              <Option value="Fall 2024">Fall 2024</Option>
-              <Option value="Spring 2025">Spring 2025</Option>
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="date"
-            label="Ngày bảo vệ"
-            rules={[{ required: true, message: 'Vui lòng chọn ngày bảo vệ!' }]}
-          >
-            <DatePicker
-              className="w-full"
-              format="YYYY-MM-DD"
-              placeholder="Chọn ngày bảo vệ"
-              disabledDate={(current) => current && current < dayjs().endOf('day')}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="topicId"
-            label="Đề tài khóa luận"
-            rules={[{ required: true, message: 'Vui lòng chọn đề tài!' }]}
-          >
-            <Select 
-              placeholder="Chọn đề tài khóa luận"
-              showSearch
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
-              }
-            >
-              {topics.map(topic => (
-                <Option key={topic.id} value={topic.id}>
-                  <div>
-                    <div className="font-medium">{topic.title}</div>
-                    <div className="text-sm text-gray-500">
-                      {topic.studentName} ({topic.studentId}) - GVHD: {topic.supervisorName}
-                    </div>
-                  </div>
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item className="mb-0">
-            <Space className="w-full justify-end">
-              <Button 
-                onClick={() => {
-                  setIsModalVisible(false);
-                  form.resetFields();
-                }}
-              >
-                Hủy
-              </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                className="bg-blue-600 border-blue-600 hover:bg-blue-700 hover:border-blue-700"
-              >
-                Tạo hội đồng
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Council Detail Modal */}
-      <Modal
-        title="Chi tiết hội đồng"
-        open={!!selectedCouncil}
-        onCancel={() => setSelectedCouncil(null)}
-        footer={
-          <Button onClick={() => setSelectedCouncil(null)}>
+        open={showCouncilDetails}
+        onCancel={() => setShowCouncilDetails(false)}
+        footer={[
+          <Button key="close" onClick={() => setShowCouncilDetails(false)}>
             Đóng
+          </Button>,
+          <Button 
+            key="view-list" 
+            type="primary" 
+            className="bg-orange-500 hover:bg-orange-600 border-orange-500"
+            onClick={() => {
+              setShowCouncilDetails(false);
+              // Navigate to council list page if exists
+              // router.push('/councils');
+            }}
+          >
+            Xem danh sách hội đồng
           </Button>
-        }
-        width={700}
+        ]}
+        width={800}
       >
-        {selectedCouncil && (
-          <div className="space-y-4">
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <div className="border rounded-lg p-4">
-                  <Text className="text-gray-500">Học kỳ</Text>
-                  <div className="font-medium">{selectedCouncil.semester}</div>
-                </div>
-              </Col>
-              <Col span={12}>
-                <div className="border rounded-lg p-4">
-                  <Text className="text-gray-500">Ngày bảo vệ</Text>
-                  <div className="font-medium">{dayjs(selectedCouncil.date).format('DD/MM/YYYY')}</div>
-                </div>
-              </Col>
-            </Row>
-              <div className="border rounded-lg p-4">
-              <Text className="text-gray-500 block mb-2">Đề tài khóa luận</Text>
-              <div className="font-medium text-lg mb-2">{selectedCouncil.topicName}</div>
-            </div>
+        {createdCouncil && (
+          <div className="space-y-6">
+            {/* Basic Info */}
+            <Card size="small" title="Thông tin cơ bản">
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label="Tên hội đồng" span={2}>
+                  <strong>{createdCouncil.councilName}</strong>
+                </Descriptions.Item>
+                <Descriptions.Item label="Học kỳ">
+                  {createdCouncil.semester}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày">
+                  <CalendarOutlined className="mr-1" />
+                  {councilService.formatDate(createdCouncil.date)}
+                </Descriptions.Item>
+                <Descriptions.Item label="Trạng thái">
+                  <Badge 
+                    status={councilService.getStatusColor(createdCouncil.status) as any}
+                    text={councilService.getStatusDisplay(createdCouncil.status)}
+                  />
+                </Descriptions.Item>
+                <Descriptions.Item label="Slot">
+                  <ClockCircleOutlined className="mr-1" />
+                  Slot {createdCouncil.slot}
+                </Descriptions.Item>
+                <Descriptions.Item label="Đề tài" span={2}>
+                  <Tag color="blue">{createdCouncil.topicName}</Tag>
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
 
-            <Row gutter={[16, 16]}>
-              <Col span={12}>
-                <div className="border rounded-lg p-4">
-                  <Text className="text-gray-500">Trạng thái</Text>
-                  <div>
-                    <Tag color={getStatusColor(selectedCouncil.status)} className="mt-1">
-                      {getStatusText(selectedCouncil.status)}
-                    </Tag>
-                  </div>
-                </div>
-              </Col>
-              <Col span={12}>
-                <div className="border rounded-lg p-4">
-                  <Text className="text-gray-500">Slot</Text>
-                  <div className="font-medium">Slot {selectedCouncil.slot}</div>
-                </div>
-              </Col>
-            </Row>
-
-            <div className="border rounded-lg p-4">
-              <Text className="text-gray-500 block mb-2">Thành viên hội đồng</Text>
-              {selectedCouncil.councilMembers.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedCouncil.councilMembers.map((member) => (
-                    <div key={member.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <div>
-                        <div className="font-medium">{member.name}</div>
-                        <div className="text-sm text-gray-600">{member.email}</div>
+            {/* Council Members */}
+            <Card size="small" title="Thành viên hội đồng">
+              <div className="space-y-3">
+                {createdCouncil.councilMembers.map((member) => (
+                  <Card
+                    key={member.id}
+                    size="small"
+                    className="bg-gray-50"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <UserOutlined className="text-gray-500" />
+                        <div>
+                          <div className="font-medium">{member.fullName}</div>
+                          <div className="text-sm text-gray-500">{member.email}</div>
+                          <div className="text-sm text-gray-500">{member.phoneNumber}</div>
+                        </div>
                       </div>
-                      <Tag color={member.role === 'Chủ tịch' ? 'red' : member.role === 'Thư ký' ? 'blue' : 'green'}>
-                        {member.role}
+                      <Tag color={councilService.getRoleColor(member.role)}>
+                        {councilService.getRoleDisplay(member.role)}
                       </Tag>
                     </div>
-                  ))}
+                  </Card>
+                ))}
+              </div>
+            </Card>
+
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="flex items-start">
+                <CheckCircleOutlined className="text-green-500 mr-2 mt-1" />
+                <div>
+                  <div className="font-medium text-green-800">
+                    Hội đồng đã được thành lập thành công!
+                  </div>
+                  <div className="text-green-700 text-sm mt-1">
+                    Hội đồng ID: <strong>{createdCouncil.id}</strong> đã sẵn sàng cho quá trình bảo vệ luận văn.
+                  </div>
                 </div>
-              ) : (
-                <div className="text-gray-500 italic">Chưa có thành viên nào được phân công</div>
-              )}
+              </div>
             </div>
           </div>
         )}
       </Modal>
-
-      <Footer />
     </Layout>
   );
-}
+};
+
+export default CouncilPage;

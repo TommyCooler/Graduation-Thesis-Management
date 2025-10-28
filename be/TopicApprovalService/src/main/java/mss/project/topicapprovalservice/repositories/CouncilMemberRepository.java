@@ -12,12 +12,12 @@ import java.util.List;
 
 @Repository
 public interface CouncilMemberRepository extends JpaRepository<CouncilMember, Long> {
-    @Query("""
-        SELECT cm.accountId
-        FROM CouncilMember cm
-        JOIN cm.council c
-        WHERE c.date = :date AND c.slot = :slot""")
-    List<Long> findBusyLecturers(@Param("date") LocalDate date, @Param("slot") int slot);
+
+
+    List<CouncilMember> findByCouncil_DateAndCouncil_Slot(LocalDate date, int slot);
+
+    List<CouncilMember> findByCouncil_Id(long id);
+
     
     @Query("SELECT cm FROM CouncilMember cm WHERE cm.council.id = :councilId")
     List<CouncilMember> findByCouncilId(@Param("councilId") Long councilId);

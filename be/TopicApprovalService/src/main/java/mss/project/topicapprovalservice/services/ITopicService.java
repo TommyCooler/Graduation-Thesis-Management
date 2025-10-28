@@ -15,6 +15,7 @@ public interface ITopicService {
     TopicsDTOResponse updateTopic(Long Id,TopicsDTORequest topicsDTO);
     void deleteTopic(Long topicId);
     List<TopicsDTOResponse> getAllTopics();
+    TopicsDTOResponse getTopicBy(Long topicId);
     TopicsDTOResponse approveTopic(Long topicId, String email); // Thay accountId bằng email
     TopicsDTOResponse rejectTopic(Long topicId, String email);
 

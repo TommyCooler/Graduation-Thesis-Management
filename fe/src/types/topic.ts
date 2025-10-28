@@ -130,7 +130,7 @@ export interface TopicPagination {
 export interface PaginatedTopicResponse {
   code: number;
   message: string;
-  result: {
+  data: {
     content: TopicResponse[];
     pagination: TopicPagination;
   };
