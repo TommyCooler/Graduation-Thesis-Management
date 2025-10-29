@@ -18,7 +18,7 @@ export default function FirstLoginPage() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
   useEffect(() => {
     if (!email) {
@@ -36,7 +36,7 @@ export default function FirstLoginPage() {
     try {
       await toast.promise(
         (async () => {
-          const res = await fetch(`${API_BASE}/api/auth/password/change-first-login`, {
+          const res = await fetch(`${API_BASE}/account-service/api/auth/password/change-first-login`, {
             method: 'POST',
             headers: { accept: '*/*', 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, newPassword: values.password }),
