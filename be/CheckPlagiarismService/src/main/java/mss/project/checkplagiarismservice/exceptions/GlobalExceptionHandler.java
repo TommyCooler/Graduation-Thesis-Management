@@ -1,6 +1,5 @@
 package mss.project.checkplagiarismservice.exceptions;
 
-import jakarta.validation.ConstraintViolationException;
 import mss.project.checkplagiarismservice.dtos.response.ApiResponse;
 import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -38,20 +37,20 @@ public class GlobalExceptionHandler {
     }
 
     // Lỗi validate @Validated trên @RequestParam, @PathVariable
-    @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ApiResponse<List<String>>> handleConstraintViolation(ConstraintViolationException ex) {
-        List<String> messages = ex.getConstraintViolations().stream()
-                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
-                .toList();
-
-        return ResponseEntity.badRequest().body(
-                ApiResponse.<List<String>>builder()
-                        .status("error")
-                        .message("Validation failed")
-                        .data(messages)
-                        .build()
-        );
-    }
+//    @ExceptionHandler(ConstraintViolationException.class)
+//    public ResponseEntity<ApiResponse<List<String>>> handleConstraintViolation(ConstraintViolationException ex) {
+//        List<String> messages = ex.getConstraintViolations().stream()
+//                .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+//                .toList();
+//
+//        return ResponseEntity.badRequest().body(
+//                ApiResponse.<List<String>>builder()
+//                        .status("error")
+//                        .message("Validation failed")
+//                        .data(messages)
+//                        .build()
+//        );
+//    }
 
     // Bắt-all (đặt cuối cùng)
     @ExceptionHandler(Exception.class)

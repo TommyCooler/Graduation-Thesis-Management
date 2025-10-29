@@ -24,13 +24,13 @@ export interface ReviewCouncilUIModel {
   feedback?: string;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8083';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 class ReviewCouncilService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/progress-review-councils`;
+    this.baseUrl = `${API_BASE_URL}/topic-approval-service/api/progress-review-councils`;
   }
 
   async getAllCouncils(): Promise<ReviewCouncilUIModel[]> {

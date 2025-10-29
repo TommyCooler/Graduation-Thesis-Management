@@ -137,10 +137,10 @@ export default function TopicsList(): JSX.Element {
     try {
       const values = await form.validateFields();
       const token = getToken();
-      const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
+      const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
 
       const response = await fetch(
-        `${API_BASE}/api/topics/update/${editingTopic?.id}`,
+        `${API_BASE}/topic-approval-service/api/topics/update/${editingTopic?.id}`,
         {
           method: 'PUT',
           headers: {

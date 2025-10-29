@@ -1,6 +1,7 @@
 package mss.project.checkplagiarismservice.controllers;
 
 import mss.project.checkplagiarismservice.dtos.response.ApiResponse;
+import mss.project.checkplagiarismservice.dtos.response.N8nResponse;
 import mss.project.checkplagiarismservice.services.S3Service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -35,12 +36,12 @@ public class S3Controller {
 
 
     @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<?>> upload(@RequestParam("file") MultipartFile file) throws IOException {
-        String url = s3Service.uploadFileAndGetUrl(file, "topic");
+    public ResponseEntity<ApiResponse<?>> upload(@RequestParam("file") MultipartFile file, @RequestParam Long topicId) throws IOException {
+        N8nResponse n8n = s3Service.uploadFileAndGetUrl(file, prefix, topicId);
         return ResponseEntity.ok(ApiResponse.builder()
                 .status("200")
                 .message("File uploaded successfully")
-                .data(Map.of("url", url))
+                .data(n8n)
                 .build());
     }
 

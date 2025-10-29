@@ -63,7 +63,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 const councilService = {
   // Create new council
   createCouncil: async (councilData: CouncilCreateRequest): Promise<CouncilResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/councils`, {
+    const response = await fetch(`${API_BASE_URL}/topic-approval-service/api/councils`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +82,7 @@ const councilService = {
 
   // Get all councils
   getAllCouncils: async (): Promise<CouncilResponse[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/councils`, {
+    const response = await fetch(`${API_BASE_URL}/topic-approval-service/api/councils`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ const councilService = {
 
   // Delete council
   deleteCouncil: async (id: number): Promise<void> => {
-    const response = await fetch(`${API_BASE_URL}/api/councils/${id}`, {
+    const response = await fetch(`${API_BASE_URL}/topic-approval-service/api/councils/${id}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -116,7 +116,7 @@ const councilService = {
 
   // Get available topics for council creation
   getAvailableTopics: async (): Promise<Topic[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/topics/available`, {
+    const response = await fetch(`${API_BASE_URL}/topic-approval-service/api/topics/available`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

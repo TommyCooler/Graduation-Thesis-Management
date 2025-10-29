@@ -123,7 +123,7 @@ export default function CheckPlagiarismPage() {
         setUploadStatus('uploading');
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/plagiarism/upload-and-check`, {
+            const response = await fetch(`${API_BASE_URL}/plagiarism-service/api/plagiarism/upload-and-check`, {
                 method: 'POST',
                 body: formData,
             });
@@ -148,7 +148,7 @@ export default function CheckPlagiarismPage() {
     // Get detailed analysis
     const getDetailedAnalysis = async (reportId: number) => {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/plagiarism/analysis/${reportId}`);
+            const response = await fetch(`${API_BASE_URL}/plagiarism-service/api/plagiarism/analysis/${reportId}`);
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
