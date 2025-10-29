@@ -16,7 +16,8 @@ public interface AccountTopicsRepository extends JpaRepository<AccountTopics, Lo
 
     List<Long> findAccountIdByTopics_Id(Long topicId);
     List<AccountTopics> findByTopics_Id(Long topicId);
-    Long findAccountIdByTopics(Topics topic);
+//    Long findAccountIdByTopics(Topics topic);
+    AccountTopics findByTopics(Topics topic);
     List<AccountTopics> findByTopicsId(Long topicId);
     Optional<AccountTopics> findByTopicsIdAndAccountId(Long topicId, Long accountId);
     boolean existsByTopicsIdAndAccountId(Long topicsId, Long accountId);
