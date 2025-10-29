@@ -18,7 +18,7 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [form] = Form.useForm();
   const router = useRouter();
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
   const onFinish = async (values: { email: string; password: string }) => {
     form.setFields([{ name: 'email', errors: [] }, { name: 'password', errors: [] }]);
@@ -26,7 +26,7 @@ export default function LoginPage() {
     try {
       await toast.promise(
         (async () => {
-          const res = await fetch(`${API_BASE}/api/auth/login`, {
+          const res = await fetch(`${API_BASE}/account-service/api/auth/login`, {
             method: 'POST',
             headers: { accept: '*/*', 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -47,6 +47,11 @@ export default function LoginPage() {
 
           const token = parsed?.data?.token as string | undefined;
           const role = parsed?.data?.role as string | undefined;
+          const firstLogin = parsed?.data?.firstLogin as boolean | undefined;
+          if (firstLogin) {
+            router.push(`/auth/change-password?email=${encodeURIComponent(values.email.trim())}`);
+            return;
+          }
           if (!token) throw new Error('Thông tin đăng nhập không hợp lệ');
 
           localStorage.setItem('accessToken', token);

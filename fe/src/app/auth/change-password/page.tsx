@@ -1,7 +1,7 @@
 'use client';
 import { useMemo, useState, useEffect } from 'react';
 import { Card, Typography, Form, Input, Button } from 'antd';
-import { LockOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { LockOutlined, SafetyCertificateOutlined, UserOutlined } from '@ant-design/icons';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ToastContainer, toast } from 'react-toastify';
@@ -10,26 +10,25 @@ import 'react-toastify/dist/ReactToastify.css';
 const { Title, Text } = Typography;
 
 type ApiResp<T = any> = { code?: number; message?: string; data?: T };
-
-export default function ForgotPasswordPage() {
+export default function FirstLoginPage() {
   const params = useSearchParams();
   const router = useRouter();
-  const token = useMemo(() => params.get('token') || '', [params]);
+  const email = useMemo(() => params.get('email') || '', [params]);
 
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
 
   useEffect(() => {
-    if (!token) {
-      toast.warn('Thiếu token đặt lại mật khẩu. Vui lòng yêu cầu email mới.');
+    if (!email) {
+      toast.warn('Thiếu tham số username. Vui lòng đăng nhập lại để tiếp tục.');
     }
-  }, [token]);
+  }, [email]);
 
-  const onSubmit = async (values: { password: string; confirmPassword: string }) => {
-    if (!token) {
-      toast.error('Thiếu token. Vui lòng quay lại yêu cầu đặt lại mật khẩu.');
+  const onSubmit = async (values: { tempPassword: string; password: string; confirmPassword: string }) => {
+    if (!email) {
+      toast.error('Thiếu username. Vui lòng đăng nhập lại.');
       return;
     }
 
@@ -37,35 +36,33 @@ export default function ForgotPasswordPage() {
     try {
       await toast.promise(
         (async () => {
-          const res = await fetch(`${API_BASE}/account-service/api/auth/password/reset`, {
+          const res = await fetch(`${API_BASE}/api/auth/password/change-first-login`, {
             method: 'POST',
             headers: { accept: '*/*', 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token, newPassword: values.password }),
+            body: JSON.stringify({ email, newPassword: values.password }),
           });
 
           const text = await res.text();
           let parsed: ApiResp | any = {};
           try { parsed = text ? JSON.parse(text) : {}; } catch {}
 
-          // Chuẩn: code === 200
+          // success convention: code === 200 (adjust to your API)
           if (!res.ok || parsed?.code !== 200) {
-            // các case hay gặp
             if (parsed?.code === 400) throw new Error(parsed?.message || 'Yêu cầu không hợp lệ.');
-            if (parsed?.code === 401) throw new Error(parsed?.message || 'Token không hợp lệ.');
+            if (parsed?.code === 401) throw new Error(parsed?.message || 'Sai mật khẩu tạm hoặc phiên không hợp lệ.');
             if (parsed?.code === 410 || /expired|hết hạn/i.test(parsed?.message || '')) {
-              throw new Error(parsed?.message || 'Token đã hết hạn. Vui lòng yêu cầu lại.');
+              throw new Error(parsed?.message || 'Mật khẩu tạm đã hết hạn. Vui lòng yêu cầu cấp lại.');
             }
-            throw new Error(parsed?.message || text || `Đặt lại mật khẩu thất bại (HTTP ${res.status})`);
+            throw new Error(parsed?.message || text || `Đổi mật khẩu lần đầu thất bại (HTTP ${res.status})`);
           }
         })(),
         {
-          pending: 'Đang đặt lại mật khẩu...',
-          success: 'Đặt lại mật khẩu thành công! Bạn có thể đăng nhập.',
-          error: { render({ data }: any) { return data?.message || 'Đặt lại mật khẩu thất bại.'; } },
+          pending: 'Đang cập nhật mật khẩu...',
+          success: 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.',
+          error: { render({ data }: any) { return data?.message || 'Cập nhật mật khẩu thất bại.'; } },
         }
       );
 
-      // Reset form và chuyển trang
       form.resetFields();
       router.push('/auth/login');
     } finally {
@@ -81,25 +78,27 @@ export default function ForgotPasswordPage() {
           <div className="w-16 h-16 bg-[#fff5f0] rounded-full flex items-center justify-center mx-auto mb-4">
             <SafetyCertificateOutlined className="text-4xl text-[#ff6b35]" />
           </div>
-          <Title level={2} className="m-0 text-[#ff6b35]">Đặt lại mật khẩu</Title>
+          <Title level={2} className="m-0 text-[#ff6b35]">Đổi mật khẩu lần đầu</Title>
           <Text type="secondary">
-            Nhập mật khẩu mới cho tài khoản của bạn.
+            Đăng nhập bằng cách đặt <b>mật khẩu mới</b> để sử dụng tiếp.
           </Text>
         </div>
 
         <Form form={form} layout="vertical" size="large" onFinish={onSubmit}>
+          <Form.Item label="Tài khoản" tooltip="Được chuyển từ màn hình đăng nhập" required>
+            <Input prefix={<UserOutlined className="text-[#ff6b35]" />} value={email} disabled />
+          </Form.Item>
+
           <Form.Item
             name="password"
             label="Mật khẩu mới"
             rules={[
               { required: true, message: 'Vui lòng nhập mật khẩu mới!' },
-              { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự!' },
+              { min: 8, message: 'Mật khẩu phải có ít nhất 8 ký tự!' },
+              { pattern: /^(?=.*[A-Za-z])(?=.*\d).+$/, message: 'Tối thiểu 1 chữ và 1 số.' },
             ]}
           >
-            <Input.Password
-              prefix={<LockOutlined className="text-[#ff6b35]" />}
-              placeholder="Nhập mật khẩu mới"
-            />
+            <Input.Password prefix={<LockOutlined className="text-[#ff6b35]" />} placeholder="Nhập mật khẩu mới" />
           </Form.Item>
 
           <Form.Item
@@ -116,10 +115,7 @@ export default function ForgotPasswordPage() {
               }),
             ]}
           >
-            <Input.Password
-              prefix={<LockOutlined className="text-[#ff6b35]" />}
-              placeholder="Nhập lại mật khẩu mới"
-            />
+            <Input.Password prefix={<LockOutlined className="text-[#ff6b35]" />} placeholder="Nhập lại mật khẩu mới" />
           </Form.Item>
 
           <Button
@@ -127,7 +123,7 @@ export default function ForgotPasswordPage() {
             htmlType="submit"
             loading={loading}
             className="w-full h-12 bg-[#ff6b35] border-[#ff6b35] font-bold"
-            disabled={!token}
+            disabled={!email}
           >
             Cập nhật mật khẩu
           </Button>

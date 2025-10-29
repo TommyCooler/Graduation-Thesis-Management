@@ -8,8 +8,8 @@ spring:
     username: ${PLAGIARISM_DB_USERNAME}
     password: ${PLAGIARISM_DB_PASSWORD}
     hikari:
-      maximum-pool-size: 5
-      minimum-idle: 2
+      maximum-pool-size: 2
+      minimum-idle: 1
       idle-timeout: 30000
       max-lifetime: 1800000
       connection-timeout: 20000
@@ -33,14 +33,6 @@ server:
   port: ${SERVER_PORT:8084}
 
 # Database, RabbitMQ and Eureka configurations removed
-
-# SpringDoc OpenAPI Configuration
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operationsSorter: method
 
 # Actuator Configuration for Health Check
 management:
@@ -97,5 +89,10 @@ topic:
 
 folder:
   prefix: ${FOLDER_PREFIX}
+
+n8n:
+ base-url: ${N8N_BASE_URL}
+ ingest-path: ${N8N_INGEST_PATH}
+ token: ${N8N_INGEST_TOKEN}
 
 

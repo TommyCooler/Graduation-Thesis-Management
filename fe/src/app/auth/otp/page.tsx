@@ -21,7 +21,7 @@ export default function OtpPage() {
   const [otpExpired, setOtpExpired] = useState(false);
   const [cooldownSec, setCooldownSec] = useState(0);
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
   // restore cooldown on reload
   useEffect(() => {
@@ -57,7 +57,7 @@ export default function OtpPage() {
     setOtpExpired(false);
 
     try {
-      const res = await fetch(`${API_BASE}/api/auth/otp/verify`, {
+      const res = await fetch(`${API_BASE}/account-service/api/auth/otp/verify`, {
         method: 'POST',
         headers: { accept: '*/*', 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: values.code }),
@@ -93,7 +93,7 @@ export default function OtpPage() {
     if (cooldownSec > 0) return;
     setResending(true);
     try {
-      const res = await fetch(`${API_BASE}/api/auth/otp/resend`, {
+      const res = await fetch(`${API_BASE}/account-service/api/auth/otp/resend`, {
         method: 'POST',
         headers: { accept: '*/*', 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

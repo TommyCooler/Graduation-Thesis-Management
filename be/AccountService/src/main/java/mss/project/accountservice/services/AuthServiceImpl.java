@@ -12,6 +12,7 @@ import mss.project.accountservice.exceptions.ErrorCode;
 import mss.project.accountservice.pojos.Account;
 import mss.project.accountservice.repositories.AccountRepository;
 import mss.project.accountservice.utils.JwtTokenGenerator;
+import mss.project.accountservice.utils.TempPasswordGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -57,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtTokenGenerator.generate(account.getId(), account.getName(), request.getEmail(), account.getRole().toString());
         response.setRole(account.getRole().toString());
         response.setToken(token);
+        response.setFirstLogin(account.isFirstLogin());
         ResponseCookie cookie = ResponseCookie.from("access_token", token)
                 .httpOnly(true)
                 .secure(true)
@@ -86,6 +88,7 @@ public class AuthServiceImpl implements AuthService {
         acc.setPhoneNumber(request.getPhoneNumber());
         acc.setRole(Role.LECTURER);
         acc.setActive(false);
+        acc.setFirstLogin(true);
 
         try {
             accountRepository.saveAndFlush(acc);
@@ -184,5 +187,36 @@ public class AuthServiceImpl implements AuthService {
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
+    @Override
+    @Transactional
+    public void provideEmail(String email) {
+        String tempPassword = TempPasswordGenerator.generate(8);
+        Account account = accountRepository.findByEmail(email);
+        if (account == null) {
+            account = new Account();
+            account.setEmail(email);
+            account.setName(email);
+            account.setPassword(passwordEncoder.encode(tempPassword));
+            account.setRole(Role.LECTURER);
+            account.setFirstLogin(true);
+            account.setActive(true);
+            accountRepository.save(account);
+            mailService.sendAccountProvisionEmail(email, tempPassword);
+        } else {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void changePasswordWhenFirstLogin(String email, String newPassword) {
+        Account account = accountRepository.findByEmail(email);
+        if (account == null) {
+            throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+        account.setPassword(passwordEncoder.encode(newPassword));
+        account.setFirstLogin(false);
+        accountRepository.save(account);
+    }
 
 }

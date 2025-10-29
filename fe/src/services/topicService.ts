@@ -10,13 +10,13 @@ import {
   ApprovedTopic
 } from '../types/topic';
 
-const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
+const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
 
 class TopicService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/topics`;
+    this.baseUrl = `${API_BASE_URL}/topic-approval-service/api/topics`;
   }
 
   /**

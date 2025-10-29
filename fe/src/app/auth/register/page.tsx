@@ -9,7 +9,7 @@ import Image from 'next/image';
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
   const [form, setForm] = useState({
     fullName: '',
@@ -43,7 +43,7 @@ export default function RegisterPage() {
     };
 
     const doRegister = async () => {
-      const res = await fetch(`${API_BASE}/api/auth/register`, {
+      const res = await fetch(`${API_BASE}/account-service/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

@@ -191,7 +191,7 @@ export default function HeadOfDepartmentPage() {
 
   const handleJoinThesis = async (thesis: ApprovedThesis) => {
     try {
-      const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
+      const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
       const token = localStorage.getItem('access_token');
       
       const res = await fetch(`${API_BASE}/topic-approval-service/api/review-councils/join`, {

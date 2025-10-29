@@ -49,6 +49,41 @@ public class MailServiceImpl implements MailService {
         sendHtmlViaResend(to, subject, html);
     }
 
+    @Override
+    public void sendAccountProvisionEmail(String to, String tempPassword) {
+        String subject = "Thông tin tài khoản mới được tạo";
+        String html = """
+            <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: auto;
+                        border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; background-color: #ffffff;">
+                <div style="background-color: #ff6600; padding: 16px 24px; text-align: center;">
+                    <h2 style="margin: 8px 0 0 0; color: white; font-weight: 600; font-size: 22px;">
+                        THÔNG TIN TÀI KHOẢN MỚI
+                    </h2>
+                </div>
+
+                <div style="padding: 28px 24px; font-size: 15px; color: #333333; line-height: 1.6;">
+                    <p>Xin chào,</p>
+                    <p>Tài khoản của bạn đã được tạo thành công. Dưới đây là thông tin đăng nhập tạm thời của bạn:</p>
+
+                    <ul>
+                        <li><strong>Email:</strong> %s</li>
+                        <li><strong>Mật khẩu tạm thời:</strong> %s</li>
+                    </ul>
+
+                    <p>Vui lòng đăng nhập và thay đổi mật khẩu ngay sau lần đăng nhập đầu tiên để bảo mật tài khoản.</p>
+                    <p>Trân trọng,<br><strong>Đội ngũ Hỗ trợ FPT</strong></p>
+                </div>
+
+                <div style="background-color: #f5f5f5; color: #777; text-align: center;
+                            padding: 14px; font-size: 13px; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 4px 0;">© 2025 FPT Corporation. All rights reserved.</p>
+                    <p style="margin: 0;">Email này được gửi tự động, vui lòng không trả lời.</p>
+                </div>
+            </div>
+        """.formatted(to, tempPassword);
+        sendHtmlViaResend(to, subject, html);
+    }
+
     // ============ RESEND CORE ============
 
     private void sendHtmlViaResend(String to, String subject, String htmlContent) {
