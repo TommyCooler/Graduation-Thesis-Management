@@ -1,5 +1,6 @@
 package mss.project.accountservice.services;
 
+import mss.project.accountservice.dtos.requests.UpdateAccountRequest;
 import mss.project.accountservice.dtos.responses.AccountPerPageResponse;
 import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.PageResponse;
@@ -15,4 +16,8 @@ public interface AccountService {
     AccountResponse findById(Long id);
 
     PageResponse<AccountPerPageResponse> getAccountsPaged(int page, int size);
+
+    AccountResponse getCurrentAccount(String email);
+
+    void updateAccountProfile(Long id, UpdateAccountRequest account);
 }

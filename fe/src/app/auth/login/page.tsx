@@ -73,7 +73,7 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
-    window.location.href = `${API_BASE}/oauth2/authorization/google`;
+    window.location.href = `${API_BASE}/account-service/oauth2/authorization/google`;
   };
 
   return (

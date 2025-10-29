@@ -20,32 +20,32 @@ export default function Footer() {
                   alt="FPT Education" 
                   width={80} 
                   height={32}
-                  className="h-8 w-auto"
+                  className="!h-8 !w-auto"
                 />
               </div>
-              <Paragraph className="text-white">
+              <Paragraph className="!text-white">
                 Hệ thống duyệt đề tài và kiểm tra đạo văn chuyên nghiệp.
               </Paragraph>
             </div>
           </Col>
           <Col xs={24} md={6}>
-            <Title level={5} className="text-white mb-5">Tính năng</Title>
+            <Title level={5} className="!text-white !mb-5">Tính năng</Title>
             <div className="flex flex-col gap-2">
-              <Link href="/features/approval" className="text-white hover:text-gray-300 transition-colors">Duyệt đề tài</Link>
-              <Link href="/features/plagiarism" className="text-white hover:text-gray-300 transition-colors">Kiểm tra đạo văn</Link>
-              <Link href="/features/analytics" className="text-white hover:text-gray-300 transition-colors">Thống kê báo cáo</Link>
+              <Link href="/features/approval" className="!text-white hover:!text-gray-300 !transition-colors">Duyệt đề tài</Link>
+              <Link href="/features/plagiarism" className="!text-white hover:!text-gray-300 !transition-colors">Kiểm tra đạo văn</Link>
+              <Link href="/features/analytics" className="!text-white hover:!text-gray-300 !transition-colors">Thống kê báo cáo</Link>
             </div>
           </Col>
           <Col xs={24} md={6}>
-            <Title level={5} className="text-white mb-5">Hỗ trợ</Title>
+            <Title level={5} className="!text-white !mb-5">Hỗ trợ</Title>
             <div className="flex flex-col gap-2">
-              <Link href="/guide/teacher" className="text-white hover:text-gray-300 transition-colors">Hướng dẫn giảng viên</Link>
-              <Link href="/guide/head" className="text-white hover:text-gray-300 transition-colors">Hướng dẫn trưởng môn</Link>
-              <Link href="/contact" className="text-white hover:text-gray-300 transition-colors">Liên hệ hỗ trợ</Link>
+              <Link href="/guide/teacher" className="!text-white hover:!text-gray-300 !transition-colors">Hướng dẫn giảng viên</Link>
+              <Link href="/guide/head" className="!text-white hover:!text-gray-300 !transition-colors">Hướng dẫn trưởng môn</Link>
+              <Link href="/contact" className="!text-white hover:!text-gray-300 !transition-colors">Liên hệ hỗ trợ</Link>
             </div>
           </Col>
           <Col xs={24} md={6}>
-            <Title level={5} className="text-white mb-5">Thông tin</Title>
+            <Title level={5} className="!text-white !mb-5">Thông tin</Title>
             <div className="text-white leading-relaxed">
               <div>Email: support@thesis-review.edu.vn</div>
               <div>Điện thoại: (024) 123-4567</div>

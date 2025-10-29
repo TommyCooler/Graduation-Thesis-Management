@@ -1,5 +1,6 @@
 package mss.project.accountservice.services;
 
+import mss.project.accountservice.dtos.requests.UpdateAccountRequest;
 import mss.project.accountservice.dtos.responses.AccountPerPageResponse;
 import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.PageResponse;
@@ -56,13 +57,7 @@ public class AccountServiceImpl implements AccountService {
     public AccountResponse findById(Long id) {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
-        AccountResponse response = new AccountResponse();
-        response.setId(account.getId());
-        response.setName(account.getName());
-        response.setEmail(account.getEmail());
-        response.setPhoneNumber(account.getPhoneNumber());
-        response.setRole(account.getRole().toString());
-        return response;
+        return getAccountResponse(account);
     }
 
     @Override
@@ -86,6 +81,42 @@ public class AccountServiceImpl implements AccountService {
                 .totalElements(accountPage.getTotalElements())
                 .pageSize(accountPage.getSize())
                 .build();
+    }
+
+    @Override
+    public AccountResponse getCurrentAccount(String email) {
+        Account account = accountRepository.findByEmail(email);
+        if (account == null) {
+            throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+        return getAccountResponse(account);
+    }
+
+    @Override
+    public void updateAccountProfile(Long id, UpdateAccountRequest request) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (request.getUsername() != null && request.getUsername().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_NAME);
+        }
+        account.setName(request.getUsername());
+
+        if (request.getPhoneNumber() != null && request.getPhoneNumber().trim().isEmpty()) {
+            throw new AppException(ErrorCode.INVALID_PHONE_NUMBER);
+        }
+        account.setPhoneNumber(request.getPhoneNumber());
+        accountRepository.save(account);
+    }
+
+    private AccountResponse getAccountResponse(Account account) {
+        AccountResponse response = new AccountResponse();
+        response.setId(account.getId());
+        response.setName(account.getName());
+        response.setEmail(account.getEmail());
+        response.setPhoneNumber(account.getPhoneNumber());
+        response.setRole(account.getRole().toString());
+        return response;
     }
 }
 

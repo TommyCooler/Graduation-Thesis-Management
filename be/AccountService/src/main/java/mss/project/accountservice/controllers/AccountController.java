@@ -1,10 +1,13 @@
 package mss.project.accountservice.controllers;
 
+import mss.project.accountservice.dtos.requests.UpdateAccountRequest;
 import mss.project.accountservice.dtos.responses.AccountPerPageResponse;
 import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.ApiResponse;
 import mss.project.accountservice.dtos.responses.PageResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,6 +52,24 @@ public class AccountController {
         PageResponse<AccountPerPageResponse> response = accountService.getAccountsPaged(page - 1, size);
         ApiResponse<PageResponse<AccountPerPageResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setData(response);
+        return apiResponse;
+    }
+
+    @GetMapping("/current-account")
+    public AccountResponse getCurrentAccount(@AuthenticationPrincipal Jwt jwt) {
+        String email = jwt.getClaimAsString("email");
+        return accountService.getCurrentAccount(email);
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<?> updateAccountProfile(
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestBody UpdateAccountRequest request
+    ) {
+        Long id = jwt.getSubject() != null ? Long.parseLong(jwt.getSubject()) : null;
+        accountService.updateAccountProfile(id, request);
+        ApiResponse<?> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Cập nhật thông tin tài khoản thành công.");
         return apiResponse;
     }
 
