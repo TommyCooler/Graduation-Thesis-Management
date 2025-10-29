@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import mss.project.accountservice.dtos.requests.LoginRequest;
 import mss.project.accountservice.dtos.requests.RegisterRequest;
+import mss.project.accountservice.dtos.requests.SendMailRequest;
 import mss.project.accountservice.dtos.responses.LoginResponse;
 import mss.project.accountservice.enums.Role;
 import mss.project.accountservice.exceptions.AppException;
@@ -189,21 +190,21 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void provideEmail(String email) {
+    public void provideEmail(SendMailRequest request) {
         String tempPassword = TempPasswordGenerator.generate(8);
-        Account account = accountRepository.findByEmail(email);
-        if (account == null) {
+        Account account = accountRepository.findByEmail(request.getEmail());
+        if (account != null) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        } else {
             account = new Account();
-            account.setEmail(email);
-            account.setName(email);
+            account.setEmail(request.getEmail());
+            account.setName(request.getEmail());
             account.setPassword(passwordEncoder.encode(tempPassword));
             account.setRole(Role.LECTURER);
             account.setFirstLogin(true);
             account.setActive(true);
             accountRepository.save(account);
-            mailService.sendAccountProvisionEmail(email, tempPassword);
-        } else {
-            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+            mailService.sendAccountProvisionEmail(request.getEmail(), tempPassword);
         }
     }
 

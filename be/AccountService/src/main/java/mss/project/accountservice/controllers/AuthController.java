@@ -3,6 +3,7 @@ package mss.project.accountservice.controllers;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import mss.project.accountservice.dtos.requests.*;
 import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.ApiResponse;
@@ -140,9 +141,9 @@ public class AuthController {
     }
 
     @PostMapping("/provide-email")
-    public ApiResponse<?> provideEmail(@RequestParam String email) {
+    public ApiResponse<?> provideEmail(@RequestBody @Valid SendMailRequest request) {
         ApiResponse<?> res = new ApiResponse<>();
-        authService.provideEmail(email);
+        authService.provideEmail(request);
         res.setMessage("Cung cấp email thành công.");
         return res;
     }

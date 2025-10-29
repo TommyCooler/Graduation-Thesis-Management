@@ -39,8 +39,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                        .requestMatchers("/api/auth/provide-email").hasRole("HEADOFDEPARTMENT")
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/accounts/**").hasRole("LECTURER")
+                        .requestMatchers("/api/accounts/**").hasAnyRole("LECTURER", "HEADOFDEPARTMENT")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
