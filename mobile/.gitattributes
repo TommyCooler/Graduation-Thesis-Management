@@ -1,0 +1,45 @@
+# Giữ nguyên line endings cho tất cả file
+* text=auto
+
+# Đặc biệt cho các file generated
+generated_plugin_registrant.* -text
+
+# Flutter generated files
+**/generated_plugin_registrant.* -text
+**/GeneratedPluginRegistrant.* -text
+
+# Các file binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+*.otf binary
+
+# Các file build
+*.class binary
+*.dex binary
+*.so binary
+*.aar binary
+*.jar binary
+*.apk binary
+*.aab binary
+
+# iOS specific
+*.pbxproj -text
+*.xcworkspacedata -text
+*.xcscheme -text
+*.plist -text

@@ -23,11 +23,15 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource())) // ⚡ THÊM DÒNG NÀY
+                // CORS is handled by API Gateway, disable this to avoid duplicate headers
+                // .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/progress-review-councils/**").hasRole("LECTURER")
+                        // Allow service-to-service calls from PlagiarismService
+                        .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/topics/update/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -50,6 +54,8 @@ public class SecurityConfig {
         return jwtAuthConverter;
     }
 
+    // CORS is handled by API Gateway, disable this to avoid duplicate headers
+    /*
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
@@ -62,4 +68,5 @@ public class SecurityConfig {
         source.registerCorsConfiguration("/**", cfg);
         return source;
     }
+    */
 }

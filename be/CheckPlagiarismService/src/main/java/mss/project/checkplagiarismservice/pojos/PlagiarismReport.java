@@ -16,12 +16,13 @@ public class PlagiarismReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double similarity;
+    @Column(name = "plagiarism_percent")
+    private Double plagiarismPercent;
 
-    @Column(name = "lecture_id")
-    private Long lectureId;
-
-    @Column(name = "topic_id")
+    @Column(name = "topic_id", unique = false)
     private Long topicId;
 
+    public PlagiarismReport(Long topicId) {
+        this.topicId = topicId;
+    }
 }

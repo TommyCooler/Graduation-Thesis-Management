@@ -23,13 +23,13 @@ type Claims = {
 export default function Header() {
   const router = useRouter();
   const [claims, setClaims] = useState<Claims | null>(null);
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
   // Lấy user info bằng cookie
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/auth/me`, {
+        const res = await fetch(`${API_BASE}/account-service/api/auth/me`, {
           credentials: 'include',
         });
         if (!res.ok) {
@@ -46,7 +46,7 @@ export default function Header() {
   }, [API_BASE]);
 
   const onLogout = async () => {
-    await fetch(`${API_BASE}/api/auth/logout`, {
+    await fetch(`${API_BASE}/account-service/api/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });

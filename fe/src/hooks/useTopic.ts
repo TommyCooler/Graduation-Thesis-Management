@@ -23,13 +23,15 @@ interface UseTopicReturn {
   updateLoading: boolean;
   deleteLoading: boolean;
   submitLoading: boolean;
-    // Actions
+  // Actions
   fetchTopics: (filters?: TopicFilters, page?: number, size?: number) => Promise<void>;
   fetchTopicById: (id: number) => Promise<void>;
   fetchStats: () => Promise<void>;
   createTopic: (data: TopicCreateRequest) => Promise<Topic | null>;
+  createTopicWithFile: (data: TopicCreateRequest, file: File) => Promise<Topic | null>;
   createTopicWithSubmission: (data: TopicCreateRequest) => Promise<Topic | null>;
   updateTopic: (id: number, data: TopicUpdateRequest) => Promise<Topic | null>;
+  updateTopicWithFile: (id: number, data: TopicUpdateRequest, file: File) => Promise<Topic | null>;
   deleteTopic: (id: number) => Promise<boolean>;
   submitTopic: (id: number) => Promise<Topic | null>;
   approveTopic: (id: number) => Promise<Topic | null>;
@@ -143,6 +145,32 @@ export const useTopic = (): UseTopicReturn => {
   }, []);
 
   /**
+   * Create new topic with file upload
+   */
+  const createTopicWithFile = useCallback(async (data: TopicCreateRequest, file: File): Promise<Topic | null> => {
+    setCreateLoading(true);
+    try {
+      const newTopic = await topicService.createTopicWithFile(data, file);
+      message.success('Tạo đề tài và upload file thành công');
+      
+      // Refresh topics list after successful creation
+      try {
+        await refreshTopics();
+      } catch (refreshError) {
+        console.warn('Could not refresh topics list:', refreshError);
+      }
+      
+      return newTopic;
+    } catch (error: any) {
+      message.error(error.message || 'Không thể tạo đề tài với file');
+      console.error('Error creating topic with file:', error);
+      return null;
+    } finally {
+      setCreateLoading(false);
+    }
+  }, []);
+
+  /**
    * Create new topic with submission details
    */
   const createTopicWithSubmission = useCallback(async (data: TopicCreateRequest): Promise<Topic | null> => {
@@ -187,6 +215,35 @@ export const useTopic = (): UseTopicReturn => {
     } catch (error) {
       message.error('Không thể cập nhật đề tài');
       console.error('Error updating topic:', error);
+      return null;
+    } finally {
+      setUpdateLoading(false);
+    }
+  }, [currentTopic]);
+
+  /**
+   * Update topic with file upload
+   */
+  const updateTopicWithFile = useCallback(async (id: number, data: TopicUpdateRequest, file: File): Promise<Topic | null> => {
+    setUpdateLoading(true);
+    try {
+      const updatedTopic = await topicService.updateTopicWithFile(id, data, file);
+      message.success('Cập nhật đề tài và file thành công');
+      
+      // Update in current list
+      setTopics(prev => prev.map(topic => 
+        topic.id === id ? updatedTopic : topic
+      ));
+      
+      // Update current topic if it's the same
+      if (currentTopic?.id === id) {
+        setCurrentTopic(updatedTopic);
+      }
+      
+      return updatedTopic;
+    } catch (error: any) {
+      message.error(error.message || 'Không thể cập nhật đề tài với file');
+      console.error('Error updating topic with file:', error);
       return null;
     } finally {
       setUpdateLoading(false);
@@ -366,8 +423,10 @@ export const useTopic = (): UseTopicReturn => {
     fetchTopicById,
     fetchStats,
     createTopic,
+    createTopicWithFile,
     createTopicWithSubmission,
     updateTopic,
+    updateTopicWithFile,
     deleteTopic,
     submitTopic,
     approveTopic,

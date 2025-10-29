@@ -16,6 +16,10 @@ spring:
       connection-init-sql: DISCARD ALL
       data-source-properties:
         preferQueryMode: simple   # hoặc thay bằng prepareThreshold: 0
+
+    # url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:topicapproval}
+    # username: ${DB_USERNAME:postgres}
+    # password: ${DB_PASSWORD:postgres123}
   jpa:
     hibernate:
       ddl-auto: update

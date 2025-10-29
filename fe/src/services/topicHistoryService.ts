@@ -1,13 +1,13 @@
 import { TopicHistory, TopicHistoryApiResponse, TopicHistoryFilters } from '../types/topic-history';
 
 // Use the same base URL as topicService
-const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
+const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
 
 class TopicHistoryService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/topic-history`;
+    this.baseUrl = `${API_BASE_URL}/topic-approval-service/api/topic-history`;
   }
 
   /**
