@@ -6,7 +6,8 @@ import {
   TopicFilters,
   TopicStats,
   PaginatedTopicResponse,
-  TopicPagination
+  TopicPagination,
+  ApprovedTopic
 } from '../types/topic';
 
 const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8083';
@@ -407,6 +408,39 @@ class TopicService {
       throw error;
     }
   }
+
+  async getAllTopicsForReviewCouncil(): Promise<Topic[]> {
+    const response = await fetch(`${this.baseUrl}/all`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch topics: ${response.status}`);
+    }
+
+    const json = await response.json();
+    return json.data ?? [];
+  }
+
+  async getApprovedTopics(): Promise<ApprovedTopic[]> {
+    const response = await fetch(`${this.baseUrl}/approved`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch approved topics: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data ?? [];
+  }
+
 
   /**
    * Chuyển đổi dữ liệu từ API response sang Topic

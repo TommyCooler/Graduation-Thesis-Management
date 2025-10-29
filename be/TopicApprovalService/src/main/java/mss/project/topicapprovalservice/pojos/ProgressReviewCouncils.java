@@ -35,8 +35,8 @@ public class ProgressReviewCouncils {
     @Column(nullable=false)
     private Status status;
 
-    @Column(nullable=true, length=500)
-    private String overallComments;
+//    @Column(nullable=true, length=500)
+//    private String overallComments;
 
     @Column(nullable=false)
     private LocalDateTime createdAt;

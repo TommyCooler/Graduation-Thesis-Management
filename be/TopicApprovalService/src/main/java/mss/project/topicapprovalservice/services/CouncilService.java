@@ -9,6 +9,7 @@ import mss.project.topicapprovalservice.enums.Role;
 import mss.project.topicapprovalservice.enums.Status;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
+import mss.project.topicapprovalservice.pojos.AccountTopics;
 import mss.project.topicapprovalservice.pojos.Council;
 import mss.project.topicapprovalservice.pojos.CouncilMember;
 import mss.project.topicapprovalservice.pojos.Topics;
@@ -55,8 +56,18 @@ public class CouncilService implements ICouncilService {
 
 
     private List<AccountDTO> getAvailableLecturers(LocalDate date, int slot, Long topicId) {
-        List<Long> busyIds = councilMemberRepository.findBusyLecturers(date, slot);
-        List<Long> topicRelatedLecturers = accountTopicsRepository.findAccountIdsByTopicId(topicId);
+        List<Long> busyIds = councilMemberRepository
+                .findByCouncil_DateAndCouncil_Slot(date, slot)
+                .stream()
+                .map(CouncilMember::getAccountId)
+                .toList();
+
+        List<Long> topicRelatedLecturers = accountTopicsRepository
+                .findByTopics_Id(topicId)
+                .stream()
+                .map(AccountTopics::getAccountId)
+                .toList();
+
         List<AccountDTO> allLecturers = accountFeignClient.getAllAccounts();
 
         return allLecturers.stream()
@@ -109,30 +120,33 @@ public class CouncilService implements ICouncilService {
         council.setCouncilMembers(members);
         councilRepository.save(council);
 
-        CouncilResponse councilResponse = new CouncilResponse();
-        councilResponse.setId(council.getId());
-        councilResponse.setCouncilName(council.getCouncilName());
-        councilResponse.setSemester(council.getSemester());
-        councilResponse.setDate(council.getDate().toString());
-        councilResponse.setSlot(council.getSlot());
-        councilResponse.setStatus(council.getStatus());
-        councilResponse.setTopicName(topic.getTitle());
-        List<CouncilMemberResponse> memberResponses = new ArrayList<>();
-        for(CouncilMember member : members){
-            AccountDTO acc = accountFeignClient.getAccountById(member.getAccountId());
-            if (acc == null) {
-                throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
-            }
-            CouncilMemberResponse memberResponse = new CouncilMemberResponse();
-            memberResponse.setId(member.getId());
-            memberResponse.setAccountId(acc.getId());
-            memberResponse.setFullName(acc.getName());
-            memberResponse.setEmail(acc.getEmail());
-            memberResponse.setRole(member.getRole());
-            memberResponses.add(memberResponse);
-        }
-        councilResponse.setCouncilMembers(memberResponses);
-        return councilResponse;
+        List<CouncilMemberResponse> memberResponses = members.stream()
+                .map(member -> {
+                    AccountDTO acc = accountFeignClient.getAccountById(member.getAccountId());
+                    if (acc == null) {
+                        throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
+                    }
+                    return CouncilMemberResponse.builder()
+                            .id(member.getId())
+                            .accountId(acc.getId())
+                            .fullName(acc.getName())
+                            .email(acc.getEmail())
+                            .role(member.getRole())
+                            .phoneNumber(acc.getPhoneNumber())
+                            .build();
+                })
+                .toList();
+
+        return CouncilResponse.builder()
+                .id(council.getId())
+                .councilName(council.getCouncilName())
+                .semester(council.getSemester())
+                .date(council.getDate().toString())
+                .slot(council.getSlot())
+                .status(council.getStatus())
+                .topicName(topic.getTitle())
+                .councilMembers(memberResponses)
+                .build();
     }
 
     @Override
@@ -151,7 +165,40 @@ public class CouncilService implements ICouncilService {
     }
 
     @Override
-    public List<Council> getAllCouncils() {
-        return List.of();
+    public List<CouncilResponse> getAllCouncils() {
+        List<Council> councilList =councilRepository.findAll();
+        List <CouncilResponse> councilResponses = new ArrayList<>();
+        for(Council council : councilList){
+            List<CouncilMember> members = councilMemberRepository.findByCouncil_Id(council.getId());
+            List<CouncilMemberResponse> memberResponses = new ArrayList<>();
+            for(CouncilMember member : members){
+                AccountDTO acc = accountFeignClient.getAccountById(member.getAccountId());
+                if(acc == null){
+                    throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
+                }
+                CouncilMemberResponse memberResponse = CouncilMemberResponse.builder()
+                        .id(member.getId())
+                        .accountId(acc.getId())
+                        .fullName(acc.getName())
+                        .email(acc.getEmail())
+                        .role(member.getRole())
+                        .phoneNumber(acc.getPhoneNumber())
+                        .build();
+                memberResponses.add(memberResponse);
+            }
+            council.setCouncilMembers(members);
+            CouncilResponse councilResponse = CouncilResponse.builder()
+                    .id(council.getId())
+                    .councilName(council.getCouncilName())
+                    .semester(council.getSemester())
+                    .date(council.getDate().toString())
+                    .slot(council.getSlot())
+                    .status(council.getStatus())
+                    .topicName(council.getTopic().getTitle())
+                    .councilMembers(memberResponses)
+                    .build();
+            councilResponses.add(councilResponse);
+        }
+        return councilResponses;
     }
 }

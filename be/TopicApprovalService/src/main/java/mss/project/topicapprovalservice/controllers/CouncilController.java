@@ -8,10 +8,9 @@ import mss.project.topicapprovalservice.pojos.Council;
 import mss.project.topicapprovalservice.services.CouncilService;
 import mss.project.topicapprovalservice.services.ICouncilService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("api/councils")
@@ -23,9 +22,20 @@ public class CouncilController {
     @PostMapping("/create")
     public ApiResponse<CouncilResponse> createCouncil(@RequestBody CouncilCreateRequest councilCreateRequest) {
         CouncilResponse saved = councilService.addCouncil(councilCreateRequest);
-        ApiResponse<CouncilResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Council Created");
-        apiResponse.setData(saved);
-        return apiResponse;
+        return ApiResponse.<CouncilResponse>builder()
+                .code(201)
+                .message("Council created successfully")
+                .data(saved)
+                .build();
+    }
+
+    @GetMapping("/all")
+    public ApiResponse<List<CouncilResponse>> findAllCouncil() {
+        List<CouncilResponse> councils = councilService.getAllCouncils();
+        return ApiResponse.<List<CouncilResponse>>builder()
+                .code(200)
+                .message("Fetched all councils successfully")
+                .data(councils)
+                .build();
     }
 }
