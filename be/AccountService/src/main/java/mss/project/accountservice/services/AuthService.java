@@ -18,4 +18,8 @@ public interface AuthService {
 
     void logout(HttpServletResponse response);
 
+    void provideEmail(String email);
+
+    void changePasswordWhenFirstLogin(String email, String newPassword);
+
 }

@@ -139,5 +139,21 @@ public class AuthController {
         return apiResponse;
     }
 
+    @PostMapping("/provide-email")
+    public ApiResponse<?> provideEmail(@RequestParam String email) {
+        ApiResponse<?> res = new ApiResponse<>();
+        authService.provideEmail(email);
+        res.setMessage("Cung cấp email thành công.");
+        return res;
+    }
+
+    @PostMapping("/password/change-first-login")
+    public ApiResponse<?> changePasswordWhenFirstLogin(@RequestBody ChangePasswordRequest req) {
+        ApiResponse<?> res = new ApiResponse<>();
+        authService.changePasswordWhenFirstLogin(req.getEmail(), req.getNewPassword());
+        res.setMessage("Đổi mật khẩu thành công.");
+        return res;
+    }
+
 
 }
