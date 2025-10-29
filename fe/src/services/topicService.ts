@@ -387,6 +387,100 @@ class TopicService {
   }
 
   /**
+   * Tạo đề tài mới kèm theo file upload
+   */
+  async createTopicWithFile(topicData: TopicCreateRequest, file: File): Promise<Topic> {
+    try {
+      const formData = new FormData();
+      
+      // Tạo blob cho topic data với Content-Type application/json
+      const topicBlob = new Blob([JSON.stringify(topicData)], {
+        type: 'application/json'
+      });
+      
+      formData.append('topic', topicBlob);
+      formData.append('file', file);
+
+      // Get auth headers but remove Content-Type for FormData
+      const headers: HeadersInit = {};
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+
+      const response = await fetch(`${this.baseUrl}/create-with-file`, {
+        method: 'POST',
+        headers: headers,
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      console.log('Create topic with file response:', apiResponse);
+      
+      const data = this.extractResponseData(apiResponse);
+      return this.mapToTopics([data])[0];
+    } catch (error) {
+      console.error('Error creating topic with file:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cập nhật đề tài kèm theo file upload
+   */
+  async updateTopicWithFile(id: number, topicData: TopicUpdateRequest, file: File): Promise<Topic> {
+    try {
+      const formData = new FormData();
+      
+      // Tạo blob cho topic data với Content-Type application/json
+      const topicBlob = new Blob([JSON.stringify(topicData)], {
+        type: 'application/json'
+      });
+      
+      formData.append('topic', topicBlob);
+      formData.append('file', file);
+
+      // Get auth headers but remove Content-Type for FormData
+      const headers: HeadersInit = {};
+      if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+      }
+
+      const response = await fetch(`${this.baseUrl}/update-with-file/${id}`, {
+        method: 'PUT',
+        headers: headers,
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      console.log('Update topic with file response:', apiResponse);
+      
+      const data = this.extractResponseData(apiResponse);
+      return this.mapToTopics([data])[0];
+    } catch (error) {
+      console.error('Error updating topic with file:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Lấy đề tài có sẵn cho hội đồng
    */
   async getAvailableTopics(): Promise<Topic[]> {

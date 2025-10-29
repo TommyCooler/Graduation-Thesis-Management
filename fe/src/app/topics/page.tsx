@@ -68,6 +68,8 @@ export default function TopicUpload(): JSX.Element {
   const [form] = Form.useForm<TopicFormValues>();
   const [keywords, setKeywords] = useState<string[]>([]);
   const [inputKeyword, setInputKeyword] = useState<string>('');
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
   
   const [members, setMembers] = useState<Member[]>([]);
   const [memberModalOpen, setMemberModalOpen] = useState(false);

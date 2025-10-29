@@ -97,6 +97,13 @@
             <artifactId>spring-security-oauth2-jose</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>software.amazon.awssdk</groupId>
+            <artifactId>s3</artifactId>
+            <version>2.35.10</version>
+            <scope>compile</scope>
+        </dependency>
+
     </dependencies>
     
     <dependencyManagement>
