@@ -1,6 +1,9 @@
 package mss.project.topicapprovalservice.services;
 
+
+
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
+import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
 
@@ -15,6 +18,7 @@ public interface TopicService {
     List<TopicsDTOResponse> getAllTopics();
     TopicsDTOResponse approveTopic(Long topicId, String email);
     TopicsDTOResponse rejectTopic(Long topicId, String email);
+    List<GetAllApprovedTopicsResponse> getApprovedTopics();
     AccountTopicsDTOResponse joinTopic(Long topicId, Long memberId, String memberName);
     List<AccountTopicsDTOResponse> getTopicMembers(Long topicId);
 }

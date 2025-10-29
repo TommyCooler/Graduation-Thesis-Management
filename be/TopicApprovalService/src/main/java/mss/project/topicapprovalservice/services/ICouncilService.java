@@ -9,7 +9,7 @@ import java.util.List;
 public interface ICouncilService {
 
     public Council getCouncilById(int id);
-    public List<Council> getAllCouncils();
+    public List<CouncilResponse> getAllCouncils();
     public CouncilResponse addCouncil(CouncilCreateRequest councilCreateRequest);
     public CouncilResponse updateCouncil(int id, CouncilCreateRequest councilCreateRequest);
     public void deleteCouncil(int id);

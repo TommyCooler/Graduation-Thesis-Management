@@ -17,13 +17,13 @@ public class CreateReviewCouncilRequest {
     @NotBlank(message = "Tên hội đồng không được để trống")
     private String councilName;
 
-    @NotNull(message = "Đề tài không được để trống")
-    private Long topicID;
+//    @NotNull(message = "Đề tài không được để trống")
+//    private Long topicID;
 
     @NotNull(message = "Mốc review không được để trống")
     private Milestone milestone;
 
-    @NotNull(message = "Ngày review không được để trốngd")
+//    @NotNull(message = "Ngày review không được để trốngd")
     @Future(message = "Ngày review phải là một ngày trong tương lai")
     private LocalDateTime reviewDate;
 

@@ -1,11 +1,13 @@
 package mss.project.topicapprovalservice.dtos.responses;
 
+import lombok.Builder;
 import lombok.Data;
 import mss.project.topicapprovalservice.enums.Status;
 
 import java.util.List;
 
 @Data
+@Builder
 public class CouncilResponse {
 
     private Long id;

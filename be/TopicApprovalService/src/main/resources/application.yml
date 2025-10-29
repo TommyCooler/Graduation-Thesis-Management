@@ -27,9 +27,9 @@ spring:
 server:
   port: 8083
 
-springdoc:
-  swagger-ui:
-    operationsSorter: method
+#springdoc:
+#  swagger-ui:
+#    operationsSorter: method
 
 management:
   endpoints:

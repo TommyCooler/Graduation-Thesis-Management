@@ -22,6 +22,9 @@ public class ReviewCouncilMembers {
     @Column(nullable = false)
     private Long accountID;
 
+    @Column(nullable=true, length=500)
+    private String overallComments;
+
     public ReviewCouncilMembers(ProgressReviewCouncils progressReviewCouncil, Long accountID) {
         this.progressReviewCouncil = progressReviewCouncil;
         this.accountID = accountID;

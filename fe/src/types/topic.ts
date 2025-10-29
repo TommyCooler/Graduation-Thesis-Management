@@ -68,6 +68,12 @@ export interface TopicStats {
   recentSubmissions: number;
 }
 
+export interface ApprovedTopic {
+  topicID: number;
+  topicTitle: string;
+  description: string;
+}
+
 // Status constants
 export const TOPIC_STATUS = {
   DRAFT: 'DRAFT',
@@ -124,7 +130,7 @@ export interface TopicPagination {
 export interface PaginatedTopicResponse {
   code: number;
   message: string;
-  result: {
+  data: {
     content: TopicResponse[];
     pagination: TopicPagination;
   };
