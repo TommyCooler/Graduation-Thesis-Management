@@ -47,6 +47,11 @@ export default function LoginPage() {
 
           const token = parsed?.data?.token as string | undefined;
           const role = parsed?.data?.role as string | undefined;
+          const firstLogin = parsed?.data?.firstLogin as boolean | undefined;
+          if (firstLogin) {
+            router.push(`/auth/change-password?email=${encodeURIComponent(values.email.trim())}`);
+            return;
+          }
           if (!token) throw new Error('Thông tin đăng nhập không hợp lệ');
 
           localStorage.setItem('accessToken', token);
