@@ -2,9 +2,11 @@ package mss.project.topicapprovalservice.pojos;
 
 import jakarta.persistence.*;
 import lombok.*;
+import mss.project.topicapprovalservice.enums.TopicStatus;
 
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "topics")
@@ -25,8 +27,9 @@ public class Topics {
     @Column(name = "submited_at")
     private LocalDateTime submitedAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status;
+    private TopicStatus status;
 
     @Column(name = "file_path_url")
     private String filePathUrl;
@@ -40,10 +43,25 @@ public class Topics {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "approval_count")
+    private Integer approvalCount = 0;
+
+    @Column(name = "required_approvals")
+    private Integer requiredApprovals = 2;
+
+    @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TopicApproval> approvals = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.approvalCount == null) {
+            this.approvalCount = 0;
+        }
+        if (this.requiredApprovals == null) {
+            this.requiredApprovals = 2;
+        }
     }
 
     @PreUpdate

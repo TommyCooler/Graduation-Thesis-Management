@@ -7,7 +7,9 @@ import {
   TopicStats,
   PaginatedTopicResponse,
   TopicPagination,
-  ApprovedTopic
+  ApprovedTopic,
+  TopicWithApprovalStatus,
+  ApproveTopicRequest
 } from '../types/topic';
 
 const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
@@ -533,6 +535,126 @@ class TopicService {
 
     const data = await response.json();
     return data.data ?? [];
+  }
+
+  /**
+   * Lấy topics theo status
+   */
+  async getTopicsByStatus(status: string): Promise<Topic[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/by-status?status=${status}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      const data = this.extractResponseData(apiResponse);
+      return this.mapToTopics(data);
+    } catch (error) {
+      console.error(`Error fetching topics by status ${status}:`, error);
+      throw error;
+    }
+  }
+
+  // ========== 2-Person Approval Workflow Methods ==========
+
+  /**
+   * Approve topic với 2-person approval workflow
+   */
+  async approveTopicV2(id: number, request?: ApproveTopicRequest): Promise<TopicWithApprovalStatus> {
+    try {
+      const response = await fetch(`${this.baseUrl}/approve-v2/${id}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify(request || {}),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error approving topic v2:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách topics đang chờ approval (chưa approve bởi user hiện tại)
+   */
+  async getPendingTopicsForApproval(): Promise<TopicWithApprovalStatus[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/pending-for-approval`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error fetching pending topics for approval:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách topics đã approve bởi user hiện tại (nhưng chưa đủ 2/2)
+   */
+  async getApprovedTopicsByUser(): Promise<TopicWithApprovalStatus[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/my-approved`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error fetching approved topics by user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách topics đã fully approved (2/2 approvals)
+   */
+  async getFullyApprovedTopics(): Promise<TopicWithApprovalStatus[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/fully-approved`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error fetching fully approved topics:', error);
+      throw error;
+    }
   }
 
 

@@ -41,6 +41,7 @@ public enum ErrorCode {
     COUNCIL_FULL(400, "Hội đồng đã đủ 2 thành viên"),
     ALREADY_JOINED_COUNCIL(400, "Bạn đã tham gia hội đồng này rồi"),
     NOT_COUNCIL_MEMBER(400, "Bạn không phải thành viên của hội đồng này"),
+    TOPIC_ALREADY_APPROVED(400, "You have already approved this topic"),
     ;
     private int code;
     private String message;

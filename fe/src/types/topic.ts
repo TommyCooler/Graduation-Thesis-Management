@@ -74,6 +74,28 @@ export interface ApprovedTopic {
   description: string;
 }
 
+// 2-Person Approval Types
+export interface TopicApproval {
+  id: number;
+  topicId: number;
+  approverEmail: string;
+  approverName: string;
+  approvedAt: string;
+  comment: string | null;
+}
+
+export interface TopicWithApprovalStatus extends TopicResponse {
+  approvalCount: number;
+  requiredApprovals: number;
+  approvalStatus: string; // "0/2", "1/2", "2/2"
+  hasUserApproved: boolean;
+  approvals: TopicApproval[];
+}
+
+export interface ApproveTopicRequest {
+  comment?: string;
+}
+
 // Status constants
 export const TOPIC_STATUS = {
   DRAFT: 'DRAFT',

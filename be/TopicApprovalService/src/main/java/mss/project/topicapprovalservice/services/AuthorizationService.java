@@ -20,9 +20,9 @@ public class AuthorizationService {
             throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
         
-        if (!"HEADOFDEPARTMENT".equals(account.getRole())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED_ACCESS);
-        }
+//        if (!"HEADOFDEPARTMENT".equals(account.getRole())) {
+//            throw new AppException(ErrorCode.UNAUTHORIZED_ACCESS);
+//        }
         
         return account; // Trả về thông tin account nếu có quyền
     }

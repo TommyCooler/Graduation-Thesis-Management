@@ -2,6 +2,7 @@ package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.TopicHistoryDTOResponse;
+import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
 import mss.project.topicapprovalservice.pojos.TopicHistory;
@@ -105,18 +106,26 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
             changes.add("Mô tả đề tài đã được cập nhật");
         }
         
-        // Kiểm tra các trường khác nếu có
-        if (request.getStatus() != null && !Objects.equals(topic.getStatus(), request.getStatus())) {
-            changes.add(String.format("Trạng thái: '%s' -> '%s'", 
-                topic.getStatus(), request.getStatus()));
+        // Kiểm tra trạng thái (parse String to Enum)
+        if (request.getStatus() != null && !request.getStatus().isEmpty()) {
+            try {
+                TopicStatus newStatus = TopicStatus.valueOf(request.getStatus().toUpperCase());
+                if (!Objects.equals(topic.getStatus(), newStatus)) {
+                    changes.add(String.format("Trạng thái: '%s' -> '%s'", 
+                        topic.getStatus() != null ? topic.getStatus().name() : "null", 
+                        newStatus.name()));
+                }
+                // Cập nhật status
+                topic.setStatus(newStatus);
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status value: {}", request.getStatus());
+                // Không update status nếu giá trị không hợp lệ
+            }
         }
         
         // Cập nhật topic
         topic.setTitle(request.getTitle());
         topic.setDescription(request.getDescription());
-        if (request.getStatus() != null) {
-            topic.setStatus(request.getStatus());
-        }
         // ... other updates
         
         Topics savedTopic = topicsRepository.save(topic);

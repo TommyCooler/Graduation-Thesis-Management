@@ -182,8 +182,10 @@ async function buildPdf(data: Omit<Body, 'format'>) {
   const center = (text: string, bold = false, dy = lineHeight) => {
     const f = bold ? fontBold : font;
     const size = 12;
-    const textWidth = f.widthOfTextAtSize(text, size);
-    page.drawText(text, { x: (width - textWidth) / 2, y, size, font: f });
+    // FIX: Ensure text is a valid string
+    const safeText = String(text || '');
+    const textWidth = f.widthOfTextAtSize(safeText, size);
+    page.drawText(safeText, { x: (width - textWidth) / 2, y, size, font: f, color: rgb(0, 0, 0) });
     y -= dy;
   };
 
@@ -193,7 +195,7 @@ async function buildPdf(data: Omit<Body, 'format'>) {
   page.drawLine({ start: { x: width / 2 - 90, y }, end: { x: width / 2 + 90, y }, thickness: 0.5, color: rgb(0, 0, 0) });
   y -= 18;
   center(data.university.toUpperCase(), true);
-  center(data.docDateStr);
+  center(data.docDateStr || '', false); // Add fallback
   y -= 8;
   center(data.formTitle.toUpperCase(), true, 22);
   y -= 10;
@@ -201,15 +203,17 @@ async function buildPdf(data: Omit<Body, 'format'>) {
   // Left-aligned content
   const drawLabelValue = (label: string, value: string) => {
     const size = 12;
-    page.drawText(label, { x: margin, y, size, font: fontBold });
-    const tx = margin + fontBold.widthOfTextAtSize(label, size) + 2;
-    page.drawText(value || '', { x: tx, y, size, font });
+    const safeLabel = String(label || '');
+    const safeValue = String(value || '');
+    page.drawText(safeLabel, { x: margin, y, size, font: fontBold, color: rgb(0, 0, 0) });
+    const tx = margin + fontBold.widthOfTextAtSize(safeLabel, size) + 2;
+    page.drawText(safeValue, { x: tx, y, size, font, color: rgb(0, 0, 0) });
     y -= lineHeight;
   };
 
-  drawLabelValue('Tên đề tài: ', data.topicTitle);
-  drawLabelValue('Họ và Tên chủ nhiệm đề tài: ', data.piFullName);
-  drawLabelValue('Mã số giảng viên (chủ nhiệm): ', data.piLecturerId);
+  drawLabelValue('Tên đề tài: ', data.topicTitle || '');
+  drawLabelValue('Họ và Tên chủ nhiệm đề tài: ', data.piFullName || '');
+  drawLabelValue('Mã số giảng viên (chủ nhiệm): ', data.piLecturerId || '');
   y -= 8;
 
   // Members table header
@@ -219,16 +223,17 @@ async function buildPdf(data: Omit<Body, 'format'>) {
   const rowHeight = 20;
 
   const drawCell = (tx: number, ty: number, w: number, h: number, text: string, bold = false, centerText = false) => {
+    const safeText = String(text || '');
     page.drawRectangle({ x: tx, y: ty - h, width: w, height: h, borderWidth: 0.5, borderColor: rgb(0, 0, 0) });
     const f = bold ? fontBold : font;
     const size = 11;
     const padding = 4;
     let textX = tx + padding;
     if (centerText) {
-      const tw = f.widthOfTextAtSize(text, size);
+      const tw = f.widthOfTextAtSize(safeText, size);
       textX = tx + (w - tw) / 2;
     }
-    page.drawText(text, { x: textX, y: ty - h + (h - size) / 2, size, font: f });
+    page.drawText(safeText, { x: textX, y: ty - h + (h - size) / 2, size, font: f, color: rgb(0, 0, 0) });
   };
 
   // Header row
@@ -244,33 +249,39 @@ async function buildPdf(data: Omit<Body, 'format'>) {
   const list = data.members && data.members.length ? data.members : [{ fullName: '', lecturerId: '', note: '' }];
   list.forEach((m, idx) => {
     tx = tableX;
-    drawCell(tx, ty, colWidths[0], rowHeight, String(idx + 1), false, true); tx += colWidths[0];
-    drawCell(tx, ty, colWidths[1], rowHeight, m.fullName || ''); tx += colWidths[1];
-    drawCell(tx, ty, colWidths[2], rowHeight, m.lecturerId || ''); tx += colWidths[2];
+    drawCell(tx, ty, colWidths[0], rowHeight, String(idx + 1), false, true); 
+    tx += colWidths[0];
+    drawCell(tx, ty, colWidths[1], rowHeight, m.fullName || ''); 
+    tx += colWidths[1];
+    drawCell(tx, ty, colWidths[2], rowHeight, m.lecturerId || ''); 
+    tx += colWidths[2];
     drawCell(tx, ty, colWidths[3], rowHeight, m.note || '');
     ty -= rowHeight;
   });
 
   y = ty - 14;
-  page.drawText('Mô tả đề tài', { x: margin, y, size: 12, font: fontBold });
+  page.drawText('Mô tả đề tài', { x: margin, y, size: 12, font: fontBold, color: rgb(0, 0, 0) });
   y -= lineHeight;
 
   // Simple word-wrap for description
   const maxWidth = width - margin * 2;
-  const words = (data.description || '').split(/\s+/);
+  const safeDescription = String(data.description || '');
+  const words = safeDescription.split(/\s+/).filter(w => w.length > 0);
   let line = '';
   words.forEach((w) => {
     const test = line ? line + ' ' + w : w;
     if (font.widthOfTextAtSize(test, 12) > maxWidth) {
-      page.drawText(line, { x: margin, y, size: 12, font });
-      y -= lineHeight;
+      if (line) {
+        page.drawText(line, { x: margin, y, size: 12, font, color: rgb(0, 0, 0) });
+        y -= lineHeight;
+      }
       line = w;
     } else {
       line = test;
     }
   });
   if (line) {
-    page.drawText(line, { x: margin, y, size: 12, font });
+    page.drawText(line, { x: margin, y, size: 12, font, color: rgb(0, 0, 0) });
     y -= lineHeight;
   }
 
