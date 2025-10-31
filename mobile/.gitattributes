@@ -1,5 +1,10 @@
 # Giữ nguyên line endings cho tất cả file
 * text=auto
+*.cc text eol=lf
+*.dart text eol=lf
+*.java text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
 
 # Đặc biệt cho các file generated
 generated_plugin_registrant.* -text
