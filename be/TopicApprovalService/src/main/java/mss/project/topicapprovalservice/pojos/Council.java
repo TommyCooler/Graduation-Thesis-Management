@@ -10,6 +10,7 @@ import mss.project.topicapprovalservice.enums.Status;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,8 +29,8 @@ public class Council {
     @Column(name = "council_name")
     private String councilName;
 
-    @Column(name ="date")
-    private LocalDate date;
+    @Column(name ="defense_date")
+    private LocalDate defenseDate;
 
     @Column(name= "semester")
     private String semester;
@@ -37,14 +38,11 @@ public class Council {
     @Column(name = "status")
     private Status status;
 
-    @Column(name ="slot")
-    private int slot;
-
     @OneToMany(mappedBy = "council", cascade = CascadeType.ALL)
     @JsonManagedReference
     private List<CouncilMember> councilMembers= new ArrayList<>();;
 
-    @OneToOne
-    @JoinColumn(name = "topic_id")
-    private Topics topic;
+    @OneToMany(mappedBy = "council", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Topics> topics = new ArrayList<>();
 }

@@ -11,6 +11,6 @@ import java.util.Optional;
 @Repository
 public interface CouncilRepository extends JpaRepository<Council, Long> {
     
-    @Query("SELECT c FROM Council c WHERE c.topic.id = :topicId")
-    Optional<Council> findByTopicId(@Param("topicId") Long topicId);
+//    @Query("SELECT c FROM Council c WHERE c.topic.id = :topicId")
+//    Optional<Council> findByTopicId(@Param("topicId") Long topicId);
 }

@@ -14,7 +14,7 @@ import java.util.List;
 public interface CouncilMemberRepository extends JpaRepository<CouncilMember, Long> {
 
 
-    List<CouncilMember> findByCouncil_DateAndCouncil_Slot(LocalDate date, int slot);
+    List<CouncilMember> findByCouncil_DefenseDate(LocalDate date);
 
     List<CouncilMember> findByCouncil_Id(long id);
 

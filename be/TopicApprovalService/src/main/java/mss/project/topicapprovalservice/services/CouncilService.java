@@ -5,23 +5,24 @@ import mss.project.topicapprovalservice.dtos.requests.CouncilCreateRequest;
 import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 import mss.project.topicapprovalservice.dtos.responses.CouncilMemberResponse;
 import mss.project.topicapprovalservice.dtos.responses.CouncilResponse;
+import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
+import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.enums.Role;
 import mss.project.topicapprovalservice.enums.Status;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
-import mss.project.topicapprovalservice.pojos.AccountTopics;
-import mss.project.topicapprovalservice.pojos.Council;
-import mss.project.topicapprovalservice.pojos.CouncilMember;
-import mss.project.topicapprovalservice.pojos.Topics;
-import mss.project.topicapprovalservice.repositories.AccountTopicsRepository;
-import mss.project.topicapprovalservice.repositories.CouncilMemberRepository;
-import mss.project.topicapprovalservice.repositories.CouncilRepository;
-import mss.project.topicapprovalservice.repositories.TopicsRepository;
+import mss.project.topicapprovalservice.pojos.*;
+import mss.project.topicapprovalservice.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class CouncilService implements ICouncilService {
@@ -41,63 +42,104 @@ public class CouncilService implements ICouncilService {
     @Autowired
     private AccountTopicsRepository accountTopicsRepository;
 
+    @Autowired
+    private ProgressReviewCouncilRepository progressReviewCouncilRepository;
+
     private static final Random RANDOM = new Random();
 
-    private LocalDate getDateFromSemester(String semester) {
-        int Year = LocalDate.now().getYear();
-        return switch (semester.toUpperCase()){
-            case "SPRING" -> LocalDate.of(Year, 3, 1);
-            case "SUMMER" -> LocalDate.of(Year, 6, 1);
-            case "FALL" -> LocalDate.of(Year, 9, 1);
-            case "WINTER" -> LocalDate.of(Year, 12, 1);
-            default -> throw new AppException(ErrorCode.INVALID_SEMESTER);
-        };
+
+    private LocalDateTime getRandomDefenseDateInWeek15(List<Topics> topics) {
+
+        LocalDateTime LastReviewDate = topics.stream()
+                .map(topic -> {
+                    ProgressReviewCouncils reviewCouncil = progressReviewCouncilRepository.findByTopicAndMilestone(topic, Milestone.WEEK_12);
+                    if (reviewCouncil == null) {
+                        throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
+                    }
+                    if(!reviewCouncil.getStatus().equals(Status.APPROVED)) {
+                        throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_APPROVED);
+                    }
+                    return reviewCouncil.getReviewDate();
+                })
+                .max(LocalDateTime::compareTo)
+                .orElseThrow(() -> new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND));
+        LocalDateTime week15Start = LastReviewDate.toLocalDate().plusWeeks(3).atStartOfDay();
+        week15Start = week15Start.with(java.time.DayOfWeek.MONDAY);
+        LocalDateTime week15End = week15Start.with(DayOfWeek.SATURDAY);
+
+        long days = ChronoUnit.DAYS.between(week15Start, week15End);
+        long randomOffset = ThreadLocalRandom.current().nextLong(days + 1);
+        return week15Start.plusDays(randomOffset);
     }
 
 
-    private List<AccountDTO> getAvailableLecturers(LocalDate date, int slot, Long topicId) {
+    private List<AccountDTO> getAvailableLecturers(LocalDate date,  List<Long> topicListId) {
         List<Long> busyIds = councilMemberRepository
-                .findByCouncil_DateAndCouncil_Slot(date, slot)
+                .findByCouncil_DefenseDate(date)
                 .stream()
                 .map(CouncilMember::getAccountId)
                 .toList();
+        Set<Long> busySet = new HashSet<>(busyIds);
 
-        List<Long> topicRelatedLecturers = accountTopicsRepository
-                .findByTopics_Id(topicId)
-                .stream()
-                .map(AccountTopics::getAccountId)
-                .toList();
 
+        Set<Long> topicRelatedSet = new HashSet<>();
+        for(Long topicId : topicListId) {
+            Topics topic = topicsRepository.findById(topicId)
+                    .orElseThrow(() -> new AppException(ErrorCode.TOPIC_NOT_FOUND));
+
+            List<Long> topicRelatedLecturers = accountTopicsRepository
+                    .findByTopics_Id(topicId)
+                    .stream()
+                    .map(AccountTopics::getAccountId)
+                    .toList();
+            topicRelatedSet.addAll(topicRelatedLecturers);
+        }
         List<AccountDTO> allLecturers = accountFeignClient.getAllAccounts();
 
         return allLecturers.stream()
-                .filter(acc -> !busyIds.contains(acc.getId()))
-                .filter(acc -> !topicRelatedLecturers.contains(acc.getId()))
+                .filter(acc -> !busySet.contains(acc.getId()))
+                .filter(acc -> !topicRelatedSet.contains(acc.getId()))
                 .toList();
     }
 
     @Transactional
     @Override
     public CouncilResponse addCouncil(CouncilCreateRequest councilCreateRequest) {
-        Topics topic = topicsRepository.findById(councilCreateRequest.getTopicId())
-                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+
+        List<Topics> topicList = new ArrayList<>();
+        for (Long topicId : councilCreateRequest.getTopicId()) {
+            Topics topic = topicsRepository.findById(topicId)
+                    .orElseThrow(() -> new AppException(ErrorCode.TOPIC_NOT_FOUND));
+            if (topic.getCouncil() != null) {
+                throw new AppException(ErrorCode.TOPIC_ALREADY_ASSIGNED_TO_COUNCIL);
+            }
+            topicList.add(topic);
+        }
+
+        LocalDateTime date = getRandomDefenseDateInWeek15(topicList);
+        LocalDate defenseDate = date.toLocalDate();
+
         Council council = new Council();
-        council.setCouncilName("Hội đồng "+topic.getTitle());
-        council.setSemester(councilCreateRequest.getSemester());
+        council.setCouncilName("Hội Đồng Chấm ngày "+defenseDate);
+        council.setSemester("Học kỳ"+councilCreateRequest.getSemester());
         council.setStatus(Status.PLANNED);
-        council.setTopic(topic);
+        council.setDefenseDate(defenseDate);
 
-        LocalDate startDate = getDateFromSemester(councilCreateRequest.getSemester());
+        councilRepository.save(council);
 
-        int dayOffset = new Random().nextInt(5); // 0 -> 4
-        LocalDate defenseDate = startDate.plusDays(dayOffset);
-        council.setDate(LocalDate.from(defenseDate.atStartOfDay()));
+        LocalTime startTime = LocalTime.of(8, 0);
+        int totalMinutesPerTopic = 90 + 15; // 1 tiếng 30p + 15p nghỉ = 105 phút
 
-        int randomSlot = new Random().nextInt(5) + 1;
-        council.setSlot(randomSlot);
+        for (int i = 0; i < topicList.size(); i++) {
+            Topics topic = topicList.get(i);
+            LocalTime topicTime = startTime.plusMinutes((long) i * totalMinutesPerTopic);
+            topic.setCouncil(council);
+            topic.setDefenseTime(topicTime);
+        }
+        topicsRepository.saveAll(topicList);
 
-        List<AccountDTO> availableLecturers = getAvailableLecturers(defenseDate, randomSlot, topic.getId());
-        if(availableLecturers.size() < 4){
+        List<AccountDTO> availableLecturers = getAvailableLecturers(defenseDate, councilCreateRequest.getTopicId());
+        if (availableLecturers.size() < 4) {
             throw new AppException(ErrorCode.NOT_ENOUGH_LECTURERS);
         }
 
@@ -105,7 +147,7 @@ public class CouncilService implements ICouncilService {
         Collections.shuffle(modifiableList);
         List<AccountDTO> selectedMembers = modifiableList.subList(0, 4);
         List<CouncilMember> members = new ArrayList<>();
-        for(int i =0;i<selectedMembers.size();i++){
+        for (int i = 0; i < selectedMembers.size(); i++) {
             AccountDTO acc = selectedMembers.get(i);
             CouncilMember member = new CouncilMember();
             member.setAccountId(acc.getId());
@@ -117,8 +159,8 @@ public class CouncilService implements ICouncilService {
             });
             members.add(member);
         }
+        councilMemberRepository.saveAll(members);
         council.setCouncilMembers(members);
-        councilRepository.save(council);
 
         List<CouncilMemberResponse> memberResponses = members.stream()
                 .map(member -> {
@@ -136,15 +178,21 @@ public class CouncilService implements ICouncilService {
                             .build();
                 })
                 .toList();
+        List<TopicsDTOResponse> topicResponses = topicList.stream()
+                .map(topic -> TopicsDTOResponse.builder()
+                        .id(topic.getId())
+                        .title(topic.getTitle())
+                        .description(topic.getDescription())
+                        .build())
+                .toList();
 
         return CouncilResponse.builder()
                 .id(council.getId())
                 .councilName(council.getCouncilName())
                 .semester(council.getSemester())
-                .date(council.getDate().toString())
-                .slot(council.getSlot())
+                .date(council.getDefenseDate().toString())
                 .status(council.getStatus())
-                .topicName(topic.getTitle())
+                .topic(topicResponses)
                 .councilMembers(memberResponses)
                 .build();
     }
@@ -169,7 +217,7 @@ public class CouncilService implements ICouncilService {
         List<Council> councilList =councilRepository.findAll();
         List <CouncilResponse> councilResponses = new ArrayList<>();
         for(Council council : councilList){
-            List<CouncilMember> members = councilMemberRepository.findByCouncil_Id(council.getId());
+            List<CouncilMember> members = council.getCouncilMembers();
             List<CouncilMemberResponse> memberResponses = new ArrayList<>();
             for(CouncilMember member : members){
                 AccountDTO acc = accountFeignClient.getAccountById(member.getAccountId());
@@ -186,15 +234,26 @@ public class CouncilService implements ICouncilService {
                         .build();
                 memberResponses.add(memberResponse);
             }
+            List<Topics> topics = council.getTopics();
+            List<TopicsDTOResponse> topicResponses = new ArrayList<>();
+            for(Topics topic : topics){
+                Topics checkTopic= topicsRepository.findById(topic.getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.TOPIC_NOT_FOUND));
+                TopicsDTOResponse topicResponse = TopicsDTOResponse.builder()
+                        .id(checkTopic.getId())
+                        .title(checkTopic.getTitle())
+                        .description(checkTopic.getDescription())
+                        .build();
+                topicResponses.add(topicResponse);
+            }
             council.setCouncilMembers(members);
             CouncilResponse councilResponse = CouncilResponse.builder()
                     .id(council.getId())
                     .councilName(council.getCouncilName())
                     .semester(council.getSemester())
-                    .date(council.getDate().toString())
-                    .slot(council.getSlot())
+                    .date(council.getDefenseDate().toString())
                     .status(council.getStatus())
-                    .topicName(council.getTopic().getTitle())
+                    .topic(topicResponses)
                     .councilMembers(memberResponses)
                     .build();
             councilResponses.add(councilResponse);

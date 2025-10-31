@@ -42,7 +42,7 @@ public class TopicWithApprovalStatusResponse extends TopicsDTOResponse {
         this.setFilePathUrl(filePathUrl);
         this.setCreatedAt(createdAt);
         this.setUpdatedAt(updatedAt);
-        
+
         // Set this class fields
         this.approvalCount = approvalCount;
         this.requiredApprovals = requiredApprovals;

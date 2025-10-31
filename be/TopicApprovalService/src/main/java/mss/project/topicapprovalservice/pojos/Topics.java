@@ -1,12 +1,15 @@
 package mss.project.topicapprovalservice.pojos;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import mss.project.topicapprovalservice.enums.TopicStatus;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalTime;
+
+
 
 @Entity
 @Table(name = "topics")
@@ -34,6 +37,9 @@ public class Topics {
     @Column(name = "file_path_url")
     private String filePathUrl;
 
+    @Column(name = "defense_time")
+    private LocalTime defenseTime;
+
     @Column(name = "created_by")
     private String createdBy;
 
@@ -51,6 +57,11 @@ public class Topics {
 
     @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TopicApproval> approvals = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "council_id")
+    @JsonBackReference
+    private Council council;
 
     @PrePersist
     protected void onCreate() {
