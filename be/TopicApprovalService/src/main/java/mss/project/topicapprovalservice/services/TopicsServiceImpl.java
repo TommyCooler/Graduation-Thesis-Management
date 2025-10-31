@@ -16,6 +16,8 @@ import mss.project.topicapprovalservice.repositories.TopicsRepository;
 import mss.project.topicapprovalservice.repositories.AccountTopicsRepository;
 import mss.project.topicapprovalservice.enums.TopicRole;
 import mss.project.topicapprovalservice.enums.TopicStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class TopicsServiceImpl implements TopicService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TopicsServiceImpl.class);
 
     @Autowired
     private AuthorizationService authorizationService;
@@ -259,12 +263,15 @@ public class TopicsServiceImpl implements TopicService {
     @Override
     @Transactional
     public TopicWithApprovalStatusResponse approveTopicV2(Long topicId, String approverEmail, String approverName, String comment) {
+        logger.info("Approving topic {} by user {} ({})", topicId, approverName, approverEmail);
+        
         // Find topic
         Topics topic = topicsRepository.findById(topicId)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
 
         // Check if already approved by this user
         if (topicApprovalRepository.existsByTopicIdAndApproverEmail(topicId, approverEmail)) {
+            logger.warn("Topic {} already approved by user {}", topicId, approverEmail);
             throw new AppException(ErrorCode.TOPIC_ALREADY_APPROVED);
         }
 
@@ -276,6 +283,8 @@ public class TopicsServiceImpl implements TopicService {
                 .comment(comment)
                 .build();
         topicApprovalRepository.save(approval);
+        logger.info("Saved approval record: topicId={}, approverEmail={}, approverName={}", 
+                    topicId, approverEmail, approverName);
 
         // Update approval count
         topic.setApprovalCount(topic.getApprovalCount() + 1);
@@ -284,9 +293,13 @@ public class TopicsServiceImpl implements TopicService {
         if (topic.getApprovalCount() == 1) {
             // First approval - change to UNDER_REVIEW
             topic.setStatus(TopicStatus.UNDER_REVIEW);
+            logger.info("Topic {} status changed to UNDER_REVIEW (1/{})", 
+                        topicId, topic.getRequiredApprovals());
         } else if (topic.getApprovalCount() >= topic.getRequiredApprovals()) {
             // Fully approved - change to APPROVED
             topic.setStatus(TopicStatus.APPROVED);
+            logger.info("Topic {} status changed to APPROVED ({}/{})", 
+                        topicId, topic.getApprovalCount(), topic.getRequiredApprovals());
         }
 
         topicsRepository.save(topic);
@@ -310,14 +323,33 @@ public class TopicsServiceImpl implements TopicService {
 
     @Override
     public List<TopicWithApprovalStatusResponse> getApprovedTopicsByUser(String userEmail) {
-        // Get all UNDER_REVIEW topics (partially approved)
-        List<Topics> underReviewTopics = topicsRepository.findByStatus(TopicStatus.UNDER_REVIEW);
+        logger.info("Getting approved topics for user: {}", userEmail);
+        
+        // Get all approvals by this user using optimized query
+        List<TopicApproval> userApprovals = topicApprovalRepository.findByApproverEmail(userEmail);
+        logger.info("Found {} approval records for user {}", userApprovals.size(), userEmail);
 
-        // Filter topics approved by this user
-        return underReviewTopics.stream()
-                .filter(topic -> topicApprovalRepository.existsByTopicIdAndApproverEmail(topic.getId(), userEmail))
-                .map(topic -> convertToTopicWithApprovalStatusDTO(topic, userEmail))
+        // Get all topics that user has approved
+        List<TopicWithApprovalStatusResponse> result = userApprovals.stream()
+                .map(approval -> {
+                    Topics topic = approval.getTopic();
+                    logger.debug("Processing topic: id={}, title={}, status={}", 
+                                topic.getId(), topic.getTitle(), topic.getStatus());
+                    
+                    // Only return topics that are still in review process or approved
+                    // Exclude rejected topics
+                    if (topic.getStatus() == TopicStatus.UNDER_REVIEW || 
+                        topic.getStatus() == TopicStatus.APPROVED) {
+                        return convertToTopicWithApprovalStatusDTO(topic, userEmail);
+                    }
+                    return null;
+                })
+                .filter(dto -> dto != null)
+                .distinct() // Remove duplicates if any
                 .collect(Collectors.toList());
+        
+        logger.info("Returning {} approved topics for user {}", result.size(), userEmail);
+        return result;
     }
 
     @Override

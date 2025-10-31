@@ -337,25 +337,25 @@ class TopicService {
   /**
    * Lấy thống kê đề tài
    */
-  async getTopicStats(): Promise<TopicStats> {
-    try {
-      const response = await fetch(`${this.baseUrl}/stats`, {
-        method: 'GET',
-        headers: this.getAuthHeaders(),
-        credentials: 'include',
-      });
+  // async getTopicStats(): Promise<TopicStats> {
+  //   try {
+  //     const response = await fetch(`${this.baseUrl}/stats`, {
+  //       method: 'GET',
+  //       headers: this.getAuthHeaders(),
+  //       credentials: 'include',
+  //     });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+  //     if (!response.ok) {
+  //       throw new Error(`HTTP error! status: ${response.status}`);
+  //     }
 
-      const data = await response.json();
-      return data.result;
-    } catch (error) {
-      console.error('Error fetching topic stats:', error);
-      throw error;
-    }
-  }
+  //     const data = await response.json();
+  //     return data.result;
+  //   } catch (error) {
+  //     console.error('Error fetching topic stats:', error);
+  //     throw error;
+  //   }
+  // }
 
   /**
    * Upload file cho đề tài

@@ -26,7 +26,6 @@ interface UseTopicReturn {
   // Actions
   fetchTopics: (filters?: TopicFilters, page?: number, size?: number) => Promise<void>;
   fetchTopicById: (id: number) => Promise<void>;
-  fetchStats: () => Promise<void>;
   createTopic: (data: TopicCreateRequest) => Promise<Topic | null>;
   createTopicWithFile: (data: TopicCreateRequest, file: File) => Promise<Topic | null>;
   createTopicWithSubmission: (data: TopicCreateRequest) => Promise<Topic | null>;
@@ -101,19 +100,6 @@ export const useTopic = (): UseTopicReturn => {
       console.error('Error fetching topic by ID:', error);
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch statistics
-   */
-  const fetchStats = useCallback(async () => {
-    try {
-      const statsData = await topicService.getTopicStats();
-      setStats(statsData);
-    } catch (error) {
-      message.error('Không thể tải thống kê đề tài');
-      console.error('Error fetching stats:', error);
     }
   }, []);
 
@@ -401,8 +387,7 @@ export const useTopic = (): UseTopicReturn => {
   useEffect(() => {
     // Silently load data, don't show errors to user
     fetchTopics().catch(err => console.warn('Initial topics load failed:', err));
-    fetchStats().catch(err => console.warn('Initial stats load failed:', err));
-  }, [fetchTopics, fetchStats]);
+  }, [fetchTopics]);
 
   return {
     // Data
@@ -421,7 +406,6 @@ export const useTopic = (): UseTopicReturn => {
     // Actions
     fetchTopics,
     fetchTopicById,
-    fetchStats,
     createTopic,
     createTopicWithFile,
     createTopicWithSubmission,

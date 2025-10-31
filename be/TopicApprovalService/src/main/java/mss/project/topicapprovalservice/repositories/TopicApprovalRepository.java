@@ -19,4 +19,7 @@ public interface TopicApprovalRepository extends JpaRepository<TopicApproval, Lo
     long countByTopicId(Long topicId);
     
     void deleteByTopicId(Long topicId);
+    
+    // New method to get all approvals by a user
+    List<TopicApproval> findByApproverEmail(String approverEmail);
 }
