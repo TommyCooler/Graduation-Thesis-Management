@@ -1,12 +1,9 @@
 package mss.project.topicapprovalservice.controllers;
 
 import jakarta.validation.Valid;
-import lombok.Getter;
 import mss.project.topicapprovalservice.dtos.requests.CreateReviewCouncilRequest;
-import mss.project.topicapprovalservice.dtos.requests.GiveCommentRequest;
 import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.services.IProgressReviewCouncilService;
-import mss.project.topicapprovalservice.services.ProgressReviewCouncilServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
