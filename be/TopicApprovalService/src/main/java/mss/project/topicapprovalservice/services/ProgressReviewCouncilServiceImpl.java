@@ -183,6 +183,28 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
         }
     }
 
+    @Override
+    public List<GetAllReviewCouncilResponse> getAllReviewCouncilForCalendar() {
+        List<ProgressReviewCouncils> councilsList = progressReviewCouncilRepository.findAll();
+        if(councilsList.isEmpty()) {
+            throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
+        }
+
+        return councilsList.stream().map(council -> GetAllReviewCouncilResponse.builder()
+                .councilID(council.getCouncilID())
+                .councilName(council.getCouncilName())
+                .topicID(council.getTopic().getId())
+                .topicTitle(council.getTopic().getTitle())
+                .milestone(council.getMilestone())
+                .reviewDate(council.getReviewDate())
+                .status(council.getStatus().getValue())
+                .createdAt(council.getCreatedAt())
+                .reviewFormat(council.getReviewFormat())
+                .meetingLink(council.getMeetingLink())
+                .roomNumber(council.getRoomNumber())
+                .build()).toList();
+    }
+
 
     private void validateForWeek4(Topics topic, List<Long> memberIDs, CreateReviewCouncilRequest request) {
         Long supervisorID = accountTopicsRepository.findByTopics(topic).getAccountId();

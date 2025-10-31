@@ -69,6 +69,16 @@ public class ProgressReviewCouncilController {
                 .build();
     }
 
+    @GetMapping
+    public ApiResponse<List<GetAllReviewCouncilResponse>> getAllReviewCouncilsForCalendar() {
+        List<GetAllReviewCouncilResponse> result = progressReviewCouncilService.getAllReviewCouncilForCalendar();
+        return ApiResponse.<List<GetAllReviewCouncilResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Fetched all Progress Review Councils successfully")
+                .data(result)
+                .build();
+    }
+
 
 
 }
