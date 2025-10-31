@@ -7,6 +7,9 @@ import {
   FileAddOutlined,
   SearchOutlined,
   LogoutOutlined,
+  UnorderedListOutlined,
+  DashboardOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -54,9 +57,21 @@ export default function Header() {
     router.push('/auth/login');
   };
 
+  // Kiểm tra xem user có phải là Head of Department không
+  const isHeadOfDepartment = claims?.role?.toLowerCase() === 'headofdepartment' || 
+                             claims?.role?.toLowerCase() === 'head_of_department';
+
   const menu = {
     items: [
       { key: 'profile', label: <Link href="/profile">Hồ sơ</Link>, icon: <UserOutlined /> },
+      ...(isHeadOfDepartment ? [
+        { type: 'divider' as const },
+        { 
+          key: 'management', 
+          label: <Link href="/head-of-department/dashboard">Quản lý</Link>, 
+          icon: <DashboardOutlined /> 
+        },
+      ] : []),
       { type: 'divider' as const },
       { key: 'logout', label: <span onClick={onLogout}>Đăng xuất</span>, icon: <LogoutOutlined /> },
     ],
@@ -70,18 +85,31 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center space-x-6">
-          <nav className="hidden lg:flex space-x-4">
-            <Link href="/topics">
-              <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                Đăng tải đề tài
-              </Button>
-            </Link>
-            <Link href="/check-plagiarism">
-              <Button type="text" icon={<SearchOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                Kiểm tra đạo văn
-              </Button>
-            </Link>
-          </nav>
+          {/* Chỉ hiện navigation khi đã đăng nhập */}
+          {claims && (
+            <nav className="hidden lg:flex space-x-4">
+              <Link href="/topics">
+                <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Đăng tải đề tài
+                </Button>
+              </Link>
+              <Link href="/check-plagiarism">
+                <Button type="text" icon={<SearchOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Kiểm tra đạo văn
+                </Button>
+              </Link>
+              <Link href="/topics/list">
+                <Button type="text" icon={<UnorderedListOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Danh sách đề tài
+                </Button>
+              </Link>
+              <Link href="/topic-history">
+                <Button type="text" icon={<HistoryOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Lịch sử đề tài
+                </Button>
+              </Link>
+            </nav>
+          )}
 
           <Space>
             {!claims ? (

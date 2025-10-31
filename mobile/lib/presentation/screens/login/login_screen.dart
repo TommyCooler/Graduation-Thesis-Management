@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:another_flushbar/flushbar.dart';
-
-const FPT_ORANGE = Color(0xFFFF6600);
+import 'package:mobile/core/constants/app_colors.dart';
+import 'package:mobile/core/routes/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,7 +13,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtl = TextEditingController();
-  final _passCtl  = TextEditingController();
+  final _passCtl = TextEditingController();
   bool _obscure = true;
   bool _isSubmitting = false;
 
@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _showBar(String msg, {Color color = FPT_ORANGE, IconData icon = Icons.info}) {
+  void _showBar(String msg, {Color color = AppColors.fptOrange, IconData icon = Icons.info}) {
     Flushbar(
       message: msg,
       icon: Icon(icon, color: Colors.white),
@@ -41,20 +41,38 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
-    _showBar("Đang xử lý đăng nhập...", icon: Icons.login ,color: Colors.blueGrey);
+    _showBar(
+      "Đang xử lý đăng nhập...",
+      icon: Icons.login,
+      color: Colors.blueGrey,
+    );
 
     // TODO: call API đăng nhập ở đây
     await Future.delayed(const Duration(seconds: 1)); // giả lập gọi API
 
+    if (!mounted) return;
+    
     setState(() => _isSubmitting = false);
-    _showBar("Đăng nhập thành công!", color: Colors.green, icon: Icons.check_circle);
-    // TODO: Navigator.pushReplacementNamed(context, '/home');
+    _showBar(
+      "Đăng nhập thành công!",
+      color: AppColors.success,
+      icon: Icons.check_circle,
+    );
+    
+    // Navigate to home screen
+    // Sử dụng pushReplacementNamed để không thể back về login screen
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Đăng nhập")),
+      appBar: AppBar(
+        title: const Text("Đăng nhập"),
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -66,95 +84,128 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.lock_outline, size: 56, color: FPT_ORANGE),
+                    // Logo/Icon
+                    const Icon(
+                      Icons.lock_outline,
+                      size: 56,
+                      color: AppColors.fptOrange,
+                    ),
                     const SizedBox(height: 16),
-                    const Text(
+                    
+                    // Title
+                    Text(
                       "Chào mừng trở lại",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                      style: Theme.of(context).textTheme.headlineLarge,
                     ),
-                    const Text(
+                    const SizedBox(height: 8),
+                    Text(
                       "Hệ thống quản lý đồ án FPT",
-                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 32),
 
-                    // Email
+                    // Email Field
                     TextFormField(
                       controller: _emailCtl,
                       keyboardType: TextInputType.emailAddress,
                       decoration: const InputDecoration(
                         labelText: "Email",
+                        hintText: "example@fpt.edu.vn",
                         prefixIcon: Icon(Icons.alternate_email),
                       ),
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return "Vui lòng nhập email";
+                        if (v == null || v.trim().isEmpty) {
+                          return "Vui lòng nhập email";
+                        }
                         final email = v.trim();
                         final ok = RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(email);
                         return ok ? null : "Email không hợp lệ";
                       },
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 16),
 
-                    // Password
+                    // Password Field
                     TextFormField(
                       controller: _passCtl,
                       obscureText: _obscure,
                       decoration: InputDecoration(
                         labelText: "Mật khẩu",
+                        hintText: "Nhập mật khẩu của bạn",
                         prefixIcon: const Icon(Icons.lock),
                         suffixIcon: IconButton(
                           onPressed: () => setState(() => _obscure = !_obscure),
-                          icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                          icon: Icon(
+                            _obscure ? Icons.visibility_off : Icons.visibility,
+                          ),
                         ),
                       ),
                       validator: (v) {
-                        if (v == null || v.isEmpty) return "Vui lòng nhập mật khẩu";
-                        if (v.length < 6) return "Tối thiểu 6 ký tự";
+                        if (v == null || v.isEmpty) {
+                          return "Vui lòng nhập mật khẩu";
+                        }
+                        if (v.length < 6) {
+                          return "Mật khẩu tối thiểu 6 ký tự";
+                        }
                         return null;
                       },
                     ),
                     const SizedBox(height: 8),
 
-                    // Hàng phụ: quên mật khẩu
+                    // Forgot Password
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         TextButton(
                           onPressed: () {
-                            _showBar("Đi tới đặt lại mật khẩu", icon: Icons.key, color: Colors.blueGrey);
-                            // TODO: Navigator.pushNamed(context, '/forgot-password');
+                            _showBar(
+                              "Đi tới đặt lại mật khẩu",
+                              icon: Icons.key,
+                              color: AppColors.info,
+                            );
+                            // Navigator.pushNamed(context, AppRoutes.forgotPassword);
                           },
                           child: const Text("Quên mật khẩu?"),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 16),
 
-                    // Nút đăng nhập
+                    // Login Button
                     SizedBox(
                       width: double.infinity,
+                      height: 50,
                       child: ElevatedButton(
                         onPressed: _isSubmitting ? null : _onLogin,
                         child: _isSubmitting
                             ? const SizedBox(
-                                width: 22, height: 22,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
-                            : const Text("Đăng nhập", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                            : const Text("Đăng nhập"),
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
 
-                    // Đăng ký (tuỳ chọn)
+                    // Register Link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         const Text("Chưa có tài khoản? "),
                         TextButton(
                           onPressed: () {
-                            _showBar("Đi tới đăng ký", icon: Icons.person_add, color: Colors.blueGrey);
-                            // TODO: Navigator.pushNamed(context, '/signup');
+                            _showBar(
+                              "Đi tới đăng ký",
+                              icon: Icons.person_add,
+                              color: AppColors.info,
+                            );
+                            // Navigator.pushNamed(context, AppRoutes.register);
                           },
                           child: const Text("Tạo tài khoản"),
                         ),

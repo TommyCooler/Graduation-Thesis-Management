@@ -8,12 +8,12 @@ import {
   Tag, 
   Button,
   Input,
-  Select,
   Row,
   Col,
   Spin,
   Empty,
-  Tooltip
+  Tooltip,
+  Badge
 } from 'antd';
 import { 
   SearchOutlined, 
@@ -22,97 +22,114 @@ import {
   FileTextOutlined,
   CalendarOutlined,
   FilterOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons';
 import React, { JSX, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Header from '../../../components/combination/Header';
 import Footer from '../../../components/combination/Footer';
-import { useTopic } from '../../../hooks/useTopic';
+import { topicService } from '../../../services/topicService';
 import { useAuth } from '../../../hooks/useAuth';
-import { Topic, TOPIC_STATUS, STATUS_DISPLAY, STATUS_COLORS } from '../../../types/topic';
+import { TopicWithApprovalStatus, TOPIC_STATUS, STATUS_DISPLAY, STATUS_COLORS } from '../../../types/topic';
 import type { ColumnsType } from 'antd/es/table';
 import { Modal, Form, message } from 'antd';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
-const { Option } = Select;
 
 export default function TopicsList(): JSX.Element {
   const router = useRouter();
-  const { topics, loading, pagination, fetchTopics } = useTopic();
   const { isAuthenticated, getToken } = useAuth();
   
+  const [topics, setTopics] = useState<TopicWithApprovalStatus[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
   const [searchText, setSearchText] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [isEditModalVisible, setIsEditModalVisible] = useState<boolean>(false);
-  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [editingTopic, setEditingTopic] = useState<TopicWithApprovalStatus | null>(null);
   const [form] = Form.useForm();
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [editPermissions, setEditPermissions] = useState<Record<number, boolean>>({});
 
-  // Load topics on mount and when filters change
+  // Load topics on mount
   useEffect(() => {
-    loadTopics();
-    loadCurrentUser();
-  }, [statusFilter]);
+    loadApprovedTopics();
+  }, []);
 
-  const loadCurrentUser = () => {
-    const token = getToken();
-    if (token) {
-      try {
-        // Decode JWT to get userId
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setCurrentUserId(payload.userId ? parseInt(payload.userId) : null);
-      } catch (error) {
-        console.error('Error decoding token:', error);
-      }
+  // Load permissions when auth status changes or topics change
+  useEffect(() => {
+    if (isAuthenticated && topics.length > 0) {
+      loadEditPermissions();
+    }
+  }, [isAuthenticated, topics.length]);
+
+  const loadEditPermissions = async () => {
+    if (!isAuthenticated || topics.length === 0) return;
+    
+    try {
+      const permissions: Record<number, boolean> = {};
+      await Promise.all(
+        topics.map(async (topic) => {
+          const canEdit = await topicService.canUserEditTopic(topic.id);
+          permissions[topic.id] = canEdit;
+        })
+      );
+      setEditPermissions(permissions);
+    } catch (error) {
+      console.error('Error loading edit permissions:', error);
     }
   };
 
-  const loadTopics = async () => {
+  const loadApprovedTopics = async () => {
     try {
-      await fetchTopics(
-        {
-          searchText: searchText || undefined,
-          status: statusFilter || undefined,
-          sortBy: 'createdAt',
-          sortOrder: 'desc', // Mới nhất ở đầu
-        },
-        currentPage - 1,
-        pageSize
-      );
+      setLoading(true);
+      // Lấy danh sách topics đã được fully approved (2/2)
+      const fullyApproved = await topicService.getFullyApprovedTopics();
+      setTopics(fullyApproved);
+      
+      // Kiểm tra quyền edit cho từng topic
+      if (isAuthenticated && fullyApproved.length > 0) {
+        const permissions: Record<number, boolean> = {};
+        await Promise.all(
+          fullyApproved.map(async (topic) => {
+            const canEdit = await topicService.canUserEditTopic(topic.id);
+            permissions[topic.id] = canEdit;
+          })
+        );
+        setEditPermissions(permissions);
+      }
     } catch (error) {
-      console.error('Error loading topics:', error);
+      console.error('Error loading approved topics:', error);
+      message.error('Không thể tải danh sách đề tài');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSearch = () => {
     setCurrentPage(1);
-    loadTopics();
+    loadApprovedTopics();
   };
 
   const handleReset = () => {
     setSearchText('');
-    setStatusFilter('');
     setCurrentPage(1);
-    fetchTopics({}, 0, pageSize);
+    loadApprovedTopics();
+  };
+
+  const getFilteredTopics = () => {
+    if (!searchText) return topics;
+    return topics.filter(
+      (topic) =>
+        topic.title.toLowerCase().includes(searchText.toLowerCase()) ||
+        topic.description.toLowerCase().includes(searchText.toLowerCase())
+    );
   };
 
   const handleTableChange = (page: number, size?: number) => {
     setCurrentPage(page);
     if (size) setPageSize(size);
-    fetchTopics(
-      {
-        searchText: searchText || undefined,
-        status: statusFilter || undefined,
-        sortBy: 'createdAt',
-        sortOrder: 'desc', // Mới nhất ở đầu
-      },
-      page - 1,
-      size || pageSize
-    );
   };
 
   const handleViewDetail = (topicId: number) => {
@@ -123,12 +140,11 @@ export default function TopicsList(): JSX.Element {
     router.push(`/topics/detail/${topicId}`);
   };
 
-  const handleEditTopic = (topic: Topic) => {
+  const handleEditTopic = (topic: TopicWithApprovalStatus) => {
     setEditingTopic(topic);
     form.setFieldsValue({
       title: topic.title,
       description: topic.description,
-      status: topic.status,
     });
     setIsEditModalVisible(true);
   };
@@ -136,6 +152,17 @@ export default function TopicsList(): JSX.Element {
   const handleEditSubmit = async () => {
     try {
       const values = await form.validateFields();
+      
+      if (!editingTopic) return;
+      
+      // Kiểm tra quyền edit trước khi submit
+      const canEdit = await topicService.canUserEditTopic(editingTopic.id);
+      if (!canEdit) {
+        message.error('Bạn không có quyền chỉnh sửa đề tài này!');
+        setIsEditModalVisible(false);
+        return;
+      }
+      
       const token = getToken();
       const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
 
@@ -151,7 +178,6 @@ export default function TopicsList(): JSX.Element {
           body: JSON.stringify({
             title: values.title,
             description: values.description,
-            status: values.status,
           }),
         }
       );
@@ -165,17 +191,10 @@ export default function TopicsList(): JSX.Element {
       message.success('Cập nhật đề tài thành công! Lịch sử thay đổi đã được lưu.');
       setIsEditModalVisible(false);
       form.resetFields();
-      loadTopics(); // Reload danh sách
+      loadApprovedTopics(); // Reload danh sách
     } catch (error: any) {
       message.error(error.message || 'Có lỗi xảy ra khi cập nhật đề tài');
     }
-  };
-
-  const isTopicOwner = (topic: Topic): boolean => {
-    // Tạm thời cho phép tất cả user đã login có thể chỉnh sửa
-    // Để test TopicHistoryService ghi nhận thay đổi
-    // TODO: Sau này sẽ kiểm tra topic.createdBy === currentUserId
-    return isAuthenticated;
   };
 
   const formatDate = (dateString: string | null): string => {
@@ -194,7 +213,7 @@ export default function TopicsList(): JSX.Element {
     }
   };
 
-  const columns: ColumnsType<Topic> = [
+  const columns: ColumnsType<TopicWithApprovalStatus> = [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -281,7 +300,7 @@ export default function TopicsList(): JSX.Element {
       width: 180,
       align: 'center',
       fixed: 'right',
-      render: (_: any, record: Topic) => (
+      render: (_: any, record: TopicWithApprovalStatus) => (
         <Space>
           <Tooltip title={isAuthenticated ? "Xem chi tiết" : "Đăng nhập để xem chi tiết"}>
             <Button
@@ -293,8 +312,8 @@ export default function TopicsList(): JSX.Element {
               Xem
             </Button>
           </Tooltip>
-          {isAuthenticated && isTopicOwner(record) && (
-            <Tooltip title="Chỉnh sửa đề tài">
+          {isAuthenticated && editPermissions[record.id] && (
+            <Tooltip title="Chỉnh sửa đề tài (chỉ người tạo và người tham gia)">
               <Button
                 type="default"
                 icon={<EditOutlined />}
@@ -339,27 +358,8 @@ export default function TopicsList(): JSX.Element {
                   size="large"
                 />
               </Col>
-              
-              <Col xs={24} sm={12} md={6}>
-                <Select
-                  placeholder="Lọc theo trạng thái"
-                  value={statusFilter || undefined}
-                  onChange={setStatusFilter}
-                  allowClear
-                  size="large"
-                  className="w-full"
-                  suffixIcon={<FilterOutlined />}
-                >
-                  <Option value={TOPIC_STATUS.DRAFT}>Nháp</Option>
-                  <Option value={TOPIC_STATUS.PENDING}>Chờ xử lý</Option>
-                  <Option value={TOPIC_STATUS.SUBMITTED}>Đã nộp</Option>
-                  <Option value={TOPIC_STATUS.UNDER_REVIEW}>Đang xem xét</Option>
-                  <Option value={TOPIC_STATUS.APPROVED}>Đã duyệt</Option>
-                  <Option value={TOPIC_STATUS.REJECTED}>Từ chối</Option>
-                </Select>
-              </Col>
 
-              <Col xs={24} sm={24} md={10}>
+              <Col xs={24} sm={24} md={14}>
                 <Space className="w-full justify-end">
                   <Button 
                     size="large" 
@@ -386,19 +386,19 @@ export default function TopicsList(): JSX.Element {
             <Spin spinning={loading} tip="Đang tải dữ liệu...">
               {topics.length === 0 && !loading ? (
                 <Empty
-                  description="Chưa có đề tài nào"
+                  description="Chưa có đề tài nào được duyệt"
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ) : (
-                <Table<Topic>
+                <Table<TopicWithApprovalStatus>
                   columns={columns}
-                  dataSource={topics}
+                  dataSource={getFilteredTopics()}
                   rowKey="id"
                   loading={loading}
                   pagination={{
                     current: currentPage,
                     pageSize: pageSize,
-                    total: pagination?.total || 0,
+                    total: getFilteredTopics().length,
                     showSizeChanger: true,
                     showTotal: (total) => `Tổng cộng ${total} đề tài`,
                     pageSizeOptions: ['10', '20', '50', '100'],
@@ -416,15 +416,7 @@ export default function TopicsList(): JSX.Element {
             <Row gutter={16} className="mt-6">
               <Col xs={24} sm={8}>
                 <Card className="text-center">
-                  <Text type="secondary">Tổng đề tài</Text>
-                  <Title level={3} className="mb-0 mt-2">
-                    {pagination?.total || topics.length}
-                  </Title>
-                </Card>
-              </Col>
-              <Col xs={24} sm={8}>
-                <Card className="text-center">
-                  <Text type="secondary">Đang hiển thị</Text>
+                  <Text type="secondary">Tổng đề tài đã duyệt</Text>
                   <Title level={3} className="mb-0 mt-2">
                     {topics.length}
                   </Title>
@@ -432,9 +424,17 @@ export default function TopicsList(): JSX.Element {
               </Col>
               <Col xs={24} sm={8}>
                 <Card className="text-center">
+                  <Text type="secondary">Đang hiển thị</Text>
+                  <Title level={3} className="mb-0 mt-2">
+                    {getFilteredTopics().length}
+                  </Title>
+                </Card>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Card className="text-center">
                   <Text type="secondary">Trang hiện tại</Text>
                   <Title level={3} className="mb-0 mt-2">
-                    {currentPage} / {pagination?.totalPages || 1}
+                    {currentPage} / {Math.ceil(getFilteredTopics().length / pageSize) || 1}
                   </Title>
                 </Card>
               </Col>
@@ -481,24 +481,6 @@ export default function TopicsList(): JSX.Element {
               maxLength={500}
             />
           </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Trạng thái"
-            rules={[{ required: true, message: 'Vui lòng chọn trạng thái!' }]}
-          >
-            <Select placeholder="Chọn trạng thái" size="large">
-              <Option value={TOPIC_STATUS.DRAFT}>Nháp</Option>
-              <Option value={TOPIC_STATUS.PENDING}>Chờ xử lý</Option>
-              <Option value={TOPIC_STATUS.SUBMITTED}>Đã nộp</Option>
-            </Select>
-          </Form.Item>
-
-          <div className="bg-blue-50 p-3 rounded">
-            <Text type="secondary" className="text-sm">
-              💡 Lưu ý: Mọi thay đổi sẽ được lưu vào lịch sử và có thể xem lại tại trang Lịch sử thay đổi.
-            </Text>
-          </div>
         </Form>
       </Modal>
 

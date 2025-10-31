@@ -47,6 +47,7 @@ import { useTopic } from '../../hooks/useTopic';
 import { TopicCreateRequest, TOPIC_STATUS } from '../../types/topic';
 import { plagiarismService } from '../../services/plagiarismService';
 import { useAuth } from '../../hooks/useAuth';
+import { accountService, Account } from '../../services/accountService';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -55,7 +56,12 @@ const { Option } = Select;
 const SCHOOL_NAME = 'TRƯỜNG ĐẠI HỌC FPT';
 const FORM_TITLE = 'ĐĂNG KÝ ĐỀ TÀI';
 
-type Member = { fullName: string; lecturerId: string; note?: string };
+type Member = { 
+  accountId: number;
+  fullName: string; 
+  email: string; 
+  note?: string;
+};
 
 interface TopicFormValues {
   docDate?: Dayjs;
@@ -66,14 +72,13 @@ interface TopicFormValues {
 export default function TopicUpload(): JSX.Element {
   const router = useRouter();
   const [form] = Form.useForm<TopicFormValues>();
-  const [keywords, setKeywords] = useState<string[]>([]);
-  const [inputKeyword, setInputKeyword] = useState<string>('');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
   
   const [members, setMembers] = useState<Member[]>([]);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
   const [memberDrafts, setMemberDrafts] = useState<Member[]>([]);
+  const [availableAccounts, setAvailableAccounts] = useState<Account[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
 
   const [downloadFormat, setDownloadFormat] = useState<'docx' | 'pdf'>('docx');
 
@@ -102,7 +107,7 @@ export default function TopicUpload(): JSX.Element {
       const membersText =
         members.length > 0
           ? `\n\nThành viên:\n${members
-              .map((m, i) => `${i + 1}. ${m.fullName} - ${m.lecturerId}${m.note ? ` (${m.note})` : ''}`)
+              .map((m, i) => `${i + 1}. ${m.fullName} - ${m.email}${m.note ? ` (${m.note})` : ''}`)
               .join('\n')}`
           : '\n\nThành viên: (trống)';
 
@@ -111,7 +116,6 @@ export default function TopicUpload(): JSX.Element {
 
       const descriptionWithKeywords =
         `${headerText}\n${piText}\n\n${values.description}` +
-        (keywords.length ? `\n\nTừ khóa: ${keywords.join(', ')}` : '') +
         membersText;
 
       const topicData: TopicCreateRequest = {
@@ -195,8 +199,6 @@ export default function TopicUpload(): JSX.Element {
 
         // Reset form và chuyển trang
         form.resetFields();
-        setKeywords([]);
-        setInputKeyword('');
         setMembers([]);
         setTimeout(() => router.push('/topics/list'), 1500);
       }
@@ -207,31 +209,54 @@ export default function TopicUpload(): JSX.Element {
     }
   };
 
-  const addKeyword = () => {
-    if (inputKeyword && !keywords.includes(inputKeyword)) {
-      setKeywords([...keywords, inputKeyword]);
-      setInputKeyword('');
+  // Members modal handlers
+  const openMemberModal = async () => {
+    setLoadingAccounts(true);
+    setMemberModalOpen(true);
+    
+    try {
+      const accounts = await accountService.getAllAccounts();
+      setAvailableAccounts(accounts);
+      setMemberDrafts([...members, { accountId: 0, fullName: '', email: '', note: '' }]); // auto add new row when opening
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+      message.error('Không thể tải danh sách người dùng');
+    } finally {
+      setLoadingAccounts(false);
     }
   };
-  const removeKeyword = (k: string) => setKeywords(keywords.filter((x) => x !== k));
-
-  // Members modal handlers
-  const openMemberModal = () => {
-    setMemberDrafts([...members, { fullName: '', lecturerId: '', note: '' }]); // auto add new row when opening
-    setMemberModalOpen(true);
-  };
+  
   const confirmMembers = () => {
-    setMembers(memberDrafts.filter((m) => m.fullName || m.lecturerId));
+    setMembers(memberDrafts.filter((m) => m.fullName || m.email));
     setMemberModalOpen(false);
   };
-  const addMemberDraft = () => setMemberDrafts((prev) => [...prev, { fullName: '', lecturerId: '', note: '' }]);
-  const updateMemberDraft = (idx: number, key: keyof Member, value: string) => {
+  
+  const addMemberDraft = () => setMemberDrafts((prev) => [...prev, { accountId: 0, fullName: '', email: '', note: '' }]);
+  
+  const updateMemberDraft = (idx: number, key: keyof Member, value: string | number) => {
     setMemberDrafts((prev) => {
       const clone = [...prev];
       clone[idx] = { ...clone[idx], [key]: value };
       return clone;
     });
   };
+  
+  const handleSelectAccount = (idx: number, accountId: number) => {
+    const selectedAccount = availableAccounts.find(acc => acc.id === accountId);
+    if (selectedAccount) {
+      setMemberDrafts((prev) => {
+        const clone = [...prev];
+        clone[idx] = {
+          ...clone[idx],
+          accountId: selectedAccount.id,
+          fullName: selectedAccount.name,
+          email: selectedAccount.email,
+        };
+        return clone;
+      });
+    }
+  };
+  
   const removeMemberDraft = (idx: number) => setMemberDrafts((prev) => prev.filter((_, i) => i !== idx));
 
   const removeMember = (idx: number) => {
@@ -242,7 +267,7 @@ export default function TopicUpload(): JSX.Element {
   const columns = [
     { title: 'STT', dataIndex: 'index', width: 80, align: 'center' as const, render: (_: any, __: any, idx: number) => idx + 1 },
     { title: 'Họ và tên', dataIndex: 'fullName' },
-    { title: 'Mã số giảng viên', dataIndex: 'lecturerId', width: 200 },
+    { title: 'Email', dataIndex: 'email', width: 250 },
     { title: 'Ghi chú', dataIndex: 'note' },
     { 
       title: 'Thao tác', 
@@ -361,31 +386,10 @@ export default function TopicUpload(): JSX.Element {
                   </Row>
                 </Card>
 
-                <Card size="small" className="mb-6 rounded-xl" title={<Space><FileOutlined /> Nội dung & Từ khóa</Space>}>
-                  <Row gutter={24}>
-                    <Col xs={24} lg={16}>
-                      <Form.Item label={<Text strong>Mô tả đề tài</Text>} name="description" rules={[{ required: true, message: 'Vui lòng nhập mô tả đề tài!' }]}>
-                        <Input.TextArea rows={10} placeholder="Mô tả chi tiết về đề tài..." maxLength={4000} showCount style={{ resize: 'vertical' }} />
-                    </Form.Item>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <Form.Item label={<Text strong>Từ khóa</Text>}>
-                      <Space direction="vertical" className="w-full">
-                        <Space.Compact className="w-full">
-                            <Input value={inputKeyword} onChange={(e) => setInputKeyword(e.target.value)} placeholder="Nhập từ khóa..." onPressEnter={addKeyword} maxLength={30} />
-                          <Button type="primary" icon={<PlusOutlined />} onClick={addKeyword} disabled={!inputKeyword || keywords.length >= 10} />
-                        </Space.Compact>
-                        <div>
-                            {keywords.map((k, i) => (
-                              <Tag key={i} closable onClose={() => removeKeyword(k)}>
-                                {k}
-                            </Tag>
-                          ))}
-                        </div>
-                      </Space>
-                    </Form.Item>
-                  </Col>
-                </Row>
+                <Card size="small" className="mb-6 rounded-xl" title={<Space><FileOutlined /> Mô tả đề tài</Space>}>
+                  <Form.Item label={<Text strong>Mô tả đề tài</Text>} name="description" rules={[{ required: true, message: 'Vui lòng nhập mô tả đề tài!' }]}>
+                    <Input.TextArea rows={10} placeholder="Mô tả chi tiết về đề tài..." maxLength={4000} showCount style={{ resize: 'vertical' }} />
+                  </Form.Item>
                 </Card>
 
                 <Card 
@@ -459,7 +463,7 @@ export default function TopicUpload(): JSX.Element {
                   </Col>
                   <Col>
                         <Space>
-                          <Button onClick={() => { form.resetFields(); setKeywords([]); setInputKeyword(''); setMembers([]); }} disabled={createLoading}>Hủy</Button>
+                          <Button onClick={() => { form.resetFields(); setMembers([]); }} disabled={createLoading}>Hủy</Button>
                           <Button type="primary" htmlType="submit" icon={<SendOutlined />} loading={createLoading}>Đăng tải</Button>
                         </Space>
                   </Col>
@@ -490,85 +494,107 @@ export default function TopicUpload(): JSX.Element {
         centered
       >
         <Divider style={{ margin: '16px 0' }} />
-        <Space direction="vertical" className="w-full" style={{ width: '100%', gap: '16px' }}>
-          {memberDrafts.map((m, idx) => (
-            <Card 
-              key={idx} 
-              size="small" 
-              className="rounded-lg"
-              style={{ 
-                background: 'linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%)',
-                border: '1px solid #e8e8e8',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-              }}
-              extra={
-                <Button 
-                  type="text" 
-                  danger 
-                  size="small" 
-                  icon={<DeleteOutlined />}
-                  onClick={() => removeMemberDraft(idx)}
-                >
-                  Xóa
-                </Button>
-              }
+        <Spin spinning={loadingAccounts} tip="Đang tải danh sách người dùng...">
+          <Space direction="vertical" className="w-full" style={{ width: '100%', gap: '16px' }}>
+            {memberDrafts.map((m, idx) => (
+              <Card 
+                key={idx} 
+                size="small" 
+                className="rounded-lg"
+                style={{ 
+                  background: 'linear-gradient(135deg, #f6f9fc 0%, #ffffff 100%)',
+                  border: '1px solid #e8e8e8',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                }}
+                extra={
+                  <Button 
+                    type="text" 
+                    danger 
+                    size="small" 
+                    icon={<DeleteOutlined />}
+                    onClick={() => removeMemberDraft(idx)}
+                  >
+                    Xóa
+                  </Button>
+                }
+              >
+                <Space direction="vertical" className="w-full" style={{ width: '100%', gap: '12px' }}>
+                  <Space>
+                    <UserOutlined style={{ color: '#1890ff' }} />
+                    <Text strong style={{ fontSize: '15px' }}>Thành viên #{idx + 1}</Text>
+                  </Space>
+                  <Row gutter={12}>
+                    <Col span={24}>
+                      <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>Chọn người dùng</Text>
+                        <Select
+                          showSearch
+                          value={m.accountId || undefined}
+                          onChange={(value) => handleSelectAccount(idx, value)}
+                          placeholder="Tìm và chọn người dùng..."
+                          style={{ width: '100%' }}
+                          optionFilterProp="children"
+                          filterOption={(input, option) => {
+                            const children = option?.children as any;
+                            if (typeof children === 'string') {
+                              return children.toLowerCase().includes(input.toLowerCase());
+                            }
+                            return false;
+                          }}
+                        >
+                          {availableAccounts.map((account) => (
+                            <Option key={account.id} value={account.id}>
+                              <Space>
+                                <UserOutlined />
+                                <Text>{account.name}</Text>
+                                <Text type="secondary">({account.email})</Text>
+                              </Space>
+                            </Option>
+                          ))}
+                        </Select>
+                      </Space>
+                    </Col>
+                  </Row>
+                  {m.accountId > 0 && (
+                    <Card size="small" style={{ background: '#f0f5ff', border: '1px solid #adc6ff' }}>
+                      <Space direction="vertical" size={4} style={{ width: '100%' }}>
+                        <Space>
+                          <UserOutlined style={{ color: '#1890ff' }} />
+                          <Text strong>{m.fullName}</Text>
+                        </Space>
+                        <Space>
+                          <IdcardOutlined style={{ color: '#1890ff' }} />
+                          <Text type="secondary">{m.email}</Text>
+                        </Space>
+                      </Space>
+                    </Card>
+                  )}
+                  <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>Ghi chú (tùy chọn)</Text>
+                    <Input.TextArea 
+                      value={m.note} 
+                      onChange={(e) => updateMemberDraft(idx, 'note', e.target.value)} 
+                      placeholder="Thêm ghi chú nếu cần..." 
+                      rows={2} 
+                      maxLength={200} 
+                      showCount
+                      style={{ resize: 'none' }}
+                    />
+                  </Space>
+                </Space>
+              </Card>
+            ))}
+            <Button 
+              type="dashed" 
+              icon={<PlusOutlined />} 
+              onClick={addMemberDraft}
+              block
+              style={{ height: '42px', fontSize: '15px' }}
             >
-              <Space direction="vertical" className="w-full" style={{ width: '100%', gap: '12px' }}>
-                <Space>
-                  <UserOutlined style={{ color: '#1890ff' }} />
-                  <Text strong style={{ fontSize: '15px' }}>Thành viên #{idx + 1}</Text>
-                </Space>
-                <Row gutter={12}>
-                  <Col span={12}>
-                    <Space direction="vertical" style={{ width: '100%' }} size={4}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Họ và tên</Text>
-                      <Input 
-                        value={m.fullName} 
-                        onChange={(e) => updateMemberDraft(idx, 'fullName', e.target.value)} 
-                        placeholder="Ví dụ: Nguyễn Văn A" 
-                        maxLength={120}
-                        prefix={<UserOutlined style={{ color: '#bfbfbf' }} />}
-                      />
-                    </Space>
-                  </Col>
-                  <Col span={12}>
-                    <Space direction="vertical" style={{ width: '100%' }} size={4}>
-                      <Text type="secondary" style={{ fontSize: '12px' }}>Mã số giảng viên</Text>
-                      <Input 
-                        value={m.lecturerId} 
-                        onChange={(e) => updateMemberDraft(idx, 'lecturerId', e.target.value)} 
-                        placeholder="Ví dụ: GV00123" 
-                        maxLength={50}
-                        prefix={<IdcardOutlined style={{ color: '#bfbfbf' }} />}
-                      />
-                    </Space>
-                  </Col>
-                </Row>
-                <Space direction="vertical" style={{ width: '100%' }} size={4}>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>Ghi chú (tùy chọn)</Text>
-                  <Input.TextArea 
-                    value={m.note} 
-                    onChange={(e) => updateMemberDraft(idx, 'note', e.target.value)} 
-                    placeholder="Thêm ghi chú nếu cần..." 
-                    rows={2} 
-                    maxLength={200} 
-                    showCount
-                    style={{ resize: 'none' }}
-                  />
-                </Space>
-              </Space>
-            </Card>
-          ))}
-          <Button 
-            type="dashed" 
-            icon={<PlusOutlined />} 
-            onClick={addMemberDraft}
-            block
-            style={{ height: '42px', fontSize: '15px' }}
-          >
-            Thêm thành viên mới
-          </Button>
-        </Space>
+              Thêm thành viên mới
+            </Button>
+          </Space>
+        </Spin>
       </Modal>
     </Layout>
   );

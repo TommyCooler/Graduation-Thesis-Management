@@ -10,14 +10,19 @@ import {
   Spin,
   Empty,
   Divider,
-  Result
+  Result,
+  Modal,
+  Form,
+  Input,
+  message
 } from 'antd';
 import { 
   ArrowLeftOutlined,
   CalendarOutlined,
   FileTextOutlined,
   LinkOutlined,
-  UserOutlined
+  UserOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import React, { JSX, useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -26,6 +31,7 @@ import Footer from '../../../../components/combination/Footer';
 import { useTopic } from '../../../../hooks/useTopic';
 import { useAuth } from '../../../../hooks/useAuth';
 import { Topic, STATUS_DISPLAY, STATUS_COLORS } from '../../../../types/topic';
+import { topicService } from '../../../../services/topicService';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -36,8 +42,11 @@ function TopicDetailPage(): JSX.Element {
   const topicId = params?.id as string;
   
   const { currentTopic, loading, fetchTopicById } = useTopic();
-  const { isAuthenticated, isLoading: authLoading, requireAuth } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, requireAuth, getToken } = useAuth();
   const [error, setError] = useState<boolean>(false);
+  const [canEdit, setCanEdit] = useState<boolean>(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState<boolean>(false);
+  const [form] = Form.useForm();
 
   // Check authentication first
   useEffect(() => {
@@ -50,6 +59,7 @@ function TopicDetailPage(): JSX.Element {
   useEffect(() => {
     if (!authLoading && isAuthenticated && topicId) {
       loadTopicDetail();
+      checkEditPermission();
     }
   }, [topicId, authLoading, isAuthenticated]);
 
@@ -63,8 +73,78 @@ function TopicDetailPage(): JSX.Element {
     }
   };
 
+  const checkEditPermission = async () => {
+    try {
+      const permission = await topicService.canUserEditTopic(Number(topicId));
+      setCanEdit(permission);
+    } catch (err) {
+      console.error('Error checking edit permission:', err);
+      setCanEdit(false);
+    }
+  };
+
   const handleBack = () => {
     router.push('/topics/list');
+  };
+
+  const handleEditClick = () => {
+    if (currentTopic) {
+      form.setFieldsValue({
+        title: currentTopic.title,
+        description: getDescriptionWithoutKeywords(currentTopic.description),
+      });
+      setIsEditModalVisible(true);
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      
+      if (!currentTopic) return;
+      
+      // Kiểm tra quyền edit trước khi submit
+      const canEditCheck = await topicService.canUserEditTopic(currentTopic.id);
+      if (!canEditCheck) {
+        message.error('Bạn không có quyền chỉnh sửa đề tài này!');
+        setIsEditModalVisible(false);
+        return;
+      }
+      
+      const token = getToken();
+      const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
+
+      const response = await fetch(
+        `${API_BASE}/topic-approval-service/api/topics/update/${currentTopic.id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            title: values.title,
+            description: values.description,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || data.code !== 200) {
+        throw new Error(data.message || 'Cập nhật thất bại');
+      }
+
+      message.success('Cập nhật đề tài thành công!');
+      setIsEditModalVisible(false);
+      form.resetFields();
+      
+      // Reload topic detail
+      await loadTopicDetail();
+    } catch (error: any) {
+      message.error(error.message || 'Có lỗi xảy ra khi cập nhật đề tài');
+    }
   };
 
   const formatDate = (dateString: string | null): string => {
@@ -298,6 +378,16 @@ function TopicDetailPage(): JSX.Element {
 
             {/* Actions */}
             <Space className="w-full justify-end">
+              {canEdit && (
+                <Button 
+                  type="primary" 
+                  icon={<EditOutlined />}
+                  onClick={handleEditClick}
+                  size="large"
+                >
+                  Chỉnh sửa
+                </Button>
+              )}
               <Button onClick={handleBack} size="large">
                 Đóng
               </Button>
@@ -336,6 +426,47 @@ function TopicDetailPage(): JSX.Element {
           </div>
         </div>
       </Content>
+
+      {/* Edit Modal */}
+      <Modal
+        title={<Space><EditOutlined /> Chỉnh sửa đề tài</Space>}
+        open={isEditModalVisible}
+        onCancel={() => {
+          setIsEditModalVisible(false);
+          form.resetFields();
+        }}
+        onOk={handleEditSubmit}
+        okText="Cập nhật"
+        cancelText="Hủy"
+        width={700}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          className="mt-4"
+        >
+          <Form.Item
+            name="title"
+            label="Tên đề tài"
+            rules={[{ required: true, message: 'Vui lòng nhập tên đề tài!' }]}
+          >
+            <Input placeholder="Nhập tên đề tài" size="large" />
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="Mô tả"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}
+          >
+            <Input.TextArea
+              placeholder="Nhập mô tả đề tài"
+              rows={4}
+              showCount
+              maxLength={500}
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
 
       <Footer />
     </Layout>

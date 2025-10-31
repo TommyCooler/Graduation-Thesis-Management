@@ -3,6 +3,7 @@ package mss.project.topicapprovalservice.dtos.responses;
 import lombok.Builder;
 import lombok.Data;
 import mss.project.topicapprovalservice.enums.Status;
+import mss.project.topicapprovalservice.pojos.Topics;
 
 import java.util.List;
 
@@ -15,7 +16,6 @@ public class CouncilResponse {
     private String semester;
     private String date;
     private Status status;
-    private int slot;
     private List<CouncilMemberResponse> councilMembers;
-    private String topicName;
+    private List<TopicsDTOResponse> topic;
 }

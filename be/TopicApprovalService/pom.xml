@@ -11,8 +11,8 @@
     <groupId>mss.project</groupId>
     <artifactId>TopicApprovalService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>CheckPlagiarismService</name>
-    <description>CheckPlagiarismService</description>
+    <name>TopicApprovalService</name>
+    <description>TopicApprovalService</description>
     <url/>
     <licenses>
         <license/>

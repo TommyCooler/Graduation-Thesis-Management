@@ -105,19 +105,10 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
             changes.add("Mô tả đề tài đã được cập nhật");
         }
         
-        // Kiểm tra các trường khác nếu có
-        if (request.getStatus() != null && !Objects.equals(topic.getStatus(), request.getStatus())) {
-            changes.add(String.format("Trạng thái: '%s' -> '%s'", 
-                topic.getStatus(), request.getStatus()));
-        }
-        
-        // Cập nhật topic
+        // Cập nhật topic (chỉ cập nhật title và description, giữ nguyên status)
         topic.setTitle(request.getTitle());
         topic.setDescription(request.getDescription());
-        if (request.getStatus() != null) {
-            topic.setStatus(request.getStatus());
-        }
-        // ... other updates
+        // Không cập nhật status - giữ nguyên trạng thái hiện tại
         
         Topics savedTopic = topicsRepository.save(topic);
         

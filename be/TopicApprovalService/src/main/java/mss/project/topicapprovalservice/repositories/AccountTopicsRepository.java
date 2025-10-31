@@ -3,9 +3,8 @@ package mss.project.topicapprovalservice.repositories;
 
 import mss.project.topicapprovalservice.pojos.AccountTopics;
 import mss.project.topicapprovalservice.pojos.Topics;
+import mss.project.topicapprovalservice.enums.TopicRole;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -22,4 +21,14 @@ public interface AccountTopicsRepository extends JpaRepository<AccountTopics, Lo
     Optional<AccountTopics> findByTopicsIdAndAccountId(Long topicId, Long accountId);
     boolean existsByTopicsIdAndAccountId(Long topicsId, Long accountId);
     void deleteByTopicsId(Long topicId);
+    
+    /**
+     * Check if an account is a creator or member of a topic
+     * Uses Spring Data JPA method naming convention
+     * @param topicId the topic ID
+     * @param accountId the account ID
+     * @param roles list of roles to check (CREATOR, MEMBER)
+     * @return true if the account is a creator or member of the topic
+     */
+    boolean existsByTopicsIdAndAccountIdAndRoleIn(Long topicId, Long accountId, List<TopicRole> roles);
 }

@@ -13,4 +13,5 @@ public interface ReviewCouncilMemberRepository extends JpaRepository<ReviewCounc
     ReviewCouncilMembers findByProgressReviewCouncilAndAccountID(ProgressReviewCouncils council, Long accountID);
     List<ReviewCouncilMembers> findAllByProgressReviewCouncil(ProgressReviewCouncils council);
     Optional<String> findOverallCommentsByProgressReviewCouncilAndAccountID(ProgressReviewCouncils council, Long accountID);
+    List<ReviewCouncilMembers> findAllByProgressReviewCouncilAndOverallCommentsIsNull(ProgressReviewCouncils council);
 }

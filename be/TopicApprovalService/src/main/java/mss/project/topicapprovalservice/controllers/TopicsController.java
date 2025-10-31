@@ -1,10 +1,12 @@
 package mss.project.topicapprovalservice.controllers;
 
+import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
 import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
+import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.services.TopicService;
 import mss.project.topicapprovalservice.services.TopicHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/api/topics")
@@ -196,5 +199,112 @@ public class TopicsController {
                 .message("Fetch all approved topics successfully")
                 .data(result)
                 .build();
+    }
+    
+    @GetMapping("/by-status")
+    public ApiResponse<List<TopicsDTOResponse>> getTopicsByStatus(
+            @RequestParam String status) {
+        try {
+            TopicStatus topicStatus = TopicStatus.valueOf(status.toUpperCase());
+            List<TopicsDTOResponse> topics = topicsService.getTopicsByStatus(topicStatus);
+            ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(200);
+            apiResponse.setMessage("Topics with status " + status + " retrieved successfully");
+            apiResponse.setData(topics);
+            return apiResponse;
+        } catch (IllegalArgumentException e) {
+            ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(400);
+            apiResponse.setMessage("Invalid status value. Valid values: DRAFT, PENDING, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED");
+            apiResponse.setData(null);
+            return apiResponse;
+        }
+    }
+
+    // ========== 2-Person Approval Workflow Endpoints ==========
+
+    @PostMapping("/approve-v2/{id}")
+    public ApiResponse<TopicWithApprovalStatusResponse> approveTopicV2(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> requestBody,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        String approverEmail = jwt.getClaimAsString("email");
+        String approverName = jwt.getClaimAsString("name");
+        if (approverName == null || approverName.isEmpty()) {
+            approverName = jwt.getClaimAsString("preferred_username");
+        }
+        
+        String comment = requestBody != null ? requestBody.get("comment") : null;
+        
+        TopicWithApprovalStatusResponse result = topicsService.approveTopicV2(id, approverEmail, approverName, comment);
+        
+        ApiResponse<TopicWithApprovalStatusResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topic approved successfully. Approval status: " + result.getApprovalStatus());
+        apiResponse.setData(result);
+        return apiResponse;
+    }
+
+    @GetMapping("/pending-for-approval")
+    public ApiResponse<List<TopicWithApprovalStatusResponse>> getPendingTopicsForApproval(
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        String userEmail = jwt.getClaimAsString("email");
+        List<TopicWithApprovalStatusResponse> topics = topicsService.getPendingTopicsForApproval(userEmail);
+        
+        ApiResponse<List<TopicWithApprovalStatusResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Pending topics for approval retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
+    }
+
+    @GetMapping("/my-approved")
+    public ApiResponse<List<TopicWithApprovalStatusResponse>> getApprovedTopicsByUser(
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        String userEmail = jwt.getClaimAsString("email");
+        List<TopicWithApprovalStatusResponse> topics = topicsService.getApprovedTopicsByUser(userEmail);
+        
+        ApiResponse<List<TopicWithApprovalStatusResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topics approved by user retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
+    }
+
+    @GetMapping("/fully-approved")
+    public ApiResponse<List<TopicWithApprovalStatusResponse>> getFullyApprovedTopics() {
+        List<TopicWithApprovalStatusResponse> topics = topicsService.getFullyApprovedTopics();
+        
+        ApiResponse<List<TopicWithApprovalStatusResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Fully approved topics retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
+    }
+
+    @GetMapping("/{topicId}/can-edit")
+    public ApiResponse<Map<String, Boolean>> canUserEditTopic(
+            @PathVariable Long topicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        boolean canEdit = false;
+        
+        if (jwt != null) {
+            try {
+                Long accountId = Long.parseLong(jwt.getSubject());
+                canEdit = topicsService.canUserEditTopic(topicId, accountId);
+            } catch (NumberFormatException e) {
+                // accountId invalid, canEdit remains false
+            }
+        }
+        
+        ApiResponse<Map<String, Boolean>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Edit permission checked successfully");
+        apiResponse.setData(Map.of("canEdit", canEdit));
+        return apiResponse;
     }
 }

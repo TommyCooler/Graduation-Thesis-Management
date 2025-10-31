@@ -14,14 +14,7 @@ import java.util.List;
 public interface CouncilMemberRepository extends JpaRepository<CouncilMember, Long> {
 
 
-    List<CouncilMember> findByCouncil_DateAndCouncil_Slot(LocalDate date, int slot);
+    List<CouncilMember> findByCouncil_DefenseDate(LocalDate date);
 
     List<CouncilMember> findByCouncil_Id(long id);
-
-    
-    @Query("SELECT cm FROM CouncilMember cm WHERE cm.council.id = :councilId")
-    List<CouncilMember> findByCouncilId(@Param("councilId") Long councilId);
-    
-    @Query("SELECT cm FROM CouncilMember cm WHERE cm.council.id = :councilId AND cm.accountId = :accountId")
-    java.util.Optional<CouncilMember> findByCouncilIdAndAccountId(@Param("councilId") Long councilId, @Param("accountId") Long accountId);
 }
