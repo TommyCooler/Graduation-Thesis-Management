@@ -657,6 +657,30 @@ class TopicService {
     }
   }
 
+  /**
+   * Kiểm tra user có quyền chỉnh sửa topic không
+   */
+  async canUserEditTopic(topicId: number): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/can-edit`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return false;
+      }
+
+      const apiResponse = await response.json();
+      const data = this.extractResponseData(apiResponse);
+      return data?.canEdit || false;
+    } catch (error) {
+      console.error('Error checking edit permission:', error);
+      return false;
+    }
+  }
+
 
   /**
    * Chuyển đổi dữ liệu từ API response sang Topic

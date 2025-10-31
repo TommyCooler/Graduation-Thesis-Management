@@ -1,8 +1,6 @@
-package mss.project.topicapprovalservice.dtos;
+package mss.project.topicapprovalservice.dtos.responses;
 
 import lombok.*;
-import mss.project.topicapprovalservice.dtos.responses.TopicApprovalDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 
 import java.util.List;
 

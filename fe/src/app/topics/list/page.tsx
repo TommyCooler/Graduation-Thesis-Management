@@ -8,7 +8,6 @@ import {
   Tag, 
   Button,
   Input,
-  Select,
   Row,
   Col,
   Spin,
@@ -38,7 +37,6 @@ import { Modal, Form, message } from 'antd';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
-const { Option } = Select;
 
 export default function TopicsList(): JSX.Element {
   const router = useRouter();
@@ -52,24 +50,34 @@ export default function TopicsList(): JSX.Element {
   const [isEditModalVisible, setIsEditModalVisible] = useState<boolean>(false);
   const [editingTopic, setEditingTopic] = useState<TopicWithApprovalStatus | null>(null);
   const [form] = Form.useForm();
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [editPermissions, setEditPermissions] = useState<Record<number, boolean>>({});
 
-  // Load topics on mount and when filters change
+  // Load topics on mount
   useEffect(() => {
     loadApprovedTopics();
-    loadCurrentUser();
   }, []);
 
-  const loadCurrentUser = () => {
-    const token = getToken();
-    if (token) {
-      try {
-        // Decode JWT to get userId
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        setCurrentUserId(payload.userId ? parseInt(payload.userId) : null);
-      } catch (error) {
-        console.error('Error decoding token:', error);
-      }
+  // Load permissions when auth status changes or topics change
+  useEffect(() => {
+    if (isAuthenticated && topics.length > 0) {
+      loadEditPermissions();
+    }
+  }, [isAuthenticated, topics.length]);
+
+  const loadEditPermissions = async () => {
+    if (!isAuthenticated || topics.length === 0) return;
+    
+    try {
+      const permissions: Record<number, boolean> = {};
+      await Promise.all(
+        topics.map(async (topic) => {
+          const canEdit = await topicService.canUserEditTopic(topic.id);
+          permissions[topic.id] = canEdit;
+        })
+      );
+      setEditPermissions(permissions);
+    } catch (error) {
+      console.error('Error loading edit permissions:', error);
     }
   };
 
@@ -79,6 +87,18 @@ export default function TopicsList(): JSX.Element {
       // Lấy danh sách topics đã được fully approved (2/2)
       const fullyApproved = await topicService.getFullyApprovedTopics();
       setTopics(fullyApproved);
+      
+      // Kiểm tra quyền edit cho từng topic
+      if (isAuthenticated && fullyApproved.length > 0) {
+        const permissions: Record<number, boolean> = {};
+        await Promise.all(
+          fullyApproved.map(async (topic) => {
+            const canEdit = await topicService.canUserEditTopic(topic.id);
+            permissions[topic.id] = canEdit;
+          })
+        );
+        setEditPermissions(permissions);
+      }
     } catch (error) {
       console.error('Error loading approved topics:', error);
       message.error('Không thể tải danh sách đề tài');
@@ -125,7 +145,6 @@ export default function TopicsList(): JSX.Element {
     form.setFieldsValue({
       title: topic.title,
       description: topic.description,
-      status: topic.status,
     });
     setIsEditModalVisible(true);
   };
@@ -133,6 +152,17 @@ export default function TopicsList(): JSX.Element {
   const handleEditSubmit = async () => {
     try {
       const values = await form.validateFields();
+      
+      if (!editingTopic) return;
+      
+      // Kiểm tra quyền edit trước khi submit
+      const canEdit = await topicService.canUserEditTopic(editingTopic.id);
+      if (!canEdit) {
+        message.error('Bạn không có quyền chỉnh sửa đề tài này!');
+        setIsEditModalVisible(false);
+        return;
+      }
+      
       const token = getToken();
       const API_BASE = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
 
@@ -148,7 +178,6 @@ export default function TopicsList(): JSX.Element {
           body: JSON.stringify({
             title: values.title,
             description: values.description,
-            status: values.status,
           }),
         }
       );
@@ -166,13 +195,6 @@ export default function TopicsList(): JSX.Element {
     } catch (error: any) {
       message.error(error.message || 'Có lỗi xảy ra khi cập nhật đề tài');
     }
-  };
-
-  const isTopicOwner = (topic: TopicWithApprovalStatus): boolean => {
-    // Tạm thời cho phép tất cả user đã login có thể chỉnh sửa
-    // Để test TopicHistoryService ghi nhận thay đổi
-    // TODO: Sau này sẽ kiểm tra topic.createdBy === currentUserId
-    return isAuthenticated;
   };
 
   const formatDate = (dateString: string | null): string => {
@@ -290,8 +312,8 @@ export default function TopicsList(): JSX.Element {
               Xem
             </Button>
           </Tooltip>
-          {isAuthenticated && isTopicOwner(record) && (
-            <Tooltip title="Chỉnh sửa đề tài">
+          {isAuthenticated && editPermissions[record.id] && (
+            <Tooltip title="Chỉnh sửa đề tài (chỉ người tạo và người tham gia)">
               <Button
                 type="default"
                 icon={<EditOutlined />}
@@ -459,24 +481,6 @@ export default function TopicsList(): JSX.Element {
               maxLength={500}
             />
           </Form.Item>
-
-          <Form.Item
-            name="status"
-            label="Trạng thái"
-            rules={[{ required: true, message: 'Vui lòng chọn trạng thái!' }]}
-          >
-            <Select placeholder="Chọn trạng thái" size="large">
-              <Option value={TOPIC_STATUS.DRAFT}>Nháp</Option>
-              <Option value={TOPIC_STATUS.PENDING}>Chờ xử lý</Option>
-              <Option value={TOPIC_STATUS.SUBMITTED}>Đã nộp</Option>
-            </Select>
-          </Form.Item>
-
-          <div className="bg-blue-50 p-3 rounded">
-            <Text type="secondary" className="text-sm">
-              💡 Lưu ý: Mọi thay đổi sẽ được lưu vào lịch sử và có thể xem lại tại trang Lịch sử thay đổi.
-            </Text>
-          </div>
         </Form>
       </Modal>
 

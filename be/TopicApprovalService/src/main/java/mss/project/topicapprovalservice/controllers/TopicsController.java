@@ -1,6 +1,6 @@
 package mss.project.topicapprovalservice.controllers;
 
-import mss.project.topicapprovalservice.dtos.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
 import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
@@ -282,6 +282,29 @@ public class TopicsController {
         apiResponse.setCode(200);
         apiResponse.setMessage("Fully approved topics retrieved successfully");
         apiResponse.setData(topics);
+        return apiResponse;
+    }
+
+    @GetMapping("/{topicId}/can-edit")
+    public ApiResponse<Map<String, Boolean>> canUserEditTopic(
+            @PathVariable Long topicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        boolean canEdit = false;
+        
+        if (jwt != null) {
+            try {
+                Long accountId = Long.parseLong(jwt.getSubject());
+                canEdit = topicsService.canUserEditTopic(topicId, accountId);
+            } catch (NumberFormatException e) {
+                // accountId invalid, canEdit remains false
+            }
+        }
+        
+        ApiResponse<Map<String, Boolean>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Edit permission checked successfully");
+        apiResponse.setData(Map.of("canEdit", canEdit));
         return apiResponse;
     }
 }

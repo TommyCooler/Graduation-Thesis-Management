@@ -9,6 +9,7 @@ import {
   LogoutOutlined,
   UnorderedListOutlined,
   DashboardOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -100,6 +101,11 @@ export default function Header() {
               <Link href="/topics/list">
                 <Button type="text" icon={<UnorderedListOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
                   Danh sách đề tài
+                </Button>
+              </Link>
+              <Link href="/topic-history">
+                <Button type="text" icon={<HistoryOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Lịch sử đề tài
                 </Button>
               </Link>
             </nav>

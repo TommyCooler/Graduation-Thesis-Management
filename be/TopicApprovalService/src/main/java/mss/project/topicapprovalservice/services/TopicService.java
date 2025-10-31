@@ -2,7 +2,7 @@ package mss.project.topicapprovalservice.services;
 
 
 
-import mss.project.topicapprovalservice.dtos.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
@@ -30,4 +30,7 @@ public interface TopicService {
     List<TopicWithApprovalStatusResponse> getPendingTopicsForApproval(String userEmail);
     List<TopicWithApprovalStatusResponse> getApprovedTopicsByUser(String userEmail);
     List<TopicWithApprovalStatusResponse> getFullyApprovedTopics();
+    
+    // Check if user can edit topic (creator or member)
+    boolean canUserEditTopic(Long topicId, Long accountId);
 }

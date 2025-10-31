@@ -9,17 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface TopicApprovalRepository extends JpaRepository<TopicApproval, Long> {
-    
     List<TopicApproval> findByTopicId(Long topicId);
-    
     Optional<TopicApproval> findByTopicIdAndApproverEmail(Long topicId, String approverEmail);
-    
     boolean existsByTopicIdAndApproverEmail(Long topicId, String approverEmail);
-    
     long countByTopicId(Long topicId);
-    
     void deleteByTopicId(Long topicId);
-    
-    // New method to get all approvals by a user
     List<TopicApproval> findByApproverEmail(String approverEmail);
 }

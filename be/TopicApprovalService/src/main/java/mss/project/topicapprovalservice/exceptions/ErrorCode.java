@@ -48,6 +48,8 @@ public enum ErrorCode {
     ALREADY_JOINED_COUNCIL(400, "Bạn đã tham gia hội đồng này rồi"),
     NOT_COUNCIL_MEMBER(400, "Bạn không phải thành viên của hội đồng này"),
     TOPIC_ALREADY_APPROVED(400, "You have already approved this topic"),
+    CANNOT_APPROVE_OWN_TOPIC(403, "Người tạo và người tham gia đề tài không được duyệt đề tài của mình"),
+    CANNOT_EDIT_TOPIC(403, "Bạn không có quyền chỉnh sửa đề tài này. Chỉ người tạo và người tham gia mới được chỉnh sửa"),
     ;
     private int code;
     private String message;

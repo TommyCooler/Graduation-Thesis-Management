@@ -1,7 +1,8 @@
 package mss.project.topicapprovalservice.services;
 
+import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 import mss.project.topicapprovalservice.dtos.responses.TopicApprovalDTOResponse;
-import mss.project.topicapprovalservice.dtos.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
@@ -42,6 +43,9 @@ public class TopicsServiceImpl implements TopicService {
 
     @Autowired
     private TopicApprovalRepository topicApprovalRepository;
+
+    @Autowired
+    private AccountService accountService;
 
     @Override
     public TopicsDTOResponse getTopicbById(Long topicId) {
@@ -107,6 +111,7 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
+    @Transactional
     public TopicsDTOResponse updateTopic(Long Id, TopicsDTORequest topicsDTO) {
         Topics existingTopic = topicsRepository.findById(Id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
@@ -275,6 +280,14 @@ public class TopicsServiceImpl implements TopicService {
             throw new AppException(ErrorCode.TOPIC_ALREADY_APPROVED);
         }
 
+        // Get account info and check if user is creator or member of the topic
+        AccountDTO account = accountService.getAccountByEmail(approverEmail);
+        if (account != null && accountTopicsRepository.existsByTopicsIdAndAccountIdAndRoleIn(
+                topicId, account.getId(), List.of(TopicRole.CREATOR, TopicRole.MEMBER))) {
+            logger.warn("User {} is creator or member of topic {}, cannot approve", approverEmail, topicId);
+            throw new AppException(ErrorCode.CANNOT_APPROVE_OWN_TOPIC);
+        }
+
         // Create approval record
         TopicApproval approval = TopicApproval.builder()
                 .topic(topic)
@@ -309,14 +322,33 @@ public class TopicsServiceImpl implements TopicService {
 
     @Override
     public List<TopicWithApprovalStatusResponse> getPendingTopicsForApproval(String userEmail) {
+        // Get account info from email
+        AccountDTO account = accountService.getAccountByEmail(userEmail);
+        Long accountId = account != null ? account.getId() : null;
+        
         // Get all PENDING or UNDER_REVIEW topics
         List<Topics> pendingTopics = topicsRepository.findByStatusIn(
                 List.of(TopicStatus.PENDING, TopicStatus.UNDER_REVIEW)
         );
 
-        // Filter out topics already approved by this user
+        // Filter out topics:
+        // 1. Already approved by this user
+        // 2. Created by this user (CREATOR role)
+        // 3. User is a member of (MEMBER role)
         return pendingTopics.stream()
-                .filter(topic -> !topicApprovalRepository.existsByTopicIdAndApproverEmail(topic.getId(), userEmail))
+                .filter(topic -> {
+                    // Kiểm tra đã duyệt chưa
+                    if (topicApprovalRepository.existsByTopicIdAndApproverEmail(topic.getId(), userEmail)) {
+                        return false;
+                    }
+                    // Kiểm tra có phải là creator hoặc member không
+                    if (accountId != null && accountTopicsRepository.existsByTopicsIdAndAccountIdAndRoleIn(
+                            topic.getId(), accountId, List.of(TopicRole.CREATOR, TopicRole.MEMBER))) {
+                        logger.debug("User {} is creator or member of topic {}, cannot approve", userEmail, topic.getId());
+                        return false;
+                    }
+                    return true;
+                })
                 .map(topic -> convertToTopicWithApprovalStatusDTO(topic, userEmail))
                 .collect(Collectors.toList());
     }
@@ -362,6 +394,16 @@ public class TopicsServiceImpl implements TopicService {
                 .filter(topic -> topic.getApprovalCount() >= topic.getRequiredApprovals())
                 .map(topic -> convertToTopicWithApprovalStatusDTO(topic, null))
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean canUserEditTopic(Long topicId, Long accountId) {
+        if (accountId == null) {
+            return false;
+        }
+        // User can edit if they are creator or member of the topic
+        return accountTopicsRepository.existsByTopicsIdAndAccountIdAndRoleIn(
+                topicId, accountId, List.of(TopicRole.CREATOR, TopicRole.MEMBER));
     }
 
     private TopicWithApprovalStatusResponse convertToTopicWithApprovalStatusDTO(Topics topic, String userEmail) {
