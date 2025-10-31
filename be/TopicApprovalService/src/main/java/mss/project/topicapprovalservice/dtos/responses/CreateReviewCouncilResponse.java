@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import mss.project.topicapprovalservice.enums.Milestone;
+import mss.project.topicapprovalservice.enums.ReviewFormat;
 import mss.project.topicapprovalservice.enums.Status;
 
 import java.time.LocalDateTime;
@@ -23,5 +24,8 @@ public class CreateReviewCouncilResponse {
     private LocalDateTime reviewDate;
     private String status;
     private LocalDateTime createdAt;
+    private ReviewFormat reviewFormat;
+    private String meetingLink;
+    private String roomNumber;
     private List<Long> lecturerAccountIds;
 }

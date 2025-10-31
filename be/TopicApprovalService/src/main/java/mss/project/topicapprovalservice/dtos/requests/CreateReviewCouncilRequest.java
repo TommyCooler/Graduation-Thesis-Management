@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import mss.project.topicapprovalservice.enums.Milestone;
+import mss.project.topicapprovalservice.enums.ReviewFormat;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,8 +15,8 @@ import java.util.List;
 @AllArgsConstructor
 public class CreateReviewCouncilRequest {
 
-    @NotBlank(message = "Tên hội đồng không được để trống")
-    private String councilName;
+//    @NotBlank(message = "Tên hội đồng không được để trống")
+//    private String councilName;
 
 //    @NotNull(message = "Đề tài không được để trống")
 //    private Long topicID;
@@ -23,12 +24,19 @@ public class CreateReviewCouncilRequest {
     @NotNull(message = "Mốc review không được để trống")
     private Milestone milestone;
 
-//    @NotNull(message = "Ngày review không được để trốngd")
+//    @NotNull(message = "Ngày review không được để trống")
     @Future(message = "Ngày review phải là một ngày trong tương lai")
     private LocalDateTime reviewDate;
 
 //    @NotNull(message = "Member account IDs are required")
 //    private List<Long> memberAccountIDs;
+
+    @NotNull(message = "Hình thức review không được để trống")
+    private ReviewFormat reviewFormat;
+
+    private String meetingLink;
+
+    private String roomNumber;
 
     @NotEmpty(message = "Phải chọn đủ thành viên hội đồng")
     @Size(min = 2, max = 2, message = "Hội đồng phải có đúng 2 thành viên")
