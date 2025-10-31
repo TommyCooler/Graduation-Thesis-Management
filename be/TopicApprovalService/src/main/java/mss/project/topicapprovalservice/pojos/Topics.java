@@ -1,10 +1,15 @@
 package mss.project.topicapprovalservice.pojos;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
-
+import mss.project.topicapprovalservice.enums.TopicStatus;
 import java.time.LocalDateTime;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
+import java.time.LocalTime;
+
+
 
 @Entity
 @Table(name = "topics")
@@ -25,11 +30,18 @@ public class Topics {
     @Column(name = "submited_at")
     private LocalDateTime submitedAt;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status;
+    private TopicStatus status;
 
     @Column(name = "file_path_url")
     private String filePathUrl;
+
+    @Column(name = "defense_time")
+    private LocalTime defenseTime;
+
+    @Column(name = "created_by")
+    private String createdBy;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -37,10 +49,30 @@ public class Topics {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "approval_count")
+    private Integer approvalCount = 0;
+
+    @Column(name = "required_approvals")
+    private Integer requiredApprovals = 2;
+
+    @OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TopicApproval> approvals = new ArrayList<>();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "council_id")
+    @JsonBackReference
+    private Council council;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.approvalCount == null) {
+            this.approvalCount = 0;
+        }
+        if (this.requiredApprovals == null) {
+            this.requiredApprovals = 2;
+        }
     }
 
     @PreUpdate

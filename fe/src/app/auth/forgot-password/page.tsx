@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8081';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
   useEffect(() => {
     if (!token) {
@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
     try {
       await toast.promise(
         (async () => {
-          const res = await fetch(`${API_BASE}/api/auth/password/reset`, {
+          const res = await fetch(`${API_BASE}/account-service/api/auth/password/reset`, {
             method: 'POST',
             headers: { accept: '*/*', 'Content-Type': 'application/json' },
             body: JSON.stringify({ token, newPassword: values.password }),

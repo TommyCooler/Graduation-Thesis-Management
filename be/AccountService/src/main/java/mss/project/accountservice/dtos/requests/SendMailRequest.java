@@ -11,6 +11,6 @@ import lombok.*;
 @Builder
 public class SendMailRequest {
     @NotBlank
-    @Email
+    @Email(message = "INVALID_EMAIL")
     String email;
 }

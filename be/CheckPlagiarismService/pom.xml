@@ -25,11 +25,10 @@
   </properties>
 
   <dependencies>
-    <!-- Web MVC -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
+      <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-webflux</artifactId>
+      </dependency>
 
     <!-- Actuator -->
     <dependency>
@@ -46,7 +45,7 @@
     <!-- OpenAPI UI cho Spring MVC (bản 2.x ổn định cho Boot 3.x) -->
     <dependency>
       <groupId>org.springdoc</groupId>
-      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <artifactId>springdoc-openapi-starter-webflux-ui</artifactId>
       <version>2.8.13</version>
     </dependency>
 
@@ -63,24 +62,40 @@
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
     </dependency>
+
+      <!-- https://mvnrepository.com/artifact/io.qdrant/client -->
+      <dependency>
+          <groupId>io.qdrant</groupId>
+          <artifactId>client</artifactId>
+          <version>1.15.0</version>
+      </dependency>
+
+      <!-- https://mvnrepository.com/artifact/software.amazon.awssdk/s3 -->
+      <dependency>
+          <groupId>software.amazon.awssdk</groupId>
+          <artifactId>s3</artifactId>
+          <version>2.35.10</version>
+          <scope>compile</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>org.postgresql</groupId>
+          <artifactId>postgresql</artifactId>
+          <scope>runtime</scope>
+      </dependency>
+
+      <dependency>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-starter-data-jpa</artifactId>
+      </dependency>
   </dependencies>
 
   <dependencyManagement>
     <dependencies>
-      <!-- Spring Cloud BOM (phải khớp với Boot 3.5.x) -->
       <dependency>
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-dependencies</artifactId>
         <version>${spring-cloud.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-
-      <!-- (Giữ nếu bạn còn xài AWS SDK v2; nếu không dùng thì có thể bỏ BOM này) -->
-      <dependency>
-        <groupId>software.amazon.awssdk</groupId>
-        <artifactId>bom</artifactId>
-        <version>2.21.29</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -89,13 +104,10 @@
 
   <build>
     <plugins>
-      <!-- Spring Boot plugin -->
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
-      <!-- Không cần cấu hình maven-compiler-plugin thủ công;
-           Boot parent đã cấu hình sẵn và Lombok hoạt động qua annotation processor. -->
     </plugins>
   </build>
 </project>

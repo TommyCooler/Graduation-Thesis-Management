@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import mss.project.accountservice.dtos.requests.LoginRequest;
 import mss.project.accountservice.dtos.requests.RegisterRequest;
+import mss.project.accountservice.dtos.requests.SendMailRequest;
 import mss.project.accountservice.dtos.responses.LoginResponse;
 import mss.project.accountservice.enums.Role;
 import mss.project.accountservice.exceptions.AppException;
@@ -12,12 +13,15 @@ import mss.project.accountservice.exceptions.ErrorCode;
 import mss.project.accountservice.pojos.Account;
 import mss.project.accountservice.repositories.AccountRepository;
 import mss.project.accountservice.utils.JwtTokenGenerator;
+import mss.project.accountservice.utils.TempPasswordGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.Date;
 
@@ -55,6 +59,7 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtTokenGenerator.generate(account.getId(), account.getName(), request.getEmail(), account.getRole().toString());
         response.setRole(account.getRole().toString());
         response.setToken(token);
+        response.setFirstLogin(account.isFirstLogin());
         ResponseCookie cookie = ResponseCookie.from("access_token", token)
                 .httpOnly(true)
                 .secure(true)
@@ -73,40 +78,35 @@ public class AuthServiceImpl implements AuthService {
         final String email = request.getEmail().trim().toLowerCase();
 
         Account existing = accountRepository.findByEmail(email);
-
         if (existing != null && existing.isActive()) {
             throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         Account acc = (existing != null) ? existing : new Account();
-        acc.setName(request.getName());
         acc.setEmail(email);
+        acc.setName(request.getName());
         acc.setPassword(passwordEncoder.encode(request.getPassword()));
-        acc.setRole(Role.LECTURER);
         acc.setPhoneNumber(request.getPhoneNumber());
+        acc.setRole(Role.LECTURER);
         acc.setActive(false);
+        acc.setFirstLogin(true);
 
         try {
-            accountRepository.save(acc);
-
+            accountRepository.saveAndFlush(acc);
         } catch (DataIntegrityViolationException e) {
-            Account again = accountRepository.findByEmail(email);
-            if (again != null && again.isActive()) {
-                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
-            }
-            if (again != null) {
-                again.setName(request.getName());
-                again.setPassword(passwordEncoder.encode(request.getPassword()));
-                again.setPhoneNumber(request.getPhoneNumber());
-                again.setActive(false);
-                accountRepository.save(again);
-            } else {
-                throw e;
-            }
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
+        if (TransactionSynchronizationManager.isActualTransactionActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    otpService.sendOtpToEmail(email);
+                }
+            });
+        } else {
             otpService.sendOtpToEmail(email);
-
+        }
     }
 
     @Override
@@ -176,5 +176,48 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 
+    @Override
+    public void logout(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from("access_token", "")
+                .path("/")
+                .maxAge(0)
+                .sameSite("None")
+                .secure(true)
+                .httpOnly(true)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+    }
+
+    @Override
+    @Transactional
+    public void provideEmail(SendMailRequest request) {
+        String tempPassword = TempPasswordGenerator.generate(8);
+        Account account = accountRepository.findByEmail(request.getEmail());
+        if (account != null) {
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+        } else {
+            account = new Account();
+            account.setEmail(request.getEmail());
+            account.setName(request.getEmail());
+            account.setPassword(passwordEncoder.encode(tempPassword));
+            account.setRole(Role.LECTURER);
+            account.setFirstLogin(true);
+            account.setActive(true);
+            accountRepository.save(account);
+            mailService.sendAccountProvisionEmail(request.getEmail(), tempPassword);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void changePasswordWhenFirstLogin(String email, String newPassword) {
+        Account account = accountRepository.findByEmail(email);
+        if (account == null) {
+            throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
+        }
+        account.setPassword(passwordEncoder.encode(newPassword));
+        account.setFirstLogin(false);
+        accountRepository.save(account);
+    }
 
 }

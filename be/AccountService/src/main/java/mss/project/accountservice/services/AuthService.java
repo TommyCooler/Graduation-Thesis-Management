@@ -3,6 +3,7 @@ package mss.project.accountservice.services;
 import jakarta.servlet.http.HttpServletResponse;
 import mss.project.accountservice.dtos.requests.LoginRequest;
 import mss.project.accountservice.dtos.requests.RegisterRequest;
+import mss.project.accountservice.dtos.requests.SendMailRequest;
 import mss.project.accountservice.dtos.responses.LoginResponse;
 
 public interface AuthService {
@@ -15,5 +16,11 @@ public interface AuthService {
     void forgotPassword(String email);
 
     void resetPassword(String token, String newPassword);
+
+    void logout(HttpServletResponse response);
+
+    void provideEmail(SendMailRequest request);
+
+    void changePasswordWhenFirstLogin(String email, String newPassword);
 
 }

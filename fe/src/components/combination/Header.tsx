@@ -7,90 +7,110 @@ import {
   FileAddOutlined,
   SearchOutlined,
   LogoutOutlined,
+  UnorderedListOutlined,
+  DashboardOutlined,
+  HistoryOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { jwtDecode } from 'jwt-decode';
 
 const { Header: AntHeader } = Layout;
 
 type Claims = {
-  sub?: string;
   name?: string;
   email?: string;
   role?: string;
-  exp?: number;
-  iat?: number;
 };
 
 export default function Header() {
   const router = useRouter();
   const [claims, setClaims] = useState<Claims | null>(null);
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
+  // Lấy user info bằng cookie
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      setClaims(null);
-      return;
-    }
-    try {
-      const decoded = jwtDecode<Claims>(token);
-      setClaims(decoded);
-    } catch {
-      setClaims(null);
-    }
-  }, []);
+    const fetchUser = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/account-service/api/auth/me`, {
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          setClaims(null);
+          return;
+        }
+        const data = await res.json();
+        setClaims(data?.data || null);
+      } catch {
+        setClaims(null);
+      }
+    };
+    fetchUser();
+  }, [API_BASE]);
 
-  const onLogout = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('role');
+  const onLogout = async () => {
+    await fetch(`${API_BASE}/account-service/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
     setClaims(null);
     router.push('/auth/login');
   };
 
+  // Kiểm tra xem user có phải là Head of Department không
+  const isHeadOfDepartment = claims?.role?.toLowerCase() === 'headofdepartment' || 
+                             claims?.role?.toLowerCase() === 'head_of_department';
+
   const menu = {
     items: [
       { key: 'profile', label: <Link href="/profile">Hồ sơ</Link>, icon: <UserOutlined /> },
+      ...(isHeadOfDepartment ? [
+        { type: 'divider' as const },
+        { 
+          key: 'management', 
+          label: <Link href="/head-of-department/dashboard">Quản lý</Link>, 
+          icon: <DashboardOutlined /> 
+        },
+      ] : []),
       { type: 'divider' as const },
-      {
-        key: 'logout',
-        label: <span onClick={onLogout}>Đăng xuất</span>,
-        icon: <LogoutOutlined />,
-      },
+      { key: 'logout', label: <span onClick={onLogout}>Đăng xuất</span>, icon: <LogoutOutlined /> },
     ],
   };
 
   return (
     <AntHeader className="bg-white border-b border-gray-200 shadow-sm px-6">
       <div className="flex justify-between items-center h-full">
-        {/* Logo */}
         <Link href="/" className="flex items-center cursor-pointer">
-          <Image
-            src="/FPT_Education_logo.svg"
-            alt="FPT Education"
-            width={120}
-            height={48}
-            className="h-12 w-auto"
-          />
+          <Image src="/FPT_Education_logo.svg" alt="FPT Education" width={120} height={48} className="h-12 w-auto" />
         </Link>
 
         <div className="flex items-center space-x-6">
-          {/* Navigation */}
-          <nav className="hidden lg:flex space-x-4">
-            <Link href="/topics">
-              <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                Đăng tải đề tài
-              </Button>
-            </Link>
-            <Link href="/check-plagiarism">
-              <Button type="text" icon={<SearchOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                Kiểm tra đạo văn
-              </Button>
-            </Link>
-          </nav>
+          {/* Chỉ hiện navigation khi đã đăng nhập */}
+          {claims && (
+            <nav className="hidden lg:flex space-x-4">
+              <Link href="/topics">
+                <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Đăng tải đề tài
+                </Button>
+              </Link>
+              <Link href="/check-plagiarism">
+                <Button type="text" icon={<SearchOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Kiểm tra đạo văn
+                </Button>
+              </Link>
+              <Link href="/topics/list">
+                <Button type="text" icon={<UnorderedListOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Danh sách đề tài
+                </Button>
+              </Link>
+              <Link href="/topic-history">
+                <Button type="text" icon={<HistoryOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
+                  Lịch sử đề tài
+                </Button>
+              </Link>
+            </nav>
+          )}
 
-          {/* Auth section */}
           <Space>
             {!claims ? (
               <>

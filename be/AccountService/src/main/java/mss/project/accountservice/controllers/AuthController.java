@@ -3,16 +3,23 @@ package mss.project.accountservice.controllers;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Email;
 import mss.project.accountservice.dtos.requests.*;
+import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.ApiResponse;
 import mss.project.accountservice.dtos.responses.LoginResponse;
 import mss.project.accountservice.services.AuthService;
 import mss.project.accountservice.services.OtpService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
+@CrossOrigin
 public class AuthController {
     @Autowired
     private AuthService authService;
@@ -22,7 +29,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Login", description = "Login with email and password")
-    public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse httpResponse){
+    public ApiResponse<LoginResponse> login(@RequestBody @Valid LoginRequest request, HttpServletResponse httpResponse) {
         LoginResponse response = authService.login(request, httpResponse);
         ApiResponse<LoginResponse> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Đăng nhập thành công.");
@@ -32,7 +39,7 @@ public class AuthController {
 
     @PostMapping("/register")
     @Operation(summary = "Register", description = "Register a new account")
-    public ApiResponse<?> register(@RequestBody @Valid RegisterRequest request){
+    public ApiResponse<?> register(@RequestBody @Valid RegisterRequest request) {
         authService.register(request);
         ApiResponse<?> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Tạo khoản thành công. Vui lòng kiểm tra email để kích hoạt tài khoản.");
@@ -92,7 +99,7 @@ public class AuthController {
         return res;
     }
 
-    @PostMapping("/password/forgot" )
+    @PostMapping("/password/forgot")
     @Operation(summary = "Request password reset", description = "Request a password reset email")
     public ApiResponse<?> requestPasswordReset(@RequestBody SendMailRequest req) {
         authService.forgotPassword(req.getEmail());
@@ -101,13 +108,54 @@ public class AuthController {
         return res;
     }
 
-    @PostMapping("/password/reset" )
+    @PostMapping("/password/reset")
     @Operation(summary = "Confirm password reset", description = "Reset password using the token from email")
-    public ApiResponse<?> confirmPasswordReset( @RequestBody ResetPasswordRequest req) {
+    public ApiResponse<?> confirmPasswordReset(@RequestBody ResetPasswordRequest req) {
         authService.resetPassword(req.getToken(), req.getNewPassword());
         ApiResponse<?> res = new ApiResponse<>();
         res.setMessage("Đặt lại mật khẩu thành công. Bạn có thể đăng nhập với mật khẩu mới.");
         return res;
     }
+
+    @PostMapping("/logout")
+    public void logout(HttpServletResponse response) {
+        authService.logout(response);
+    }
+
+
+    @GetMapping("/me")
+    @Operation(summary = "Get current account", description = "Get information of the currently authenticated account")
+    public ApiResponse<AccountResponse> getCurrentAccount(@AuthenticationPrincipal Jwt jwt) {
+        if (jwt == null) {
+            ApiResponse<AccountResponse> res = new ApiResponse<>();
+            res.setCode(401);
+            res.setMessage("Chưa xác thực.");
+            return res;
+        }
+        AccountResponse res = new AccountResponse();
+        res.setEmail(jwt.getClaimAsString("email"));
+        res.setName(jwt.getClaimAsString("name"));
+        res.setRole(jwt.getClaimAsString("role"));
+        ApiResponse<AccountResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setData(res);
+        return apiResponse;
+    }
+
+    @PostMapping("/provide-email")
+    public ApiResponse<?> provideEmail(@RequestBody @Valid SendMailRequest request) {
+        ApiResponse<?> res = new ApiResponse<>();
+        authService.provideEmail(request);
+        res.setMessage("Cung cấp email thành công.");
+        return res;
+    }
+
+    @PostMapping("/password/change-first-login")
+    public ApiResponse<?> changePasswordWhenFirstLogin(@RequestBody ChangePasswordRequest req) {
+        ApiResponse<?> res = new ApiResponse<>();
+        authService.changePasswordWhenFirstLogin(req.getEmail(), req.getNewPassword());
+        res.setMessage("Đổi mật khẩu thành công.");
+        return res;
+    }
+
 
 }

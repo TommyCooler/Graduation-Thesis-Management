@@ -1,12 +1,32 @@
 import { TopicHistory, TopicHistoryApiResponse, TopicHistoryFilters } from '../types/topic-history';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+// Use the same base URL as topicService
+const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
 
 class TopicHistoryService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/topic-history`;
+    this.baseUrl = `${API_BASE_URL}/topic-approval-service/api/topic-history`;
+  }
+
+  /**
+   * Helper function to get auth headers
+   */
+  private getAuthHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Get token from localStorage
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+    
+    return headers;
   }
 
   /**
@@ -16,9 +36,8 @@ class TopicHistoryService {
     try {
       const response = await fetch(`${this.baseUrl}/topic/${topicId}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -26,7 +45,10 @@ class TopicHistoryService {
       }
 
       const data: TopicHistoryApiResponse = await response.json();
-      return this.mapToTopicHistory(data.result);
+      
+      // Handle both 'result' and 'data' fields
+      const historyData = data.result || data.data || [];
+      return Array.isArray(historyData) ? this.mapToTopicHistory(historyData) : [];
     } catch (error) {
       console.error('Error fetching topic history:', error);
       throw error;
@@ -40,9 +62,8 @@ class TopicHistoryService {
     try {
       const response = await fetch(`${this.baseUrl}/user/${username}`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -50,7 +71,8 @@ class TopicHistoryService {
       }
 
       const data: TopicHistoryApiResponse = await response.json();
-      return this.mapToTopicHistory(data.result);
+      const historyData = data.result || data.data || [];
+      return Array.isArray(historyData) ? this.mapToTopicHistory(historyData) : [];
     } catch (error) {
       console.error('Error fetching user history:', error);
       throw error;
@@ -87,9 +109,8 @@ class TopicHistoryService {
       
       const response = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -97,7 +118,8 @@ class TopicHistoryService {
       }
 
       const data: TopicHistoryApiResponse = await response.json();
-      return this.mapToTopicHistory(data.result);
+      const historyData = data.result || data.data || [];
+      return Array.isArray(historyData) ? this.mapToTopicHistory(historyData) : [];
     } catch (error) {
       console.error('Error fetching all topic history:', error);
       throw error;
@@ -118,9 +140,8 @@ class TopicHistoryService {
     try {
       const response = await fetch(`${this.baseUrl}/stats`, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -128,7 +149,8 @@ class TopicHistoryService {
       }
 
       const data = await response.json();
-      return data.result;
+      const result = data.result || data.data || {};
+      return result;
     } catch (error) {
       console.error('Error fetching topic history stats:', error);
       throw error;
@@ -147,9 +169,8 @@ class TopicHistoryService {
     try {
       const response = await fetch(`${this.baseUrl}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify(historyData),
       });
 
@@ -158,7 +179,8 @@ class TopicHistoryService {
       }
 
       const data = await response.json();
-      return this.mapToTopicHistory([data.result])[0];
+      const result = data.result || data.data;
+      return result ? this.mapToTopicHistory([result])[0] : {} as TopicHistory;
     } catch (error) {
       console.error('Error creating topic history:', error);
       throw error;

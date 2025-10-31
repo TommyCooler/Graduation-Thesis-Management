@@ -41,6 +41,9 @@ public class Account {
     @Column(nullable = false)
     private boolean isActive;
 
+    @Column(nullable = false)
+    private boolean firstLogin;
+
     @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;

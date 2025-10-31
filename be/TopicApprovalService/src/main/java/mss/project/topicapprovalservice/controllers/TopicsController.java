@@ -1,41 +1,126 @@
 package mss.project.topicapprovalservice.controllers;
 
+import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
+import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
-import mss.project.topicapprovalservice.services.impl.AccountTopicsServiceImpl;
-import mss.project.topicapprovalservice.services.impl.TopicsServiceImpl;
+import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
+import mss.project.topicapprovalservice.enums.TopicStatus;
+import mss.project.topicapprovalservice.services.TopicService;
+import mss.project.topicapprovalservice.services.TopicHistoryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @Controller
-@RequestMapping
-@RestController("/api/topics")
+@RequestMapping("/api/topics")
+@RestController
 public class TopicsController {
 
     @Autowired
-    private TopicsServiceImpl topicsService;
-
+    private TopicService topicsService;
+    
     @Autowired
-    private AccountTopicsServiceImpl accountTopicsService;
+    private TopicHistoryService topicHistoryService;
 
     @PostMapping("/create")
-    public ApiResponse<TopicsDTOResponse> createTopic(@RequestBody TopicsDTORequest topicsDTO, @RequestParam Long accountId) {
-        TopicsDTOResponse saved = topicsService.createTopic(topicsDTO);
-        accountTopicsService.assignTopicToAccount(1L, saved.getId());
-         ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
-         apiResponse.setMessage("Topic Created");
-         apiResponse.setData(saved);
-         return apiResponse;
+    public ApiResponse<TopicsDTOResponse> createTopic(
+            @RequestBody TopicsDTORequest topicsDTO, 
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Lấy thông tin người tạo từ JWT
+        Long creatorId = null;
+        String creatorName = "anonymous";
+        
+        if (jwt != null) {
+            try {
+                creatorId = Long.parseLong(jwt.getSubject());
+                creatorName = jwt.getClaimAsString("name");
+                if (creatorName == null || creatorName.isEmpty()) {
+                    creatorName = jwt.getClaimAsString("preferred_username");
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
+            }
+        }
+        
+        // Tạo topic và tự động lưu AccountTopics với role CREATOR
+        TopicsDTOResponse saved = topicsService.createTopic(topicsDTO, creatorId, creatorName);
+        
+        ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(201);
+        apiResponse.setMessage("Topic Created Successfully");
+        apiResponse.setData(saved);
+        return apiResponse;
+    }
+
+    @PostMapping("/{topicId}/join")
+    public ApiResponse<AccountTopicsDTOResponse> joinTopic(
+            @PathVariable Long topicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Lấy thông tin người tham gia từ JWT
+        Long memberId = null;
+        String memberName = "anonymous";
+        
+        if (jwt != null) {
+            try {
+                memberId = Long.parseLong(jwt.getSubject());
+                memberName = jwt.getClaimAsString("name");
+                if (memberName == null || memberName.isEmpty()) {
+                    memberName = jwt.getClaimAsString("preferred_username");
+                }
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
+            }
+        }
+        
+        // Tham gia topic với role MEMBER
+        AccountTopicsDTOResponse result = topicsService.joinTopic(topicId, memberId, memberName);
+        
+        ApiResponse<AccountTopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Successfully joined the topic");
+        apiResponse.setData(result);
+        return apiResponse;
+    }
+
+    @GetMapping("/{topicId}/members")
+    public ApiResponse<List<AccountTopicsDTOResponse>> getTopicMembers(@PathVariable Long topicId) {
+        List<AccountTopicsDTOResponse> members = topicsService.getTopicMembers(topicId);
+        
+        ApiResponse<List<AccountTopicsDTOResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topic members retrieved successfully");
+        apiResponse.setData(members);
+        return apiResponse;
     }
 
     @PutMapping("/update/{id}")
-    public ApiResponse<TopicsDTOResponse> updateTopic(@PathVariable Long id, @RequestBody TopicsDTORequest topicsDTO, @RequestParam Long accountId) {
-        TopicsDTOResponse updated = topicsService.updateTopic(id, topicsDTO);
-        accountTopicsService.assignTopicToAccount(accountId, updated.getId());
+    public ApiResponse<TopicsDTOResponse> updateTopic(
+            @PathVariable Long id, 
+            @RequestBody TopicsDTORequest topicsDTO,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Lấy tên người dùng từ JWT claim "name"
+        String username = jwt != null ? jwt.getClaimAsString("name") : "anonymous";
+        
+        // Sử dụng TopicHistoryService để update và tự động lưu lịch sử
+        topicHistoryService.updateTopic(id, topicsDTO, username);
+        
+        // Lấy topic đã update để trả về
+        TopicsDTOResponse updated = topicsService.getTopicbById(id);
+        
         ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Topic Updated");
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topic Updated Successfully");
         apiResponse.setData(updated);
         return apiResponse;
     }
@@ -44,23 +129,41 @@ public class TopicsController {
     public ApiResponse<TopicsDTOResponse> getTopicById(@PathVariable Long id) {
         TopicsDTOResponse topicsDTO = topicsService.getTopicbById(id);
         ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
         apiResponse.setMessage("Topic Found");
         apiResponse.setData(topicsDTO);
         return apiResponse;
     }
 
     @DeleteMapping("/delete/{id}")
-    public ApiResponse<TopicsDTOResponse> deleteTopic(@PathVariable Long id) {
+    public ApiResponse<Void> deleteTopic(@PathVariable Long id) {
         topicsService.deleteTopic(id);
-        ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("Topic Deleted");
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topic Deleted Successfully");
         return apiResponse;
     }
 
     @GetMapping("/all")
-    public ApiResponse<TopicsDTOResponse> getAllTopics() {
-        ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
-        apiResponse.setMessage("All Topics");
+    public ApiResponse<List<TopicsDTOResponse>> getAllTopics() {
+        List<TopicsDTOResponse> topicsDTOResponses = topicsService.getAllTopics();
+        ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("All Topics Retrieved Successfully");
+        apiResponse.setData(topicsDTOResponses);
+        return apiResponse;
+    }
+
+    @GetMapping
+    public ApiResponse<List<TopicsDTOResponse>> getTopicsWithPagination(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        // For now, return all topics (pagination can be implemented later)
+        List<TopicsDTOResponse> topicsDTOResponses = topicsService.getAllTopics();
+        ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topics retrieved successfully");
+        apiResponse.setData(topicsDTOResponses);
         return apiResponse;
     }
 
@@ -70,6 +173,7 @@ public class TopicsController {
         @RequestParam String email) {
         TopicsDTOResponse approved = topicsService.approveTopic(id, email);
         ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
         apiResponse.setMessage("Topic Approved by Head of Department");
         apiResponse.setData(approved);
         return apiResponse;
@@ -81,8 +185,126 @@ public class TopicsController {
         @RequestParam String email) {
         TopicsDTOResponse rejected = topicsService.rejectTopic(id, email);
         ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
         apiResponse.setMessage("Topic Rejected by Head of Department");
         apiResponse.setData(rejected);
+        return apiResponse;
+    }
+
+    @GetMapping("/approved")
+    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics() {
+        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics();
+        return ApiResponse.<List<GetAllApprovedTopicsResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Fetch all approved topics successfully")
+                .data(result)
+                .build();
+    }
+    
+    @GetMapping("/by-status")
+    public ApiResponse<List<TopicsDTOResponse>> getTopicsByStatus(
+            @RequestParam String status) {
+        try {
+            TopicStatus topicStatus = TopicStatus.valueOf(status.toUpperCase());
+            List<TopicsDTOResponse> topics = topicsService.getTopicsByStatus(topicStatus);
+            ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(200);
+            apiResponse.setMessage("Topics with status " + status + " retrieved successfully");
+            apiResponse.setData(topics);
+            return apiResponse;
+        } catch (IllegalArgumentException e) {
+            ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(400);
+            apiResponse.setMessage("Invalid status value. Valid values: DRAFT, PENDING, SUBMITTED, UNDER_REVIEW, APPROVED, REJECTED");
+            apiResponse.setData(null);
+            return apiResponse;
+        }
+    }
+
+    // ========== 2-Person Approval Workflow Endpoints ==========
+
+    @PostMapping("/approve-v2/{id}")
+    public ApiResponse<TopicWithApprovalStatusResponse> approveTopicV2(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> requestBody,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        String approverEmail = jwt.getClaimAsString("email");
+        String approverName = jwt.getClaimAsString("name");
+        if (approverName == null || approverName.isEmpty()) {
+            approverName = jwt.getClaimAsString("preferred_username");
+        }
+        
+        String comment = requestBody != null ? requestBody.get("comment") : null;
+        
+        TopicWithApprovalStatusResponse result = topicsService.approveTopicV2(id, approverEmail, approverName, comment);
+        
+        ApiResponse<TopicWithApprovalStatusResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topic approved successfully. Approval status: " + result.getApprovalStatus());
+        apiResponse.setData(result);
+        return apiResponse;
+    }
+
+    @GetMapping("/pending-for-approval")
+    public ApiResponse<List<TopicWithApprovalStatusResponse>> getPendingTopicsForApproval(
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        String userEmail = jwt.getClaimAsString("email");
+        List<TopicWithApprovalStatusResponse> topics = topicsService.getPendingTopicsForApproval(userEmail);
+        
+        ApiResponse<List<TopicWithApprovalStatusResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Pending topics for approval retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
+    }
+
+    @GetMapping("/my-approved")
+    public ApiResponse<List<TopicWithApprovalStatusResponse>> getApprovedTopicsByUser(
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        String userEmail = jwt.getClaimAsString("email");
+        List<TopicWithApprovalStatusResponse> topics = topicsService.getApprovedTopicsByUser(userEmail);
+        
+        ApiResponse<List<TopicWithApprovalStatusResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topics approved by user retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
+    }
+
+    @GetMapping("/fully-approved")
+    public ApiResponse<List<TopicWithApprovalStatusResponse>> getFullyApprovedTopics() {
+        List<TopicWithApprovalStatusResponse> topics = topicsService.getFullyApprovedTopics();
+        
+        ApiResponse<List<TopicWithApprovalStatusResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Fully approved topics retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
+    }
+
+    @GetMapping("/{topicId}/can-edit")
+    public ApiResponse<Map<String, Boolean>> canUserEditTopic(
+            @PathVariable Long topicId,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        boolean canEdit = false;
+        
+        if (jwt != null) {
+            try {
+                Long accountId = Long.parseLong(jwt.getSubject());
+                canEdit = topicsService.canUserEditTopic(topicId, accountId);
+            } catch (NumberFormatException e) {
+                // accountId invalid, canEdit remains false
+            }
+        }
+        
+        ApiResponse<Map<String, Boolean>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Edit permission checked successfully");
+        apiResponse.setData(Map.of("canEdit", canEdit));
         return apiResponse;
     }
 }

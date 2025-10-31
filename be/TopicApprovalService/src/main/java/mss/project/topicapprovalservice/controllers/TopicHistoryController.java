@@ -37,4 +37,21 @@ public class TopicHistoryController {
                 .data(history)
                 .build());
     }
+    
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<TopicHistoryDTOResponse>>> getAllTopicHistory(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String actionType,
+            @RequestParam(required = false) String user,
+            @RequestParam(required = false) Long topicId,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
+        // For now, return all history. You can add filtering logic later
+        List<TopicHistoryDTOResponse> history = topicHistoryService.getAllTopicHistory();
+        return ResponseEntity.ok(ApiResponse.<List<TopicHistoryDTOResponse>>builder()
+                .code(200)
+                .message("Lấy tất cả lịch sử thay đổi thành công")
+                .data(history)
+                .build());
+    }
 }

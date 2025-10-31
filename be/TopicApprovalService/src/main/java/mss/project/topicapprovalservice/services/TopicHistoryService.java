@@ -10,5 +10,6 @@ public interface TopicHistoryService {
     void recordTopicChange(Topics topic, String changedContent, String updatedBy, String actionType);
     List<TopicHistoryDTOResponse> getTopicHistory(Long topicId);
     List<TopicHistoryDTOResponse> getHistoryByUser(String username);
+    List<TopicHistoryDTOResponse> getAllTopicHistory();
     Topics updateTopic(Long id, TopicsDTORequest request, String username);
 }
