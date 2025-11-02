@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_colors.dart';
 import 'package:mobile/core/routes/app_routes.dart';
+import 'package:mobile/data/services/logout_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,7 +10,7 @@ class HomeScreen extends StatelessWidget {
     // TODO: Clear user data, tokens, etc.
     
     // Navigate back to login
-    Navigator.pushReplacementNamed(context, AppRoutes.login);
+    LogoutService.confirmLogout(context);
   }
 
   @override
@@ -31,7 +32,7 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Đăng xuất',
-            onPressed: () => _logout(context),
+            onPressed: () => LogoutService.confirmLogout(context),
           ),
         ],
       ),
