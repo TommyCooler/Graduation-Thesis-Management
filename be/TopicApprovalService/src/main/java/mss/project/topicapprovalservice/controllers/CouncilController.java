@@ -32,10 +32,26 @@ public class CouncilController {
     @GetMapping("/all")
     public ApiResponse<List<CouncilResponse>> findAllCouncil() {
         List<CouncilResponse> councils = councilService.getAllCouncils();
+        if(councils.isEmpty()) {
+            return ApiResponse.<List<CouncilResponse>>builder()
+                    .code(404)
+                    .message("No councils found")
+                    .data(councils)
+                    .build();
+        }
         return ApiResponse.<List<CouncilResponse>>builder()
                 .code(200)
                 .message("Fetched all councils successfully")
                 .data(councils)
+                .build();
+    }
+
+    @PutMapping("/{councilId}/status")
+    public ApiResponse<CouncilResponse> updateCouncilStatus(@PathVariable int councilId, @RequestParam String status) {
+        councilService.updateCouncilStatus(councilId, status);
+        return ApiResponse.<CouncilResponse>builder()
+                .code(200)
+                .message("Council status updated successfully")
                 .build();
     }
 }

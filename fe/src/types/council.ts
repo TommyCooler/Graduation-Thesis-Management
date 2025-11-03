@@ -1,9 +1,19 @@
-
-
 // Request types
 export interface CouncilCreateRequest {
   semester: string;
-  topicId: number;
+  topicId: number[];
+}
+
+// Topic trong council response
+export interface CouncilTopic {
+  id: number;
+  title: string;
+  description: string;
+  submitedAt: string | null;
+  status: string | null;
+  filePathUrl: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 // Council member types
@@ -13,7 +23,7 @@ export interface CouncilMember {
   accountId: number;
   fullName: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber: string | null; // Có thể null
 }
 
 // Council response types
@@ -23,9 +33,8 @@ export interface CouncilResponse {
   semester: string;
   date: string;
   status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  slot: number;
   councilMembers: CouncilMember[];
-  topicName: string;
+  topic: CouncilTopic[]; // Array of topics thay vì string
 }
 
 // API response wrapper

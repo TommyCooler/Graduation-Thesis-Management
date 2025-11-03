@@ -125,6 +125,16 @@ public class TopicsController {
         return apiResponse;
     }
 
+    @GetMapping("topic-count")
+    public ApiResponse<List<TopicsDTOResponse>>getTopicCount() {
+        List<TopicsDTOResponse> topicsDTOResponses= topicsService.getTopicsByCouncilNotNull();
+        ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Total Topic Count Retrieved Successfully");
+        apiResponse.setData(topicsDTOResponses);
+        return apiResponse;
+    }
+
     @GetMapping("/{id}")
     public ApiResponse<TopicsDTOResponse> getTopicById(@PathVariable Long id) {
         TopicsDTOResponse topicsDTO = topicsService.getTopicbById(id);
