@@ -26,8 +26,8 @@ class HomeScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              // TODO: Navigate to profile
-            },
+              Navigator.pushReplacementNamed(context, AppRoutes.profile);
+            }
           ),
           IconButton(
             icon: const Icon(Icons.logout),

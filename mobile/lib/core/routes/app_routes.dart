@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/presentation/screens/change-password/change_password_screen.dart';
 import 'package:mobile/presentation/screens/login/login_screen.dart';
 import 'package:mobile/presentation/screens/home/home_screen.dart';
+import 'package:mobile/presentation/screens/profile/user_profile_screen.dart';
 
 /// App Routes
 class AppRoutes {
@@ -13,11 +15,14 @@ class AppRoutes {
   static const String topics = '/topics';
   static const String topicDetail = '/topic-detail';
   static const String createTopic = '/create-topic';
+  static const String changePassword = '/change-password';
   
   // Routes Map
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
         home: (context) => const HomeScreen(),
+        profile: (context) => const UserProfileScreen(),
+        changePassword: (context) => const ChangePasswordScreen(),
         // Thêm các routes khác ở đây
       };
 

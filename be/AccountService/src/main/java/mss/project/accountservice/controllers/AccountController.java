@@ -56,9 +56,12 @@ public class AccountController {
     }
 
     @GetMapping("/current-account")
-    public AccountResponse getCurrentAccount(@AuthenticationPrincipal Jwt jwt) {
+    public ApiResponse<AccountResponse> getCurrentAccount(@AuthenticationPrincipal Jwt jwt) {
         String email = jwt.getClaimAsString("email");
-        return accountService.getCurrentAccount(email);
+        ApiResponse<AccountResponse> response = new ApiResponse<>();
+        response.setData(accountService.getCurrentAccount(email));
+        response.setMessage("Current account found");
+        return response;
     }
 
     @PutMapping("/{id}")
