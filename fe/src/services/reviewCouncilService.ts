@@ -1,6 +1,4 @@
-// 📘 reviewCouncilService.ts
-
-type CouncilStatus = 'CREATED' | 'COMPLETED' | 'CANCELLED' | string;
+type CouncilStatus = 'PLANNED' | 'APPROVED' | 'CANCELLED' | string;
 
 export interface ReviewCouncilApiModel {
   councilID: number;
@@ -12,6 +10,9 @@ export interface ReviewCouncilApiModel {
   status: string;
   createdAt?: string;
   overallComment?: string | null;
+  reviewFormat?: string | null;
+  meetingLink?: string | null;
+  roomNumber?: string | null;
 }
 
 export interface ReviewCouncilMember {
@@ -30,6 +31,9 @@ export interface ReviewCouncilUIModel {
   status: string;
   lecturers: ReviewCouncilMember[];
   feedback?: string;
+  reviewFormat?: string;
+  meetingLink?: string;
+  roomNumber?: string;
 }
 
 export interface Lecturer {
@@ -38,16 +42,17 @@ export interface Lecturer {
 }
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8083';
+  process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 class ReviewCouncilService {
   private baseUrl: string;
+  private gatewayPrefix: string = '/topic-approval-service';
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/progress-review-councils`;
+    this.baseUrl = `${API_BASE_URL}${this.gatewayPrefix}/api/progress-review-councils`;
   }
 
-  // 📦 Lấy danh sách hội đồng
+  // Lấy danh sách hội đồng
   async getAllCouncils(): Promise<ReviewCouncilUIModel[]> {
     const response = await fetch(`${this.baseUrl}`, {
       method: 'GET',
@@ -75,22 +80,24 @@ class ReviewCouncilService {
     return councilsWithMembers;
   }
 
-  // ➕ Tạo hội đồng mới
+  // Tạo hội đồng mới
   async createCouncil(payload: {
-    name: string;
     topicID: number;
     milestone: string;
     reviewDate?: string | null;
+    reviewFormat: string;
+    meetingLink?: string | null;
+    roomNumber?: string | null;
     lecturerAccountIds: number[];
   }): Promise<ReviewCouncilUIModel> {
     const body: any = {
-      councilName: payload.name,
-      topicID: payload.topicID,
       milestone: this.formatMilestoneForBackend(payload.milestone),
+      reviewFormat: payload.reviewFormat,
+      meetingLink: payload.meetingLink,
+      roomNumber: payload.roomNumber,
       lecturerAccountIds: payload.lecturerAccountIds,
     };
 
-    // 🔥 Chỉ thêm reviewDate nếu có
     if (payload.reviewDate) {
       body.reviewDate = payload.reviewDate;
     }
@@ -101,10 +108,11 @@ class ReviewCouncilService {
       credentials: 'include',
       body: JSON.stringify(body),
     });
-     if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || 'Đã xảy ra lỗi hệ thống');
-  }
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Đã xảy ra lỗi hệ thống');
+    }
 
     const data = await response.json();
     const created: ReviewCouncilApiModel = data.result ?? data.data ?? data;
@@ -114,11 +122,12 @@ class ReviewCouncilService {
   }
 
 
-  // 👩‍🏫 Lấy danh sách giảng viên (thành viên) của 1 hội đồng
+
+  // Lấy danh sách giảng viên (thành viên) của 1 hội đồng
   async getCouncilLecturers(
     councilId: number
   ): Promise<ReviewCouncilMember[]> {
-    const response = await fetch(`${this.baseUrl}/${councilId}/members`, {
+    const response = await fetch(`${API_BASE_URL}${this.gatewayPrefix}/api/review-council-members/${councilId}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
@@ -143,7 +152,7 @@ class ReviewCouncilService {
     );
   }
 
-  // 📦 Lấy danh sách tất cả giảng viên
+  // Lấy danh sách tất cả giảng viên
   async getAllLecturers(): Promise<Lecturer[]> {
     const response = await fetch(`${this.baseUrl}/lecturers`, {
       method: 'GET',
@@ -160,7 +169,7 @@ class ReviewCouncilService {
     return Array.isArray(data.data) ? data.data : [];
   }
 
-  // 🧩 Lấy danh sách hội đồng theo topicID (và lấy luôn thành viên)
+  // Lấy danh sách hội đồng theo topicID (và lấy luôn thành viên)
   async getCouncilsByTopicID(
     topicID: number
   ): Promise<ReviewCouncilUIModel[]> {
@@ -191,7 +200,7 @@ class ReviewCouncilService {
     return councilsWithMembers;
   }
 
-  // 👮‍♀️ Safe fetch giảng viên
+  // Safe fetch giảng viên
   private async getCouncilLecturersSafe(
     councilId: number
   ): Promise<ReviewCouncilMember[]> {
@@ -201,8 +210,61 @@ class ReviewCouncilService {
       return [];
     }
   }
+  // comment cho council
+  async updateCouncilComment(
+    councilID: number,
+    overallComments: string
+  ): Promise<void> {
+    const response = await fetch(
+      `${API_BASE_URL}${this.gatewayPrefix}/api/review-council-members/${councilID}/comment`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ overallComments }),
+      }
+    );
 
-  // 🧩 Map sang model dùng cho UI
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Không thể cập nhật nhận xét');
+    }
+  }
+
+  // Cập nhật trạng thái hội đồng
+  async updateCouncilStatus(councilID: number): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${councilID}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Không thể cập nhật trạng thái hội đồng');
+      }
+
+      console.log(`Cập nhật trạng thái hội đồng ${councilID} thành công`);
+    } catch (error: any) {
+      console.error('Lỗi khi cập nhật trạng thái hội đồng:', error);
+      throw error;
+    }
+  }
+
+  async getCouncilsForCalendar(): Promise<ReviewCouncilUIModel[]> {
+  const response = await fetch(`${this.baseUrl}`, {
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  });
+  if (!response.ok) throw new Error('Không thể tải danh sách lịch hội đồng');
+  return response.json();
+}
+
+
+
+  // Map sang model dùng cho UI
   private mapToUIModel(
     api: ReviewCouncilApiModel,
     lecturers: ReviewCouncilMember[]
@@ -217,6 +279,9 @@ class ReviewCouncilService {
       status: this.mapStatus(api.status),
       lecturers,
       feedback: api.overallComment || '',
+      reviewFormat: api.reviewFormat || '',
+      meetingLink: api.meetingLink || '',
+      roomNumber: api.roomNumber || '',
     };
   }
 
@@ -224,24 +289,24 @@ class ReviewCouncilService {
   private mapStatus(status?: CouncilStatus): string {
     if (!status) return 'Đã lập';
     const map: Record<string, string> = {
-      CREATED: 'Đã lập',
-      COMPLETED: 'Hoàn thành',
+      PLANNED: 'Đã lập',
+      APPROVED: 'Đã duyệt',
       CANCELLED: 'Đã hủy',
     };
     return map[status] || status;
   }
 
-  // 👉 Backend → UI
+  // Backend → UI
   private formatMilestoneForUI(m: string): string {
     return m.replace('_', ' ');
   }
 
-  // 👉 UI → Backend
+  // UI → Backend
   private formatMilestoneForBackend(m: string): string {
     return m.replace(' ', '_');
   }
 
-  // 📅 Format ngày
+  // Format ngày
   private formatDateYYYYMMDD(dateStr: string): string {
     const d = new Date(dateStr);
     if (Number.isNaN(d.getTime())) return '';
