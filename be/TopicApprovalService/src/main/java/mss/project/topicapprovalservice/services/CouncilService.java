@@ -121,7 +121,7 @@ public class CouncilService implements ICouncilService {
 
         Council council = new Council();
         council.setCouncilName("Hội Đồng Chấm ngày "+defenseDate);
-        council.setSemester("Học kỳ"+councilCreateRequest.getSemester());
+        council.setSemester("Học kỳ "+councilCreateRequest.getSemester());
         council.setStatus(Status.PLANNED);
         council.setDefenseDate(defenseDate);
 
@@ -205,6 +205,21 @@ public class CouncilService implements ICouncilService {
     @Override
     public void deleteCouncil(int id) {
 
+    }
+
+    @Override
+    public CouncilResponse updateCouncilStatus(int id, String status) {
+        Council council = councilRepository.findById((long) id)
+                .orElseThrow(() -> new AppException(ErrorCode.COUNCIL_NOT_FOUND));
+        council.setStatus(Status.valueOf(status));
+        councilRepository.save(council);
+        return CouncilResponse.builder()
+                .id(council.getId())
+                .councilName(council.getCouncilName())
+                .semester(council.getSemester())
+                .date(council.getDefenseDate().toString())
+                .status(council.getStatus())
+                .build();
     }
 
     @Override

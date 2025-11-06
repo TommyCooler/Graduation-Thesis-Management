@@ -16,4 +16,5 @@ public interface TopicsRepository extends JpaRepository<Topics, Long> {
     List<Topics> findByStatus(TopicStatus status);
     List<Topics> findByStatusIn(List<TopicStatus> statuses);
     List<Topics> findByCreatedBy(String createdBy);
+    List<Topics> findByCouncilIsNullAndStatus(TopicStatus status);
 }

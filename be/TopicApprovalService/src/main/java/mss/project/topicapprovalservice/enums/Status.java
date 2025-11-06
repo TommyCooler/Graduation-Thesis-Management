@@ -10,7 +10,9 @@ public enum Status {
     COMPLETED("Hoàn thành"),
     CANCELLED("Đã hủy"),
     PENDING("Đang chờ"),
-    APPROVED("Đã duyệt");
+    APPROVED("Đã duyệt"),
+    PASS("Đạt"),
+    FAIL("Không đạt");
 
     private String value;
 }

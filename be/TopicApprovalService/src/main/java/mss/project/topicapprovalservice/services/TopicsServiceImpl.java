@@ -124,6 +124,14 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
+    public List<TopicsDTOResponse> getTopicsByCouncilNotNull() {
+        List<Topics> topics = topicsRepository.findByCouncilIsNullAndStatus(TopicStatus.APPROVED);
+        if (!topics.isEmpty()) {
+            return topics.stream().map(this::convertToDTO).toList();
+        }
+        return null;
+    }
+    @Override
     @Transactional
     public TopicsDTOResponse updateTopic(Long Id, TopicsDTORequest topicsDTO) {
         Topics existingTopic = topicsRepository.findById(Id)
