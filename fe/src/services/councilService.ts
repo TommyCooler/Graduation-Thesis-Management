@@ -5,13 +5,13 @@ import {
   CouncilListApiResponse
 } from '../types/council';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8083';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 class CouncilService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = `${API_BASE_URL}/api/councils`;
+    this.baseUrl = `${API_BASE_URL}/topic-approval-service/api/councils`;
   }
 
   private getAuthHeaders(): HeadersInit {

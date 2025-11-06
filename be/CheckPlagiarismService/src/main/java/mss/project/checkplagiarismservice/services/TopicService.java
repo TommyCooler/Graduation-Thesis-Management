@@ -1,20 +1,22 @@
 package mss.project.checkplagiarismservice.services;
 
-import mss.project.checkplagiarismservice.dtos.request.UpdateTopicFileUrlRequest;
+import mss.project.checkplagiarismservice.dtos.response.ApiResponse;
 import mss.project.checkplagiarismservice.dtos.response.TopicDTO;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.*;
 
-@FeignClient(name = "topic-approval-service", url = "${topic.service.url}")
+@FeignClient(
+    name = "topic-service",
+    url = "${topic.service.url}"
+)
 public interface TopicService {
 
     @GetMapping("/api/topics/{topicId}")
-    TopicDTO getTopicById(@PathVariable Long topicId);
+    ApiResponse<TopicDTO> getTopicById(@PathVariable("topicId") Long topicId);
 
     @PutMapping("/api/topics/update/{topicId}")
-    TopicDTO updateTopic(@PathVariable Long topicId, @RequestBody UpdateTopicFileUrlRequest request);
-
+    ApiResponse<TopicDTO> updateTopic(
+        @PathVariable("topicId") Long topicId, 
+        @RequestBody TopicDTO request
+    );
 }

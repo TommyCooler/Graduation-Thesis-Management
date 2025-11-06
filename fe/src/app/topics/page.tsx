@@ -134,6 +134,8 @@ export default function TopicUpload(): JSX.Element {
         message.success('Tạo đề tài thành công!');
         
         // Bước 2: Generate file DOCX và gửi đến plagiarism check
+        let plagiarismCheckSuccess = false;
+        
         try {
           const plagiarismLoadingMsg = message.loading('Đang tạo file và kiểm tra đạo văn...', 0);
           
@@ -181,26 +183,34 @@ export default function TopicUpload(): JSX.Element {
 
             // Gửi file đến plagiarism check
             console.log('Sending file to plagiarism check...');
-            const result = await plagiarismService.checkPlagiarism(file, newTopic.id, 'topics');
+            const result = await plagiarismService.checkPlagiarism(file, newTopic.id);
             console.log('Plagiarism check result:', result);
             
             plagiarismLoadingMsg();
             message.success('Đã gửi file kiểm tra đạo văn thành công!');
+            plagiarismCheckSuccess = true;
           } else {
             const errorText = await fileResponse.text();
             console.error('Failed to generate file:', fileResponse.status, errorText);
             plagiarismLoadingMsg();
-            message.warning('Đã tạo đề tài nhưng không thể tạo file kiểm tra đạo văn');
+            message.error('Không thể tạo file để kiểm tra đạo văn. Vui lòng thử lại.');
+            plagiarismCheckSuccess = false;
           }
         } catch (plagiarismError) {
           console.error('Error during plagiarism check:', plagiarismError);
-          message.warning('Đã tạo đề tài nhưng lỗi khi kiểm tra đạo văn');
+          const errorMessage = plagiarismError instanceof Error ? plagiarismError.message : 'Lỗi không xác định';
+          message.error(`Kiểm tra đạo văn thất bại: ${errorMessage}. Vui lòng thử lại.`);
+          plagiarismCheckSuccess = false;
         }
 
-        // Reset form và chuyển trang
-        form.resetFields();
-        setMembers([]);
-        setTimeout(() => router.push('/topics/list'), 1500);
+        // Chỉ reset form và chuyển trang khi check đạo văn thành công
+        if (plagiarismCheckSuccess) {
+          form.resetFields();
+          setMembers([]);
+          setTimeout(() => router.push('/topics/list'), 1500);
+        } else {
+          message.error('Vui lòng kiểm tra lại và thử nộp đề tài một lần nữa.');
+        }
       }
     } catch (error) {
       loadingMessage();

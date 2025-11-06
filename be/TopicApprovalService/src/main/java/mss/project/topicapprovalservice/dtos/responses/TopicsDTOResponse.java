@@ -18,6 +18,7 @@ public class TopicsDTOResponse {
     private String submitedAt;
     private String status;
     private String filePathUrl;
+    private String createdBy;
     private String createdAt;
     private String updatedAt;
 }

@@ -658,6 +658,46 @@ class TopicService {
   }
 
   /**
+   * Lấy danh sách đề tài của người dùng đăng nhập
+   */
+  async getMyTopics(): Promise<Topic[]> {
+    try {
+      console.log('Calling getMyTopics API...');
+      const response = await fetch(`${this.baseUrl}/my-topics`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      console.log('getMyTopics response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('getMyTopics error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      console.log('getMyTopics API response:', apiResponse);
+      
+      const data = this.extractResponseData(apiResponse);
+      console.log('getMyTopics extracted data:', data);
+      
+      if (Array.isArray(data)) {
+        const topics = this.mapToTopics(data);
+        console.log('getMyTopics mapped topics:', topics);
+        return topics;
+      }
+      
+      console.warn('getMyTopics: data is not an array:', data);
+      return [];
+    } catch (error) {
+      console.error('Error fetching my topics:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Kiểm tra user có quyền chỉnh sửa topic không
    */
   async canUserEditTopic(topicId: number): Promise<boolean> {

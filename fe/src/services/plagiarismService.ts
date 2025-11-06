@@ -39,7 +39,6 @@ class PlagiarismService {
   async checkPlagiarism(
     file: File, 
     topicId: number, 
-    prefix?: string
   ): Promise<PlagiarismCheckResponse> {
     try {
       console.log('PlagiarismService.checkPlagiarism called with:', {
@@ -47,7 +46,6 @@ class PlagiarismService {
         fileSize: file.size,
         fileType: file.type,
         topicId,
-        prefix
       });
 
       const formData = new FormData();
@@ -56,11 +54,8 @@ class PlagiarismService {
       console.log('FormData created, checking file in FormData:', formData.get('file'));
       
       // Build URL with query parameters
-      const url = new URL(`${this.baseUrl}/check`);
+      const url = new URL(`${this.baseUrl}/send`);
       url.searchParams.append('topicId', topicId.toString());
-      if (prefix) {
-        url.searchParams.append('prefix', prefix);
-      }
 
       console.log('Sending POST request to:', url.toString());
 

@@ -59,7 +59,20 @@ public class TopicsServiceImpl implements TopicService {
     public TopicsDTOResponse createTopic(TopicsDTORequest topicsDTO, Long creatorId, String creatorName) {
         // Tạo và lưu topic
         Topics topics = convertToEntity(topicsDTO);
+        
+        // Lưu ID người tạo vào trường createdBy
+        if (creatorId != null) {
+            topics.setCreatedBy(creatorId.toString());
+            logger.info("Setting createdBy for topic: {}", creatorId);
+        } else {
+            logger.warn("creatorId is null, createdBy will not be set");
+        }
+        
         Topics savedTopic = topicsRepository.save(topics);
+        
+        // Log để verify createdBy đã được lưu
+        logger.info("Topic created with ID: {}, createdBy: {}, filePathUrl: {}", 
+                    savedTopic.getId(), savedTopic.getCreatedBy(), savedTopic.getFilePathUrl());
         
         // Tạo AccountTopics cho người tạo với role CREATOR
         AccountTopics creatorAccountTopic = new AccountTopics();
@@ -115,8 +128,15 @@ public class TopicsServiceImpl implements TopicService {
     public TopicsDTOResponse updateTopic(Long Id, TopicsDTORequest topicsDTO) {
         Topics existingTopic = topicsRepository.findById(Id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
-        existingTopic.setTitle(topicsDTO.getTitle());
-        existingTopic.setDescription(topicsDTO.getDescription());
+        
+        // Chỉ update các trường khi chúng không null
+        if (topicsDTO.getTitle() != null) {
+            existingTopic.setTitle(topicsDTO.getTitle());
+        }
+        
+        if (topicsDTO.getDescription() != null) {
+            existingTopic.setDescription(topicsDTO.getDescription());
+        }
         
         // Parse status from string to enum
         if (topicsDTO.getStatus() != null && !topicsDTO.getStatus().isEmpty()) {
@@ -128,8 +148,26 @@ public class TopicsServiceImpl implements TopicService {
             }
         }
         
-        existingTopic.setFilePathUrl(topicsDTO.getFilePathUrl());
-        existingTopic.setSubmitedAt(LocalDateTime.parse(topicsDTO.getSubmitedAt()));
+        // Luôn update filePathUrl khi có giá trị (kể cả empty string để clear)
+        if (topicsDTO.getFilePathUrl() != null) {
+            existingTopic.setFilePathUrl(topicsDTO.getFilePathUrl());
+            logger.info("Updated topic {} filePathUrl to: {}", Id, topicsDTO.getFilePathUrl());
+        }
+        
+        // Xử lý submitedAt an toàn
+        if (topicsDTO.getSubmitedAt() != null && !topicsDTO.getSubmitedAt().isEmpty()) {
+            try {
+                String dateStr = topicsDTO.getSubmitedAt().replace("Z", "");
+                if (dateStr.contains(".")) {
+                    dateStr = dateStr.substring(0, dateStr.indexOf("."));
+                }
+                existingTopic.setSubmitedAt(LocalDateTime.parse(dateStr));
+            } catch (Exception e) {
+                // Giữ nguyên giá trị hiện có nếu parse lỗi
+                logger.warn("Failed to parse submitedAt: {}", topicsDTO.getSubmitedAt());
+            }
+        }
+        
         topicsRepository.save(existingTopic);
         return convertToDTO(existingTopic);
     }
@@ -206,6 +244,39 @@ public class TopicsServiceImpl implements TopicService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    public List<TopicsDTOResponse> getTopicsByCreatorId(Long creatorId) {
+        if (creatorId == null) {
+            logger.warn("getTopicsByCreatorId called with null creatorId");
+            return List.of();
+        }
+        
+        logger.info("Finding topics for creatorId: {}", creatorId);
+        
+        // CHỈ tìm theo createdBy field (chính xác nhất, không bao gồm topics có createdBy = null)
+        List<Topics> topicsByCreatedBy = topicsRepository.findByCreatedBy(creatorId.toString());
+        logger.info("Found {} topics by createdBy field for creatorId: {}", topicsByCreatedBy.size(), creatorId);
+        
+        // Log để verify
+        if (!topicsByCreatedBy.isEmpty()) {
+            List<Long> topicIds = topicsByCreatedBy.stream()
+                    .map(Topics::getId)
+                    .collect(Collectors.toList());
+            logger.info("Topic IDs found by createdBy: {}", topicIds);
+            
+            // Verify createdBy của từng topic
+            for (Topics topic : topicsByCreatedBy) {
+                logger.debug("Topic ID: {}, createdBy: {}", topic.getId(), topic.getCreatedBy());
+            }
+        } else {
+            logger.warn("No topics found with createdBy = '{}'", creatorId.toString());
+        }
+        
+        return topicsByCreatedBy.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
     private Topics convertToEntity(TopicsDTORequest topicsDTO){
         Topics topics = new Topics();
         topics.setTitle(topicsDTO.getTitle());
@@ -248,6 +319,7 @@ public class TopicsServiceImpl implements TopicService {
         topicsDTO.setSubmitedAt(topics.getSubmitedAt() != null ? topics.getSubmitedAt().toString() : null);
         topicsDTO.setStatus(topics.getStatus() != null ? topics.getStatus().name() : null);
         topicsDTO.setFilePathUrl(topics.getFilePathUrl());
+        topicsDTO.setCreatedBy(topics.getCreatedBy());
         topicsDTO.setCreatedAt(topics.getCreatedAt() != null ? topics.getCreatedAt().toString() : null);
         topicsDTO.setUpdatedAt(topics.getUpdatedAt() != null ? topics.getUpdatedAt().toString() : null);
         return topicsDTO;
@@ -435,6 +507,7 @@ public class TopicsServiceImpl implements TopicService {
                 .submitedAt(topic.getSubmitedAt() != null ? topic.getSubmitedAt().toString() : null)
                 .status(topic.getStatus() != null ? topic.getStatus().name() : null)
                 .filePathUrl(topic.getFilePathUrl())
+                .createdBy(topic.getCreatedBy())
                 .createdAt(topic.getCreatedAt() != null ? topic.getCreatedAt().toString() : null)
                 .updatedAt(topic.getUpdatedAt() != null ? topic.getUpdatedAt().toString() : null)
                 .approvalCount(topic.getApprovalCount())

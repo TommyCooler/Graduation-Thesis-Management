@@ -15,4 +15,5 @@ public interface TopicsRepository extends JpaRepository<Topics, Long> {
     Optional<Topics> findById(Long id);
     List<Topics> findByStatus(TopicStatus status);
     List<Topics> findByStatusIn(List<TopicStatus> statuses);
+    List<Topics> findByCreatedBy(String createdBy);
 }

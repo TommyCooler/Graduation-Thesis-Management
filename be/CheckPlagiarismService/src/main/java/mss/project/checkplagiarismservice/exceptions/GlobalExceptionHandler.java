@@ -12,12 +12,10 @@ public class GlobalExceptionHandler {
     // NotFound tuỳ biến
     @ExceptionHandler(ClassNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(ClassNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                ApiResponse.<Void>builder()
-                        .status("error")
-                        .message(ex.getMessage())
-                        .build()
-        );
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(404);
+        response.setMessage(ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
     // Lỗi validate @Valid trên @RequestBody
@@ -27,13 +25,11 @@ public class GlobalExceptionHandler {
         ex.getBindingResult().getFieldErrors()
                 .forEach(err -> fieldErrors.put(err.getField(), err.getDefaultMessage()));
 
-        return ResponseEntity.badRequest().body(
-                ApiResponse.<Map<String, String>>builder()
-                        .status("error")
-                        .message("Validation failed")
-                        .data(fieldErrors) // trả về lỗi theo từng field
-                        .build()
-        );
+        ApiResponse<Map<String, String>> response = new ApiResponse<>();
+        response.setCode(400);
+        response.setMessage("Validation failed");
+        response.setData(fieldErrors); // trả về lỗi theo từng field
+        return ResponseEntity.badRequest().body(response);
     }
 
     // Lỗi validate @Validated trên @RequestParam, @PathVariable
@@ -56,12 +52,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         // TODO: log lỗi chi tiết (ex) vào logger/observability
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                ApiResponse.<Void>builder()
-                        .status("error")
-                        .message("Internal server error")
-                        .build()
-        );
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(500);
+        response.setMessage("Internal server error");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
 }
 

@@ -98,17 +98,54 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
         if (!Objects.equals(topic.getTitle(), request.getTitle())) {
             changes.add(String.format("Tên đề tài: '%s' -> '%s'", 
                 topic.getTitle(), request.getTitle()));
+            topic.setTitle(request.getTitle());
         }
         
         // Kiểm tra mô tả
         if (!Objects.equals(topic.getDescription(), request.getDescription())) {
             changes.add("Mô tả đề tài đã được cập nhật");
+            topic.setDescription(request.getDescription());
         }
         
-        // Cập nhật topic (chỉ cập nhật title và description, giữ nguyên status)
-        topic.setTitle(request.getTitle());
-        topic.setDescription(request.getDescription());
-        // Không cập nhật status - giữ nguyên trạng thái hiện tại
+        // Kiểm tra filePathUrl
+        if (!Objects.equals(topic.getFilePathUrl(), request.getFilePathUrl())) {
+            changes.add(String.format("Đường dẫn file: '%s' -> '%s'", 
+                topic.getFilePathUrl() != null ? topic.getFilePathUrl() : "(trống)", 
+                request.getFilePathUrl() != null ? request.getFilePathUrl() : "(trống)"));
+            topic.setFilePathUrl(request.getFilePathUrl());
+        }
+        
+        // Kiểm tra status nếu có
+        if (request.getStatus() != null && !request.getStatus().isEmpty()) {
+            try {
+                mss.project.topicapprovalservice.enums.TopicStatus newStatus = 
+                    mss.project.topicapprovalservice.enums.TopicStatus.valueOf(request.getStatus().toUpperCase());
+                if (topic.getStatus() != newStatus) {
+                    changes.add(String.format("Trạng thái: '%s' -> '%s'", 
+                        topic.getStatus(), newStatus));
+                    topic.setStatus(newStatus);
+                }
+            } catch (IllegalArgumentException e) {
+                log.warn("Invalid status value: {}", request.getStatus());
+            }
+        }
+        
+        // Kiểm tra submitedAt nếu có
+        if (request.getSubmitedAt() != null && !request.getSubmitedAt().isEmpty()) {
+            try {
+                String dateStr = request.getSubmitedAt().replace("Z", "");
+                if (dateStr.contains(".")) {
+                    dateStr = dateStr.substring(0, dateStr.indexOf("."));
+                }
+                LocalDateTime newSubmitedAt = LocalDateTime.parse(dateStr);
+                if (!Objects.equals(topic.getSubmitedAt(), newSubmitedAt)) {
+                    changes.add("Ngày nộp đã được cập nhật");
+                    topic.setSubmitedAt(newSubmitedAt);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to parse submitedAt: {}", request.getSubmitedAt());
+            }
+        }
         
         Topics savedTopic = topicsRepository.save(topic);
         

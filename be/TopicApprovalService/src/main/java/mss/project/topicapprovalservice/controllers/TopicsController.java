@@ -221,6 +221,44 @@ public class TopicsController {
         }
     }
 
+    @GetMapping("/my-topics")
+    public ApiResponse<List<TopicsDTOResponse>> getMyTopics(
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Lấy ID người dùng đăng nhập từ JWT
+        Long creatorId = null;
+        
+        if (jwt != null) {
+            try {
+                String subject = jwt.getSubject();
+                System.out.println("JWT Subject: " + subject);
+                creatorId = Long.parseLong(subject);
+                System.out.println("Parsed creatorId: " + creatorId);
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
+            }
+        } else {
+            System.err.println("JWT is null");
+        }
+        
+        if (creatorId == null) {
+            ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(401);
+            apiResponse.setMessage("User not authenticated");
+            apiResponse.setData(List.of());
+            return apiResponse;
+        }
+        
+        List<TopicsDTOResponse> topics = topicsService.getTopicsByCreatorId(creatorId);
+        System.out.println("Found " + topics.size() + " topics for creatorId: " + creatorId);
+        
+        ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("My topics retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
+    }
+
     // ========== 2-Person Approval Workflow Endpoints ==========
 
     @PostMapping("/approve-v2/{id}")

@@ -40,7 +40,7 @@ const { Title, Paragraph, Text } = Typography;
 
 export default function TopicsList(): JSX.Element {
   const router = useRouter();
-  const { isAuthenticated, getToken } = useAuth();
+  const { isAuthenticated, getToken, isLoading: authLoading } = useAuth();
   
   const [topics, setTopics] = useState<TopicWithApprovalStatus[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -52,10 +52,14 @@ export default function TopicsList(): JSX.Element {
   const [form] = Form.useForm();
   const [editPermissions, setEditPermissions] = useState<Record<number, boolean>>({});
 
-  // Load topics on mount
+  // Load topics on mount and when auth status changes
   useEffect(() => {
-    loadApprovedTopics();
-  }, []);
+    // Đợi auth check xong rồi mới load topics
+    if (!authLoading) {
+      console.log('Auth check completed, isAuthenticated:', isAuthenticated);
+      loadApprovedTopics();
+    }
+  }, [authLoading, isAuthenticated]);
 
   // Load permissions when auth status changes or topics change
   useEffect(() => {
@@ -84,23 +88,37 @@ export default function TopicsList(): JSX.Element {
   const loadApprovedTopics = async () => {
     try {
       setLoading(true);
-      // Lấy danh sách topics đã được fully approved (2/2)
-      const fullyApproved = await topicService.getFullyApprovedTopics();
-      setTopics(fullyApproved);
+      console.log('loadApprovedTopics called, isAuthenticated:', isAuthenticated);
       
-      // Kiểm tra quyền edit cho từng topic
-      if (isAuthenticated && fullyApproved.length > 0) {
-        const permissions: Record<number, boolean> = {};
-        await Promise.all(
-          fullyApproved.map(async (topic) => {
-            const canEdit = await topicService.canUserEditTopic(topic.id);
-            permissions[topic.id] = canEdit;
-          })
-        );
-        setEditPermissions(permissions);
+      // Lấy danh sách topics của người dùng đăng nhập
+      if (isAuthenticated) {
+        console.log('Loading my topics...');
+        const myTopics = await topicService.getMyTopics();
+        console.log('My topics loaded:', myTopics);
+        setTopics(myTopics as TopicWithApprovalStatus[]);
+        
+        // Kiểm tra quyền edit cho từng topic
+        if (myTopics.length > 0) {
+          const permissions: Record<number, boolean> = {};
+          await Promise.all(
+            myTopics.map(async (topic) => {
+              const canEdit = await topicService.canUserEditTopic(topic.id);
+              permissions[topic.id] = canEdit;
+            })
+          );
+          setEditPermissions(permissions);
+        } else {
+          console.warn('No topics found for current user');
+        }
+      } else {
+        // Nếu chưa đăng nhập, lấy danh sách topics đã được fully approved
+        console.log('Loading fully approved topics...');
+        const fullyApproved = await topicService.getFullyApprovedTopics();
+        console.log('Fully approved topics loaded:', fullyApproved);
+        setTopics(fullyApproved);
       }
     } catch (error) {
-      console.error('Error loading approved topics:', error);
+      console.error('Error loading topics:', error);
       message.error('Không thể tải danh sách đề tài');
     } finally {
       setLoading(false);
@@ -334,15 +352,22 @@ export default function TopicsList(): JSX.Element {
       <Header />
       
       <Content className="p-10 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <Title level={2} className="text-orange-500 mb-2">
-              <FileTextOutlined /> Danh sách đề tài
-            </Title>
-            <Paragraph className="text-base text-gray-600">
-              Xem và tìm kiếm các đề tài đã được đăng tải
-            </Paragraph>
+        {authLoading ? (
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Spin size="large" tip="Đang kiểm tra xác thực..." />
           </div>
+        ) : (
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <Title level={2} className="text-orange-500 mb-2">
+                <FileTextOutlined /> Danh sách đề tài
+              </Title>
+              <Paragraph className="text-base text-gray-600">
+                {isAuthenticated 
+                  ? 'Xem và quản lý các đề tài bạn đã đăng tải'
+                  : 'Xem và tìm kiếm các đề tài đã được đăng tải'}
+              </Paragraph>
+            </div>
 
           {/* Filters */}
           <Card className="mb-6 shadow-sm">
@@ -386,7 +411,9 @@ export default function TopicsList(): JSX.Element {
             <Spin spinning={loading} tip="Đang tải dữ liệu...">
               {topics.length === 0 && !loading ? (
                 <Empty
-                  description="Chưa có đề tài nào được duyệt"
+                  description={isAuthenticated 
+                    ? "Bạn chưa có đề tài nào"
+                    : "Chưa có đề tài nào được duyệt"}
                   image={Empty.PRESENTED_IMAGE_SIMPLE}
                 />
               ) : (
@@ -440,7 +467,8 @@ export default function TopicsList(): JSX.Element {
               </Col>
             </Row>
           )}
-        </div>
+          </div>
+        )}
       </Content>
 
       {/* Edit Modal */}

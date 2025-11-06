@@ -39,7 +39,6 @@ spring:
                 - Path=/plagiarism-service/**
               filters:
                 - RewritePath=/plagiarism-service/(?<segment>.*), /$\{segment}
-      # Kết thúc thay đổi
 
 springdoc:
   api-docs:
