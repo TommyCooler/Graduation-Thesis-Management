@@ -19,7 +19,7 @@ public class ProgressReviewCouncilController {
     @Autowired
     private IProgressReviewCouncilService progressReviewCouncilService;
 
-    @PostMapping("/{topicID}")
+    @PostMapping("/topic/{topicID}")
     public ApiResponse<CreateReviewCouncilResponse> createProgressReviewCouncil(@Valid @RequestBody CreateReviewCouncilRequest request, @PathVariable Long topicID) {
         CreateReviewCouncilResponse result = progressReviewCouncilService.createReviewCouncil(topicID, request);
         return ApiResponse.<CreateReviewCouncilResponse>builder()
@@ -29,10 +29,10 @@ public class ProgressReviewCouncilController {
                 .build();
     }
 
-    @GetMapping("/{topicID}")
-    public ApiResponse<List<GetAllReviewCouncilResponse>> getAllProgressReviewCouncils(@PathVariable Long topicID) {
-        List<GetAllReviewCouncilResponse> result = progressReviewCouncilService.getAllReviewCouncil(topicID);
-        return ApiResponse.<List<GetAllReviewCouncilResponse>>builder()
+    @GetMapping("/topic/{topicID}")
+    public ApiResponse<List<GetReviewCouncilResponse>> getAllProgressReviewCouncils(@PathVariable Long topicID) {
+        List<GetReviewCouncilResponse> result = progressReviewCouncilService.getAllReviewCouncil(topicID);
+        return ApiResponse.<List<GetReviewCouncilResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Fetched all Progress Review Councils successfully")
                 .data(result)
@@ -52,29 +52,22 @@ public class ProgressReviewCouncilController {
 
 
 
-    @PutMapping("/{councilID}/status")
-    public ApiResponse<Void> updateStatus(@PathVariable Long councilID, @AuthenticationPrincipal Jwt jwt) {
-        Long accountID = null;
-        if (jwt != null) {
-            try {
-                accountID = Long.parseLong(jwt.getSubject());
-            } catch (NumberFormatException e) {
-                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
-            }
-        }
-        progressReviewCouncilService.updateCouncilStatus(councilID, accountID);
-        return ApiResponse.<Void>builder()
-                .code(HttpStatus.NO_CONTENT.value())
-                .message("Update status successfully")
+    @GetMapping
+    public ApiResponse<List<GetReviewCouncilResponse>> getAllReviewCouncilsForCalendar() {
+        List<GetReviewCouncilResponse> result = progressReviewCouncilService.getAllReviewCouncilForCalendar();
+        return ApiResponse.<List<GetReviewCouncilResponse>>builder()
+                .code(HttpStatus.OK.value())
+                .message("Fetched all Progress Review Councils successfully")
+                .data(result)
                 .build();
     }
 
-    @GetMapping
-    public ApiResponse<List<GetAllReviewCouncilResponse>> getAllReviewCouncilsForCalendar() {
-        List<GetAllReviewCouncilResponse> result = progressReviewCouncilService.getAllReviewCouncilForCalendar();
-        return ApiResponse.<List<GetAllReviewCouncilResponse>>builder()
+    @GetMapping("/{councilID}")
+    public ApiResponse<GetReviewCouncilResponse> getReviewCouncil(@PathVariable Long councilID) {
+        GetReviewCouncilResponse result = progressReviewCouncilService.getReviewCouncil(councilID);
+        return ApiResponse.<GetReviewCouncilResponse>builder()
                 .code(HttpStatus.OK.value())
-                .message("Fetched all Progress Review Councils successfully")
+                .message("Fetched Progress Review Councils successfully")
                 .data(result)
                 .build();
     }

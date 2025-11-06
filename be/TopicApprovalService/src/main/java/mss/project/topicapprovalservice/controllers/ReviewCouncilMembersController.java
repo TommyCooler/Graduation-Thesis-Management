@@ -1,10 +1,10 @@
 package mss.project.topicapprovalservice.controllers;
 
 import jakarta.validation.Valid;
-import mss.project.topicapprovalservice.dtos.requests.GiveCommentRequest;
+import mss.project.topicapprovalservice.dtos.requests.GradeCouncilRequest;
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
 import mss.project.topicapprovalservice.dtos.responses.GetMemberOfReviewCouncilResponse;
-import mss.project.topicapprovalservice.dtos.responses.GiveCommentResponse;
+import mss.project.topicapprovalservice.dtos.responses.GradeCouncilResponse;
 import mss.project.topicapprovalservice.services.IReviewCouncilMembersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -32,8 +32,8 @@ public class ReviewCouncilMembersController {
                 .build();
     }
 
-    @PutMapping("/{councilID}/comment")
-    public ApiResponse<GiveCommentResponse> giveComment(@Valid @RequestBody GiveCommentRequest request, @PathVariable Long councilID, @AuthenticationPrincipal Jwt jwt) {
+    @PutMapping("/{councilID}/grade")
+    public ApiResponse<GradeCouncilResponse> gradeCouncil(@Valid @RequestBody GradeCouncilRequest request, @PathVariable Long councilID, @AuthenticationPrincipal Jwt jwt) {
         Long accountID = null;
         if (jwt != null) {
             try {
@@ -42,10 +42,10 @@ public class ReviewCouncilMembersController {
                 System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
             }
         }
-        GiveCommentResponse result = reviewCouncilMembersService.giveComment(councilID, request, accountID);
-        return ApiResponse.<GiveCommentResponse>builder()
+        GradeCouncilResponse result = reviewCouncilMembersService.gradeCouncil(councilID, request, accountID);
+        return ApiResponse.<GradeCouncilResponse>builder()
                 .code(HttpStatus.OK.value())
-                .message("Comment successfully")
+                .message("Graded successfully")
                 .data(result)
                 .build();
     }

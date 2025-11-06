@@ -1,13 +1,14 @@
 package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.dtos.requests.CreateReviewCouncilRequest;
-import mss.project.topicapprovalservice.dtos.requests.GiveCommentRequest;
 import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.enums.ReviewFormat;
 import mss.project.topicapprovalservice.enums.Status;
+import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
+import mss.project.topicapprovalservice.pojos.Council;
 import mss.project.topicapprovalservice.pojos.ProgressReviewCouncils;
 import mss.project.topicapprovalservice.pojos.ReviewCouncilMembers;
 import mss.project.topicapprovalservice.pojos.Topics;
@@ -18,12 +19,10 @@ import mss.project.topicapprovalservice.repositories.TopicsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import java.time.format.DateTimeFormatter;
 
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 @Service
@@ -64,9 +63,6 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
         }
 
         ProgressReviewCouncils council = new ProgressReviewCouncils();
-//        if (progressReviewCouncilRepository.findByCouncilName(request.getCouncilName()) != null) {
-//            throw new AppException(ErrorCode.NAME_OF_REVIEW_COUNCIL_ALREADY_EXIST);
-//        }
         council.setCouncilName("Hội đồng review " + request.getMilestone() + " đề tài " + topicOpt.get().getTitle());
         council.setTopic(topicOpt.get());
         council.setMilestone(request.getMilestone());
@@ -79,9 +75,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                 council.setReviewDate(progressReviewCouncilRepository.findByTopicAndMilestone(topicOpt.get(), Milestone.WEEK_8).getReviewDate().plusDays(28));
             }
         }
-//        council.setReviewDate(request.getReviewDate());
         council.setStatus(Status.PLANNED);
-//        council.setOverallComments("");
         council.setCreatedAt(LocalDateTime.now());
         if (request.getReviewFormat() == ReviewFormat.ONLINE) {
             council.setReviewFormat(ReviewFormat.ONLINE);
@@ -101,7 +95,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
         progressReviewCouncilRepository.save(council);
 
         memberIDs.forEach(accountId -> {
-            ReviewCouncilMembers member = new ReviewCouncilMembers(council, accountId);
+            ReviewCouncilMembers member = new ReviewCouncilMembers(council, accountId, Status.NOT_DECIDED);
             reviewCouncilMembersRepository.save(member);
         });
 
@@ -122,14 +116,14 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
     }
 
     @Override
-    public List<GetAllReviewCouncilResponse> getAllReviewCouncil(Long topicID) {
+    public List<GetReviewCouncilResponse> getAllReviewCouncil(Long topicID) {
         Optional<Topics> topicOpt = topicsRepository.findById(topicID);
         if (topicOpt.isEmpty()) {
             throw new AppException(ErrorCode.TOPICS_NOT_FOUND);
         }
         List<ProgressReviewCouncils> councilsList = progressReviewCouncilRepository.findAllByTopic(topicOpt.get());
         return councilsList.stream().map(council ->
-                        GetAllReviewCouncilResponse.builder()
+                        GetReviewCouncilResponse.builder()
                                 .councilID(council.getCouncilID())
                                 .councilName(council.getCouncilName())
                                 .topicID(council.getTopic().getId())
@@ -165,32 +159,13 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
 
 
     @Override
-    @Transactional
-    public void updateCouncilStatus(Long councilID, Long accountID) {
-        ProgressReviewCouncils council = progressReviewCouncilRepository.findByCouncilID(councilID);
-        if (council == null) {
-            throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
-        }
-        ReviewCouncilMembers member = reviewCouncilMembersRepository.findByProgressReviewCouncilAndAccountID(council, accountID);
-        if (member == null) {
-            throw new AppException(ErrorCode.LECTURER_IS_NOT_MEMBER);
-        }
-        if(!reviewCouncilMembersRepository.findAllByProgressReviewCouncilAndOverallCommentsIsNull(council).isEmpty()) {
-            throw new AppException(ErrorCode.COMMENT_IS_NULL);
-        } else {
-            council.setStatus(Status.APPROVED);
-            progressReviewCouncilRepository.save(council);
-        }
-    }
-
-    @Override
-    public List<GetAllReviewCouncilResponse> getAllReviewCouncilForCalendar() {
+    public List<GetReviewCouncilResponse> getAllReviewCouncilForCalendar() {
         List<ProgressReviewCouncils> councilsList = progressReviewCouncilRepository.findAll();
         if(councilsList.isEmpty()) {
             throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
         }
 
-        return councilsList.stream().map(council -> GetAllReviewCouncilResponse.builder()
+        return councilsList.stream().map(council -> GetReviewCouncilResponse.builder()
                 .councilID(council.getCouncilID())
                 .councilName(council.getCouncilName())
                 .topicID(council.getTopic().getId())
@@ -205,15 +180,33 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                 .build()).toList();
     }
 
+    @Override
+    public GetReviewCouncilResponse getReviewCouncil(Long councilID) {
+        ProgressReviewCouncils council = progressReviewCouncilRepository.findByCouncilID(councilID);
+        if(council == null) {
+            throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
+        }
+        return GetReviewCouncilResponse.builder()
+                .councilID(council.getCouncilID())
+                .councilName(council.getCouncilName())
+                .createdAt(council.getCreatedAt())
+                .reviewFormat(council.getReviewFormat())
+                .reviewDate(council.getReviewDate())
+                .meetingLink(council.getMeetingLink())
+                .roomNumber(council.getRoomNumber())
+                .milestone(council.getMilestone())
+                .topicID(council.getTopic().getId())
+                .topicTitle(council.getTopic().getTitle())
+                .status(council.getStatus().getValue())
+                .build();
+    }
+
 
     private void validateForWeek4(Topics topic, List<Long> memberIDs, CreateReviewCouncilRequest request) {
         Long supervisorID = accountTopicsRepository.findByTopics(topic).getAccountId();
         if (memberIDs.contains(supervisorID)) {
             throw new AppException(ErrorCode.MEMBER_CANNOT_BE_SUPERVISOR);
         }
-//        if (request.getReviewDate() == null) {
-//            throw new AppException(ErrorCode.REVIEW_DATE_FOR_WEEK_4_NOT_FOUND);
-//        }
         List<ProgressReviewCouncils> oldCouncilOfTopic = progressReviewCouncilRepository.findAllByTopic(topic);
         int size = oldCouncilOfTopic.size();
         if (size > 0) {
@@ -229,22 +222,17 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
             if (size < 1) {
                 throw new AppException(ErrorCode.PREVIOUS_REVIEW_COUNCIL_NOT_FOUND);
             }
-            if (progressReviewCouncilRepository.findByTopicAndMilestone(topic, Milestone.WEEK_4).getStatus() != Status.APPROVED) {
+            if(topic.getStatus() != TopicStatus.PASSED_REVIEW_1) {
                 throw new AppException(ErrorCode.STATUS_OF_PREVIOS_COUNCIL_NOT_VALID);
             }
         } else {
             if (size < 2) {
                 throw new AppException(ErrorCode.PREVIOUS_REVIEW_COUNCIL_NOT_FOUND);
             }
-            if (progressReviewCouncilRepository.findByTopicAndMilestone(topic, Milestone.WEEK_8).getStatus() != Status.APPROVED) {
+            if (topic.getStatus() != TopicStatus.PASSED_REVIEW_2) {
                 throw new AppException(ErrorCode.STATUS_OF_PREVIOS_COUNCIL_NOT_VALID);
             }
         }
-//        List<Long> oldCouncilIDs = new ArrayList<>();
-//        oldCouncilOfTopic.forEach(council -> {
-//            oldCouncilIDs.add(council.getCouncilID());
-//        });
-
         Set<Long> oldCouncilMemberIDs = new HashSet<>();
         oldCouncilOfTopic.forEach(council -> {
             List<ReviewCouncilMembers> members = reviewCouncilMembersRepository.findAllByProgressReviewCouncil(council);
@@ -258,19 +246,14 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
             }
         }
 
-//        for(int i = 0; i < size; i++) {
-//            Long oldLecturerID = oldCouncilMemberIDs.get(i);
-//            if (memberIDs.contains(oldLecturerID)) {
-//                count++;
-//            }
-//        }
+
         if (count != 1) {
             throw new AppException(ErrorCode.MEMBER_NOT_VALID);
         }
-//        Long supervisorID = accountTopicsRepository.findByTopics(topic).getAccountId();
-//        if (memberIDs.contains(supervisorID)) {
-//            throw new AppException(ErrorCode.MEMBER_CANNOT_BE_SUPERVISOR);
-//        }
+        Long supervisorID = accountTopicsRepository.findByTopics(topic).getAccountId();
+        if (memberIDs.contains(supervisorID)) {
+            throw new AppException(ErrorCode.MEMBER_CANNOT_BE_SUPERVISOR);
+        }
         if (request.getReviewDate() != null) {
             throw new AppException(ErrorCode.REVIEW_DATE_FOR_WEEK_8_12_IS_AUTO_CALCULATED);
         }
