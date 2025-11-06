@@ -31,11 +31,13 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   TeamOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import Header from '../../../components/combination/Header';
 import Footer from '../../../components/combination/Footer';
 import { topicService } from '../../../services/topicService';
 import { TopicWithApprovalStatus, TOPIC_STATUS, STATUS_DISPLAY, STATUS_COLORS } from '../../../types/topic';
+import PlagiarismResultsModal from '../../../components/PlagiarismResultsModal';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -46,6 +48,7 @@ export default function ThesisReviewPage() {
   const [approvedTopics, setApprovedTopics] = useState<TopicWithApprovalStatus[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<TopicWithApprovalStatus | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isPlagiarismModalVisible, setIsPlagiarismModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchText, setSearchText] = useState('');
@@ -379,9 +382,18 @@ export default function ThesisReviewPage() {
                 </Descriptions.Item>
                 {selectedTopic.filePathUrl && (
                   <Descriptions.Item label="File đính kèm" span={2}>
-                    <a href={selectedTopic.filePathUrl} target="_blank" rel="noopener noreferrer">
-                      <Button icon={<FileTextOutlined />}>Xem file</Button>
-                    </a>
+                    <Space>
+                      <a href={selectedTopic.filePathUrl} target="_blank" rel="noopener noreferrer">
+                        <Button icon={<FileTextOutlined />}>Xem file</Button>
+                      </a>
+                      <Button
+                        icon={<WarningOutlined />}
+                        onClick={() => setIsPlagiarismModalVisible(true)}
+                        danger
+                      >
+                        Xem danh sách đạo văn
+                      </Button>
+                    </Space>
                   </Descriptions.Item>
                 )}
               </Descriptions>
@@ -471,6 +483,13 @@ export default function ThesisReviewPage() {
             </Space>
           )}
         </Modal>
+
+        {/* Plagiarism Results Modal */}
+        <PlagiarismResultsModal
+          visible={isPlagiarismModalVisible}
+          topicId={selectedTopic?.id || null}
+          onClose={() => setIsPlagiarismModalVisible(false)}
+        />
       </Content>
       <Footer />
     </Layout>
