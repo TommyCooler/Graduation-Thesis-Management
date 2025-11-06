@@ -47,6 +47,9 @@ public class TopicsServiceImpl implements TopicService {
     @Autowired
     private AccountService accountService;
 
+    @Autowired(required = false)
+    private PlagiarismService plagiarismService;
+
     @Override
     public TopicsDTOResponse getTopicbById(Long topicId) {
         Topics topics = topicsRepository.findById(topicId)
@@ -186,6 +189,20 @@ public class TopicsServiceImpl implements TopicService {
         if (!topicsRepository.existsById(topicId)) {
             throw new AppException(ErrorCode.TOPICS_NOT_FOUND);
         }
+        
+        // Xóa topic khỏi Qdrant (vector database) trước
+        try {
+            if (plagiarismService != null) {
+                plagiarismService.deleteTopicFromQdrant(topicId);
+                logger.info("Successfully deleted topic {} from Qdrant", topicId);
+            } else {
+                logger.warn("PlagiarismService is not available, skipping Qdrant deletion for topic {}", topicId);
+            }
+        } catch (Exception e) {
+            // Log error nhưng vẫn tiếp tục xóa topic (có thể topic không có trong Qdrant)
+            logger.warn("Error deleting topic {} from Qdrant (continuing with topic deletion): {}", topicId, e.getMessage());
+        }
+        
         // Xóa tất cả AccountTopics liên quan trước
         accountTopicsRepository.deleteByTopicsId(topicId);
         // Sau đó xóa topic

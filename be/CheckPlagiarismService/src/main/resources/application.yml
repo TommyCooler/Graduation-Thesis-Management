@@ -2,25 +2,25 @@ spring:
   application:
     name: CHECK-PLAGIARISM-SERVICE
 
-#  datasource:
-#    driver-class-name: org.postgresql.Driver
-#    url: ${PLAGIARISM_DB_URL}
-#    username: ${PLAGIARISM_DB_USERNAME}
-#    password: ${PLAGIARISM_DB_PASSWORD}
-#    hikari:
-#      maximum-pool-size: 2
-#      minimum-idle: 1
-#      idle-timeout: 30000
-#      max-lifetime: 1800000
-#      connection-timeout: 20000
-#
-#  jpa:
-#    hibernate:
-#      ddl-auto: update
-#    show-sql: true
-#    properties:
-#      hibernate:
-#        dialect: org.hibernate.dialect.PostgreSQLDialect
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${PLAGIARISM_DB_URL}
+    username: ${PLAGIARISM_DB_USERNAME}
+    password: ${PLAGIARISM_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 1
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 
   servlet:
@@ -94,6 +94,7 @@ folder:
 n8n:
  base-url: ${N8N_BASE_URL}
  ingest-path: ${N8N_INGEST_PATH}
+ delete-path: ${N8N_INGEST_PATH_DELETE}
  token: ${N8N_INGEST_TOKEN}
 
 

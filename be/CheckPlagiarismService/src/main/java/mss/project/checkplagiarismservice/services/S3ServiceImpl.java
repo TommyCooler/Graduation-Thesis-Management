@@ -29,6 +29,9 @@ public class S3ServiceImpl implements S3Service {
     @Value("${n8n.ingest-path}")
     private String ingestPath;
 
+    @Value("${n8n.delete-path}")
+    private String ingestDeletePath;
+
     @Value("${n8n.token}")
     private String ingestToken;
 

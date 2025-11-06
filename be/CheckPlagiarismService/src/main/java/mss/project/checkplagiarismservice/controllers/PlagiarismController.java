@@ -64,16 +64,49 @@ public class PlagiarismController {
                 });
     }
 
-    @PostMapping("/report")
-    public ResponseEntity<ApiResponse<?>> receiveN8NResponse(@RequestBody PlagiarismReportRequest reportRequest) {
+    @PostMapping("/delete-topic-qdrant")
+    public Mono<ResponseEntity<ApiResponse<String>>> deleteTopicFromQdrant(
+            @RequestParam Long topicId) {
+
+        // Validate topicId
+        if (topicId == null) {
+            ApiResponse<String> errorResponse = ApiResponse.<String>builder()
+                    .code(400)
+                    .message("TopicId is required and cannot be empty")
+                    .data("")
+                    .build();
+            return Mono.just(ResponseEntity.badRequest().body(errorResponse));
+        }
+
+        return plagiarismService.deleteTopicFromQdrant(topicId)
+                .map(isDeleted -> {
+                    ApiResponse<String> response = ApiResponse.<String>builder()
+                            .code(200)
+                            .message(isDeleted ? "Delete topic from Qdrant success" : "Delete topic from Qdrant failed")
+                            .data("")
+                            .build();
+                    return ResponseEntity.ok(response);
+                })
+                .onErrorResume(e -> {
+                    ApiResponse<String> errorResponse = ApiResponse.<String>builder()
+                            .code(500)
+                            .message("Error deleting topic from Qdrant: " + e.getMessage())
+                            .data("")
+                            .build();
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse));
+                });
+    }
+
+    @PostMapping("/report/{id}")
+    public ResponseEntity<ApiResponse<?>> receiveN8NResponse(@PathVariable Long id, @RequestBody PlagiarismReportRequest reportRequest) {
         try {
             log.info("Received N8N report webhook");
-            log.debug("Report request: {} payload(s)", 
-                    reportRequest != null && reportRequest.getPayloads() != null 
+            log.debug("Report request: {} payload(s)",
+                    reportRequest != null && reportRequest.getPayloads() != null
                             ? reportRequest.getPayloads().size() : 0);
-            
-            // Process the report
-            plagiarismService.processPlagiarismReport(reportRequest);
+
+            // Process the report and save to database
+            plagiarismService.processPlagiarismReport(reportRequest, id);
 
             System.out.println(reportRequest);
 
@@ -89,6 +122,31 @@ public class PlagiarismController {
                     .body(ApiResponse.builder()
                             .code(500)
                             .message("Error processing report: " + e.getMessage())
+                            .data(null)
+                            .build()
+                    );
+        }
+    }
+
+    @GetMapping("/results/{topicId}")
+    public ResponseEntity<ApiResponse<?>> getPlagiarismResults(@PathVariable Long topicId) {
+        try {
+            log.info("Getting plagiarism results for topic ID: {}", topicId);
+
+            var results = plagiarismService.getPlagiarismResultsByTopicId(topicId);
+
+            return ResponseEntity.ok(ApiResponse.builder()
+                    .code(200)
+                    .message("Plagiarism results retrieved successfully")
+                    .data(results)
+                    .build()
+            );
+        } catch (Exception e) {
+            log.error("Error getting plagiarism results for topic {}: {}", topicId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.builder()
+                            .code(500)
+                            .message("Error getting plagiarism results: " + e.getMessage())
                             .data(null)
                             .build()
                     );

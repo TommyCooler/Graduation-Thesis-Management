@@ -47,3 +47,7 @@ management:
 app:
   jwt:
     secret-base64 : ${BASE-64}
+
+plagiarism:
+  service:
+    url: ${PLAGIARISM_SERVICE_URL:http://localhost:8080}
