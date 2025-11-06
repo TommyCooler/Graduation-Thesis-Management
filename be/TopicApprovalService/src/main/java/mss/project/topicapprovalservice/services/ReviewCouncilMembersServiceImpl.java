@@ -1,16 +1,19 @@
 package mss.project.topicapprovalservice.services;
 
-import mss.project.topicapprovalservice.dtos.requests.GiveCommentRequest;
+import mss.project.topicapprovalservice.dtos.requests.GradeCouncilRequest;
 import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 import mss.project.topicapprovalservice.dtos.responses.GetMemberOfReviewCouncilResponse;
-import mss.project.topicapprovalservice.dtos.responses.GiveCommentResponse;
+import mss.project.topicapprovalservice.dtos.responses.GradeCouncilResponse;
+import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.enums.Status;
+import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
 import mss.project.topicapprovalservice.pojos.ProgressReviewCouncils;
 import mss.project.topicapprovalservice.pojos.ReviewCouncilMembers;
 import mss.project.topicapprovalservice.repositories.ProgressReviewCouncilRepository;
 import mss.project.topicapprovalservice.repositories.ReviewCouncilMemberRepository;
+import mss.project.topicapprovalservice.repositories.TopicsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +34,9 @@ public class ReviewCouncilMembersServiceImpl implements IReviewCouncilMembersSer
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private TopicsRepository topicsRepository;
 
     @Override
     public List<GetMemberOfReviewCouncilResponse> getMembersOfCouncil(Long councilId) {
@@ -68,7 +74,7 @@ public class ReviewCouncilMembersServiceImpl implements IReviewCouncilMembersSer
 
     @Override
     @Transactional
-    public GiveCommentResponse giveComment(Long councilID, GiveCommentRequest request, Long accountID) {
+    public GradeCouncilResponse gradeCouncil(Long councilID, GradeCouncilRequest request, Long accountID) {
         ProgressReviewCouncils council = progressReviewCouncilRepository.findByCouncilID(councilID);
         if (council == null) {
             throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
@@ -77,18 +83,39 @@ public class ReviewCouncilMembersServiceImpl implements IReviewCouncilMembersSer
         if (member == null) {
             throw new AppException(ErrorCode.LECTURER_IS_NOT_MEMBER);
         }
-        if(council.getStatus() == Status.APPROVED) {
-            throw new AppException(ErrorCode.STATUS_OF_COUNCIL_IS_APPROVED);
-        } else {
-            if(request.getOverallComments() != null && !request.getOverallComments().trim().isEmpty()) {
-                member.setOverallComments(request.getOverallComments());
-                reviewCouncilMembersRepository.save(member);
-            }
+        if(council.getStatus() != Status.PLANNED) {
+            throw new AppException(ErrorCode.STATUS_OF_COUNCIL_IS_NOT_PLANNED);
         }
-        return GiveCommentResponse.builder()
+        member.setOverallComments(request.getOverallComments());
+        member.setDecision(request.getDecison());
+        reviewCouncilMembersRepository.save(member);
+
+        if(reviewCouncilMembersRepository.findAllByProgressReviewCouncilAndDecision(council, Status.ACCEPT).size() == 2) {
+            council.setStatus(Status.COMPLETED);
+            setStatusForTopicByMilestone(council);
+        }
+        if (!reviewCouncilMembersRepository.findAllByProgressReviewCouncilAndDecision(council, Status.REJECT).isEmpty()) {
+            council.setStatus(Status.COMPLETED);
+            council.getTopic().setStatus(TopicStatus.FAILED);
+        }
+        progressReviewCouncilRepository.save(council);
+        topicsRepository.save(council.getTopic());
+        return GradeCouncilResponse.builder()
                 .accountID(accountID)
                 .overallComments(member.getOverallComments())
+                .decision(member.getDecision().getValue())
                 .build();
     }
 
+    private void setStatusForTopicByMilestone(ProgressReviewCouncils council) {
+        if(council.getMilestone() == Milestone.WEEK_4) {
+            council.getTopic().setStatus(TopicStatus.PASSED_REVIEW_1);
+        } else if (council.getMilestone() == Milestone.WEEK_8) {
+            council.getTopic().setStatus(TopicStatus.PASSED_REVIEW_2);
+        } else {
+            council.getTopic().setStatus(TopicStatus.PASSED_REVIEW_3);
+        }
+    }
 }
+
+

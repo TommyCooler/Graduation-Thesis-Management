@@ -1,5 +1,6 @@
 package mss.project.topicapprovalservice.repositories;
 
+import mss.project.topicapprovalservice.enums.Status;
 import mss.project.topicapprovalservice.pojos.ProgressReviewCouncils;
 import mss.project.topicapprovalservice.pojos.ReviewCouncilMembers;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +13,5 @@ import java.util.Optional;
 public interface ReviewCouncilMemberRepository extends JpaRepository<ReviewCouncilMembers, Long> {
     ReviewCouncilMembers findByProgressReviewCouncilAndAccountID(ProgressReviewCouncils council, Long accountID);
     List<ReviewCouncilMembers> findAllByProgressReviewCouncil(ProgressReviewCouncils council);
-    Optional<String> findOverallCommentsByProgressReviewCouncilAndAccountID(ProgressReviewCouncils council, Long accountID);
-    List<ReviewCouncilMembers> findAllByProgressReviewCouncilAndOverallCommentsIsNull(ProgressReviewCouncils council);
+    List<ReviewCouncilMembers> findAllByProgressReviewCouncilAndDecision(ProgressReviewCouncils council, Status decision);
 }

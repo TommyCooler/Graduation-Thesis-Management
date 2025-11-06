@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -235,12 +236,14 @@ public class TopicsServiceImpl implements TopicService {
 
     @Override
     public List<GetAllApprovedTopicsResponse> getApprovedTopics() {
-        List<Topics> topicsList = topicsRepository.findByStatus(TopicStatus.APPROVED);
+        List<TopicStatus> statusList = Arrays.asList(TopicStatus.APPROVED, TopicStatus.PASSED_REVIEW_1, TopicStatus.PASSED_REVIEW_2, TopicStatus.PASSED_REVIEW_3,TopicStatus.FAILED);
+        List<Topics> topicsList = topicsRepository.findByStatusIn(statusList);
         return topicsList.stream().map(topic ->
                 GetAllApprovedTopicsResponse.builder()
                         .topicID(topic.getId())
                         .topicTitle(topic.getTitle())
                         .description(topic.getDescription())
+                        .topicStatus(topic.getStatus().getDisplayName())
                         .build()).toList();
     }
 
