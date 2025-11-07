@@ -67,6 +67,8 @@ public class PlagiarismServiceImpl implements PlagiarismService {
             return Mono.error(new IllegalArgumentException("TopicId is required"));
         }
 
+        TopicDTO topicDTO = topicService.getTopicById(topicId).getData();
+
         log.info("Starting file processing - Topic ID: {}, Filename: {}", topicId, file.filename());
 
         // Delete old plagiarism results when re-uploading file (update topic)
@@ -91,7 +93,7 @@ public class PlagiarismServiceImpl implements PlagiarismService {
                                     .thenReturn(url))
 
                             // Call N8N webhook
-                            .flatMap(url -> callN8nWebhook(topicId, url))
+                            .flatMap(url -> callN8nWebhook(topicId, url, topicDTO.getDescription()))
 
                             .doOnSuccess(result -> log.info("Successfully completed processing for topic: {}", topicId))
                             .doOnError(e -> log.error("Error processing file for topic {}: {}", topicId, e.getMessage(), e))
@@ -145,7 +147,7 @@ public class PlagiarismServiceImpl implements PlagiarismService {
     /**
      * Call N8N webhook to trigger plagiarism check
      */
-    private Mono<Boolean> callN8nWebhook(Long topicId, String url) {
+    private Mono<Boolean> callN8nWebhook(Long topicId, String url, String description) {
         log.debug("Calling N8N webhook - Topic: {}, URL: {}", topicId, url);
         
         return n8nWebClient.get()
@@ -153,6 +155,7 @@ public class PlagiarismServiceImpl implements PlagiarismService {
                         .path(ingestPath)
                         .queryParam("topicId", topicId)
                         .queryParam("fileUrl", url)
+                        .queryParam("description", description)
                         .build())
                 .header("X-INGEST-TOKEN", ingestToken)
                 .retrieve()
@@ -298,42 +301,5 @@ public class PlagiarismServiceImpl implements PlagiarismService {
                     return Mono.error(new RuntimeException("N8N delete webhook failed: " + e.getMessage(), e));
                 });
     }
-
-    /**
-     * Extract topic ID from file URL
-     * Supports various URL formats:
-     * - S3 URLs: https://bucket.s3.region.amazonaws.com/topics/123/file.pdf
-     * - S3 URLs: https://s3.region.amazonaws.com/bucket/topics/123/file.pdf
-     * - Presigned URLs with topic ID in path
-     *
-     * @param fileUrl the file URL to parse
-     * @return the extracted topic ID, or null if not found
-     */
-    private Long extractTopicIdFromFileUrl(String fileUrl) {
-        if (fileUrl == null || fileUrl.isEmpty()) {
-            return null;
-        }
-
-        try {
-            // Look for pattern: /topics/{number}/ or /topics/{number}/
-            // Also handles: topics%2F{number}%2F (URL encoded)
-            java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(
-                "(?:topics[/%]2F|topics/)([0-9]+)(?:[/%]2F|/)"
-            );
-            java.util.regex.Matcher matcher = pattern.matcher(fileUrl);
-
-            if (matcher.find()) {
-                String topicIdStr = matcher.group(1);
-                return Long.parseLong(topicIdStr);
-            }
-
-            log.debug("No topic ID pattern found in URL: {}", fileUrl);
-            return null;
-        } catch (Exception e) {
-            log.error("Error extracting topic ID from URL: {}, error: {}", fileUrl, e.getMessage());
-            return null;
-        }
-    }
-
 }
 
