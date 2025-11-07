@@ -94,7 +94,7 @@ folder:
 n8n:
  base-url: ${N8N_BASE_URL}
  ingest-path: ${N8N_INGEST_PATH}
- delete-path: ${N8N_INGEST_PATH_DELETE}
+ delete-path: ${N8N_DELETE_PATH}
  token: ${N8N_INGEST_TOKEN}
 
 

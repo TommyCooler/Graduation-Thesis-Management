@@ -161,6 +161,55 @@ public class S3Service {
     }
 
     /**
+     * Extract file name from S3 URL
+     * @param s3Url S3 URL (e.g., https://bucket.s3.amazonaws.com/path/fileName)
+     * @return File name (key) or null if cannot extract
+     */
+    public String extractFileNameFromUrl(String s3Url) {
+        if (s3Url == null || s3Url.isEmpty()) {
+            return null;
+        }
+        
+        try {
+            // Try to parse as URL
+            java.net.URL url = new java.net.URL(s3Url);
+            String path = url.getPath();
+            
+            // Remove leading slash and get the file name
+            if (path != null && path.length() > 1) {
+                // Remove leading slash
+                String key = path.substring(1);
+                // If the URL contains bucket name in path, remove it
+                if (key.startsWith(bucketName + "/")) {
+                    key = key.substring(bucketName.length() + 1);
+                }
+                return key;
+            }
+            
+            // Fallback: try to extract from path pattern
+            // Format: https://bucket.s3.amazonaws.com/fileName
+            String[] parts = s3Url.split("/");
+            if (parts.length > 0) {
+                return parts[parts.length - 1];
+            }
+            
+            return null;
+        } catch (Exception e) {
+            log.warn("Failed to extract file name from URL: {}, error: {}", s3Url, e.getMessage());
+            // Fallback: try simple extraction
+            try {
+                String[] parts = s3Url.split("/");
+                if (parts.length > 0) {
+                    return parts[parts.length - 1];
+                }
+            } catch (Exception ex) {
+                log.error("Error in fallback file name extraction: {}", ex.getMessage());
+            }
+            return null;
+        }
+    }
+
+    /**
      * Generate unique file name with timestamp
      * @param originalFilename Original file name
      * @return Unique file name

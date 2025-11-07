@@ -46,8 +46,7 @@ public class PlagiarismServiceImpl implements PlagiarismService {
     public PlagiarismServiceImpl(
             WebClient n8nWebClient,
             S3Service s3Service,
-            TopicService topicService,
-            PlagiarismResultRepository plagiarismResultRepository) {
+            TopicService topicService, PlagiarismResultRepository plagiarismResultRepository) {
         this.n8nWebClient = n8nWebClient;
         this.s3Service = s3Service;
         this.topicService = topicService;
@@ -61,7 +60,7 @@ public class PlagiarismServiceImpl implements PlagiarismService {
             log.error("File is null");
             return Mono.error(new IllegalArgumentException("File is required and cannot be empty"));
         }
-
+        
         if (topicId == null) {
             log.error("TopicId is null");
             return Mono.error(new IllegalArgumentException("TopicId is required"));
@@ -71,39 +70,28 @@ public class PlagiarismServiceImpl implements PlagiarismService {
 
         log.info("Starting file processing - Topic ID: {}, Filename: {}", topicId, file.filename());
 
-        // Delete old plagiarism results when re-uploading file (update topic)
-        return Mono.fromRunnable(() -> {
-                    log.info("Checking for existing plagiarism results for topic {}", topicId);
-                    if (plagiarismResultRepository.existsByTopicId(topicId)) {
-                        log.info("Deleting old plagiarism results for topic {} before re-check", topicId);
-                        deletePlagiarismResultsByTopicId(topicId);
-                    }
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .then(Mono.defer(() -> {
-                    // Upload file to S3
-                    return s3Service.uploadFileAndGetUrl(file, prefix)
-                            .doOnNext(url -> log.info("File uploaded successfully to S3: {}", url))
-                            .doOnError(e -> log.error("Failed to upload file to S3: {}", e.getMessage()))
-
-                            // Update topic with file URL
-                            .flatMap(url -> updateTopicWithFileUrl(topicId, url)
-                                    .doOnSuccess(topic -> log.info("Topic {} updated with file URL", topicId))
-                                    .doOnError(e -> log.error("Failed to update topic {}: {}", topicId, e.getMessage()))
-                                    .thenReturn(url))
-
-                            // Call N8N webhook
-                            .flatMap(url -> callN8nWebhook(topicId, url, topicDTO.getDescription()))
-
-                            .doOnSuccess(result -> log.info("Successfully completed processing for topic: {}", topicId))
-                            .doOnError(e -> log.error("Error processing file for topic {}: {}", topicId, e.getMessage(), e))
-
-                            // Map errors to RuntimeException with context
-                            .onErrorMap(e -> {
-                                String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                                return new RuntimeException("Error sending file to N8N: " + errorMsg, e);
-                            });
-                }));
+        // Upload file to S3
+        return s3Service.uploadFileAndGetUrl(file, prefix)
+                .doOnNext(url -> log.info("File uploaded successfully to S3: {}", url))
+                .doOnError(e -> log.error("Failed to upload file to S3: {}", e.getMessage()))
+                
+                // Update topic with file URL
+                .flatMap(url -> updateTopicWithFileUrl(topicId, url)
+                        .doOnSuccess(topic -> log.info("Topic {} updated with file URL", topicId))
+                        .doOnError(e -> log.error("Failed to update topic {}: {}", topicId, e.getMessage()))
+                        .thenReturn(url))
+                
+                // Call N8N webhook
+                .flatMap(url -> callN8nWebhook(topicId, url, topicDTO.getDescription()))
+                
+                .doOnSuccess(result -> log.info("Successfully completed processing for topic: {}", topicId))
+                .doOnError(e -> log.error("Error processing file for topic {}: {}", topicId, e.getMessage(), e))
+                
+                // Map errors to RuntimeException with context
+                .onErrorMap(e -> {
+                    String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                    return new RuntimeException("Error sending file to N8N: " + errorMsg, e);
+                });
     }
 
     /**
@@ -157,7 +145,7 @@ public class PlagiarismServiceImpl implements PlagiarismService {
                         .queryParam("fileUrl", url)
                         .queryParam("description", description)
                         .build())
-                .header("X-INGEST-TOKEN", ingestToken)
+//                .header("X-INGEST-TOKEN", ingestToken)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .timeout(Duration.ofSeconds(30))
@@ -170,7 +158,7 @@ public class PlagiarismServiceImpl implements PlagiarismService {
     }
 
     /**
-     * Process plagiarism report from N8N and save to database
+     * Process plagiarism report from N8N
      */
     @Override
     @Transactional
@@ -233,25 +221,6 @@ public class PlagiarismServiceImpl implements PlagiarismService {
         log.info("Finished processing plagiarism report");
     }
 
-    /**
-     * Get plagiarism results for a topic
-     */
-    @Override
-    public List<PlagiarismResult> getPlagiarismResultsByTopicId(Long topicId) {
-        log.info("Fetching plagiarism results for topic ID: {}", topicId);
-        return plagiarismResultRepository.findByTopicId(topicId);
-    }
-
-    /**
-     * Delete plagiarism results for a topic (used when updating topic)
-     */
-    @Override
-    @Transactional
-    public void deletePlagiarismResultsByTopicId(Long topicId) {
-        log.info("Deleting plagiarism results for topic ID: {}", topicId);
-        plagiarismResultRepository.deleteByTopicId(topicId);
-        log.info("Successfully deleted plagiarism results for topic ID: {}", topicId);
-    }
 
     /**
      * Delete topic from Qdrant via N8N webhook
@@ -282,15 +251,12 @@ public class PlagiarismServiceImpl implements PlagiarismService {
     private Mono<Boolean> callN8nDeleteWebhook(Long topicId) {
         log.debug("Calling N8N delete webhook - Topic: {}", topicId);
         
-        // Use deletePath if configured, otherwise use ingestPath
-        String path = (deletePath != null && !deletePath.isEmpty()) ? deletePath : ingestPath;
-        
         return n8nWebClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path(path)
+                        .path(deletePath)
                         .queryParam("topicId", topicId)
                         .build())
-                .header("X-INGEST-TOKEN", deletePath)
+//                .header("X-INGEST-TOKEN", ingestToken)
                 .retrieve()
                 .bodyToMono(Void.class)
                 .timeout(Duration.ofSeconds(30))

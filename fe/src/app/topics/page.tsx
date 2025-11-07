@@ -104,15 +104,15 @@ export default function TopicUpload(): JSX.Element {
       const piFullName = userInfo?.name || 'N/A';
       const piLecturerId = userInfo?.lecturerId || userInfo?.employeeId || userInfo?.id?.toString() || 'N/A';
       
-      const membersText =
-        members.length > 0
-          ? `\n\nThành viên:\n${members
-              .map((m, i) => `${i + 1}. ${m.fullName} - ${m.email}${m.note ? ` (${m.note})` : ''}`)
-              .join('\n')}`
-          : '\n\nThành viên: (trống)';
+      // const membersText =
+      //   members.length > 0
+      //     ? `\n\nThành viên:\n${members
+      //         .map((m, i) => `${i + 1}. ${m.fullName} - ${m.email}${m.note ? ` (${m.note})` : ''}`)
+      //         .join('\n')}`
+      //     : '\n\nThành viên: (trống)';
 
-      const piText = `Chủ nhiệm: ${piFullName} - ${piLecturerId}`;
-      const headerText = `[${SCHOOL_NAME} | ${formattedDocDateForHeader}]`;
+      // const piText = `Chủ nhiệm: ${piFullName} - ${piLecturerId}`;
+      // const headerText = `[${SCHOOL_NAME} | ${formattedDocDateForHeader}]`;
 
       // const descriptionWithKeywords =
       //   `${headerText}\n${piText}\n\n${values.description}` +

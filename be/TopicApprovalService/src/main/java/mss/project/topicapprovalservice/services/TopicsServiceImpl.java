@@ -24,8 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -50,6 +50,9 @@ public class TopicsServiceImpl implements TopicService {
 
     @Autowired(required = false)
     private PlagiarismService plagiarismService;
+
+    @Autowired
+    private S3Service s3Service;
 
     @Override
     public TopicsDTOResponse getTopicbById(Long topicId) {
@@ -115,6 +118,31 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
+    @Transactional
+    public AccountTopicsDTOResponse addTopicMember(Long topicId, Long accountId, String accountName) {
+        // Kiểm tra topic có tồn tại không
+        Topics topic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+        
+        // Kiểm tra user đã tham gia topic chưa
+        if (accountTopicsRepository.existsByTopicsIdAndAccountId(topicId, accountId)) {
+            throw new AppException(ErrorCode.USER_ALREADY_JOINED_TOPIC);
+        }
+        
+        // Tạo AccountTopics cho member với role MEMBER
+        AccountTopics memberAccountTopic = new AccountTopics();
+        memberAccountTopic.setTopics(topic);
+        memberAccountTopic.setAccountId(accountId);
+        memberAccountTopic.setAccountName(accountName);
+        memberAccountTopic.setRole(TopicRole.MEMBER);
+        
+        AccountTopics savedMember = accountTopicsRepository.save(memberAccountTopic);
+        logger.info("Added member {} to topic {} by admin/creator", accountId, topicId);
+        
+        return convertAccountTopicToDTO(savedMember);
+    }
+
+    @Override
     public List<AccountTopicsDTOResponse> getTopicMembers(Long topicId) {
         // Kiểm tra topic có tồn tại không
         if (!topicsRepository.existsById(topicId)) {
@@ -125,6 +153,33 @@ public class TopicsServiceImpl implements TopicService {
         return members.stream()
                 .map(this::convertAccountTopicToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void removeTopicMember(Long topicId, Long accountId) {
+        // Kiểm tra topic có tồn tại không
+        if (!topicsRepository.existsById(topicId)) {
+            throw new AppException(ErrorCode.TOPICS_NOT_FOUND);
+        }
+        
+        // Tìm AccountTopics để xóa
+        Optional<AccountTopics> accountTopic = accountTopicsRepository.findByTopicsIdAndAccountId(topicId, accountId);
+        
+        if (accountTopic.isEmpty()) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND_IN_TOPIC);
+        }
+        
+        AccountTopics member = accountTopic.get();
+        
+        // Không cho xóa CREATOR
+        if (member.getRole() == TopicRole.CREATOR) {
+            throw new AppException(ErrorCode.CANNOT_REMOVE_CREATOR);
+        }
+        
+        // Xóa thành viên
+        accountTopicsRepository.delete(member);
+        logger.info("Removed member {} from topic {}", accountId, topicId);
     }
 
     @Override
@@ -157,6 +212,24 @@ public class TopicsServiceImpl implements TopicService {
                 existingTopic.setStatus(status);
             } catch (IllegalArgumentException e) {
                 // Keep existing status if invalid
+            }
+        }
+        
+        // Xóa file cũ trên S3 nếu có filePathUrl cũ
+        // File mới sẽ được upload thông qua plagiarism check service
+        String oldFilePathUrl = existingTopic.getFilePathUrl();
+        if (oldFilePathUrl != null && !oldFilePathUrl.isEmpty()) {
+            try {
+                String oldFileName = s3Service.extractFileNameFromUrl(oldFilePathUrl);
+                if (oldFileName != null && !oldFileName.isEmpty()) {
+                    s3Service.deleteFile(oldFileName);
+                    logger.info("Deleted old file from S3: {} for topic {}", oldFileName, Id);
+                } else {
+                    logger.warn("Could not extract file name from old filePathUrl: {} for topic {}", oldFilePathUrl, Id);
+                }
+            } catch (Exception e) {
+                logger.error("Failed to delete old file from S3 for topic {}: {}", Id, e.getMessage(), e);
+                // Continue with update even if deletion fails
             }
         }
         
@@ -253,14 +326,12 @@ public class TopicsServiceImpl implements TopicService {
 
     @Override
     public List<GetAllApprovedTopicsResponse> getApprovedTopics() {
-        List<TopicStatus> statusList = Arrays.asList(TopicStatus.APPROVED, TopicStatus.PASSED_REVIEW_1, TopicStatus.PASSED_REVIEW_2, TopicStatus.PASSED_REVIEW_3,TopicStatus.FAILED);
-        List<Topics> topicsList = topicsRepository.findByStatusIn(statusList);
+        List<Topics> topicsList = topicsRepository.findByStatus(TopicStatus.APPROVED);
         return topicsList.stream().map(topic ->
                 GetAllApprovedTopicsResponse.builder()
                         .topicID(topic.getId())
                         .topicTitle(topic.getTitle())
                         .description(topic.getDescription())
-                        .topicStatus(topic.getStatus().getDisplayName())
                         .build()).toList();
     }
 

@@ -112,7 +112,7 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
             changes.add(String.format("Đường dẫn file: '%s' -> '%s'", 
                 topic.getFilePathUrl() != null ? topic.getFilePathUrl() : "(trống)", 
                 request.getFilePathUrl() != null ? request.getFilePathUrl() : "(trống)"));
-            topic.setFilePathUrl(request.getFilePathUrl());
+            topic.setFilePathUrl(request.getFilePathUrl() != null ? request.getFilePathUrl() : topic.getFilePathUrl());
         }
         
         // Kiểm tra status nếu có

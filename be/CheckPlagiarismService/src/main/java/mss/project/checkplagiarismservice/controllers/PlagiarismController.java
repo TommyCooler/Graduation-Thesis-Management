@@ -101,8 +101,8 @@ public class PlagiarismController {
     public ResponseEntity<ApiResponse<?>> receiveN8NResponse(@PathVariable Long id, @RequestBody PlagiarismReportRequest reportRequest) {
         try {
             log.info("Received N8N report webhook");
-            log.debug("Report request: {} payload(s)",
-                    reportRequest != null && reportRequest.getPayloads() != null
+            log.debug("Report request: {} payload(s)", 
+                    reportRequest != null && reportRequest.getPayloads() != null 
                             ? reportRequest.getPayloads().size() : 0);
 
             // Process the report and save to database
@@ -122,31 +122,6 @@ public class PlagiarismController {
                     .body(ApiResponse.builder()
                             .code(500)
                             .message("Error processing report: " + e.getMessage())
-                            .data(null)
-                            .build()
-                    );
-        }
-    }
-
-    @GetMapping("/results/{topicId}")
-    public ResponseEntity<ApiResponse<?>> getPlagiarismResults(@PathVariable Long topicId) {
-        try {
-            log.info("Getting plagiarism results for topic ID: {}", topicId);
-
-            var results = plagiarismService.getPlagiarismResultsByTopicId(topicId);
-
-            return ResponseEntity.ok(ApiResponse.builder()
-                    .code(200)
-                    .message("Plagiarism results retrieved successfully")
-                    .data(results)
-                    .build()
-            );
-        } catch (Exception e) {
-            log.error("Error getting plagiarism results for topic {}: {}", topicId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.builder()
-                            .code(500)
-                            .message("Error getting plagiarism results: " + e.getMessage())
                             .data(null)
                             .build()
                     );

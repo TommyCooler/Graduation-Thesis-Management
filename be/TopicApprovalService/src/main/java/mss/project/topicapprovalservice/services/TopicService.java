@@ -24,7 +24,9 @@ public interface TopicService {
     List<TopicsDTOResponse> getTopicsByStatus(TopicStatus status);
     List<TopicsDTOResponse> getTopicsByCreatorId(Long creatorId);
     AccountTopicsDTOResponse joinTopic(Long topicId, Long memberId, String memberName);
+    AccountTopicsDTOResponse addTopicMember(Long topicId, Long accountId, String accountName);
     List<AccountTopicsDTOResponse> getTopicMembers(Long topicId);
+    void removeTopicMember(Long topicId, Long accountId);
     List<TopicsDTOResponse> getTopicsByCouncilNotNull();
     
     // New methods for 2-person approval workflow

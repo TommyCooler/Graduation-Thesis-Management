@@ -125,42 +125,6 @@ class PlagiarismService {
   }
 
   /**
-   * Lấy danh sách đạo văn cho topic
-   */
-  async getPlagiarismResults(topicId: number): Promise<PlagiarismResult[]> {
-    try {
-      console.log('PlagiarismService.getPlagiarismResults called with topicId:', topicId);
-
-      const url = `${this.baseUrl}/results/${topicId}`;
-      console.log('Sending GET request to:', url);
-
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          ...this.getAuthHeaders(),
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      console.log('Response received:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error response body:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
-
-      const data = await response.json();
-      console.log('Get plagiarism results successful:', data);
-      return data.data || [];
-    } catch (error) {
-      console.error('Error getting plagiarism results:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Kiểm tra health của service
    */
   async checkHealth(): Promise<{ status: string; message: string; data: string }> {
@@ -181,15 +145,6 @@ class PlagiarismService {
       throw error;
     }
   }
-}
-
-export interface PlagiarismResult {
-  id: number;
-  topicId: number;
-  plagiarizedTopicId: number | null;
-  plagiarizedContent: string;
-  plagiarizedFileUrl: string;
-  createdAt: string;
 }
 
 // Export singleton instance

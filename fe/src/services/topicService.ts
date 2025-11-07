@@ -721,6 +721,74 @@ class TopicService {
     }
   }
 
+  /**
+   * Lấy danh sách thành viên của đề tài
+   */
+  async getTopicMembers(topicId: number): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/members`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse) || [];
+    } catch (error) {
+      console.error('Error fetching topic members:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Thêm thành viên vào đề tài (admin/creator có thể thêm member khác)
+   */
+  async addTopicMember(topicId: number, accountId: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/members/${accountId}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error adding topic member:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa thành viên khỏi đề tài
+   */
+  async removeTopicMember(topicId: number, accountId: number): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/members/${accountId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error removing topic member:', error);
+      throw error;
+    }
+  }
+
 
   /**
    * Chuyển đổi dữ liệu từ API response sang Topic

@@ -49,6 +49,8 @@ public enum ErrorCode {
     TOPIC_ALREADY_APPROVED(400, "You have already approved this topic"),
     CANNOT_APPROVE_OWN_TOPIC(403, "Người tạo và người tham gia đề tài không được duyệt đề tài của mình"),
     CANNOT_EDIT_TOPIC(403, "Bạn không có quyền chỉnh sửa đề tài này. Chỉ người tạo và người tham gia mới được chỉnh sửa"),
+    USER_NOT_FOUND_IN_TOPIC(404, "Người dùng không phải là thành viên của đề tài này"),
+    CANNOT_REMOVE_CREATOR(403, "Không thể xóa chủ nhiệm đề tài"),
     ;
     private int code;
     private String message;

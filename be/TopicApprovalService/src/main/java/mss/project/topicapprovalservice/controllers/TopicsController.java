@@ -6,9 +6,11 @@ import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
 import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
 import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
 import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
+import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.services.TopicService;
 import mss.project.topicapprovalservice.services.TopicHistoryService;
+import mss.project.topicapprovalservice.services.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,6 +31,9 @@ public class TopicsController {
     
     @Autowired
     private TopicHistoryService topicHistoryService;
+    
+    @Autowired
+    private AccountService accountService;
 
     @PostMapping("/create")
     public ApiResponse<TopicsDTOResponse> createTopic(
@@ -100,6 +105,37 @@ public class TopicsController {
         apiResponse.setCode(200);
         apiResponse.setMessage("Topic members retrieved successfully");
         apiResponse.setData(members);
+        return apiResponse;
+    }
+
+    @PostMapping("/{topicId}/members/{accountId}")
+    public ApiResponse<AccountTopicsDTOResponse> addTopicMember(
+            @PathVariable Long topicId,
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Lấy thông tin account từ AccountService
+        AccountDTO account = accountService.getAccountById(accountId);
+        String accountName = account.getName() != null ? account.getName() : account.getEmail();
+        
+        AccountTopicsDTOResponse result = topicsService.addTopicMember(topicId, accountId, accountName);
+        
+        ApiResponse<AccountTopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Member added successfully");
+        apiResponse.setData(result);
+        return apiResponse;
+    }
+
+    @DeleteMapping("/{topicId}/members/{accountId}")
+    public ApiResponse<Void> removeTopicMember(
+            @PathVariable Long topicId,
+            @PathVariable Long accountId) {
+        topicsService.removeTopicMember(topicId, accountId);
+        
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Member removed successfully");
         return apiResponse;
     }
 
