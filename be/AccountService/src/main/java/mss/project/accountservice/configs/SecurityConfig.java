@@ -41,7 +41,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/auth/provide-email").hasRole("HEADOFDEPARTMENT")
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/accounts/**").hasAnyRole("LECTURER", "HEADOFDEPARTMENT")
+                        .requestMatchers("/api/accounts/{id}/admin-update-role").hasRole("ADMIN")
+                        .requestMatchers("/api/accounts/**").hasAnyRole("LECTURER", "HEADOFDEPARTMENT","ADMIN")
                         .anyRequest().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2

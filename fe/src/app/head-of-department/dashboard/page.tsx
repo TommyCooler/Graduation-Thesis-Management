@@ -7,6 +7,7 @@ import {
   UserOutlined,
   AuditOutlined,
   BarChartOutlined,
+  MailOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Header from '../../../components/combination/Header';
@@ -25,7 +26,7 @@ interface Thesis {
 }
 
 export default function HeadOfDepartmentDashboard() {
- 
+
 
   const recentTheses: Thesis[] = [
     {
@@ -105,6 +106,16 @@ export default function HeadOfDepartmentDashboard() {
                   >
                     Xem báo cáo thống kê
                   </Button>
+
+                  <Link href="/head-of-department/provide-account">
+                    <Button
+                      size="large"
+                      className="w-full h-12 text-[#ff6b35] border-[#ff6b35]"
+                      icon={<MailOutlined />}
+                    >
+                      Cấp email cho giảng viên
+                    </Button>
+                  </Link>
                 </Space>
               </Card>
             </Col>
@@ -135,11 +146,10 @@ export default function HeadOfDepartmentDashboard() {
                         </div>
                         <div className="ml-3 text-right">
                           <div
-                            className={`py-1 px-2 rounded text-xs font-bold ${
-                              thesis.status === 'approved'
+                            className={`py-1 px-2 rounded text-xs font-bold ${thesis.status === 'approved'
                                 ? 'bg-green-100 text-green-500'
                                 : 'bg-yellow-100 text-yellow-500'
-                            }`}
+                              }`}
                           >
                             {thesis.status === 'approved' ? 'Đã duyệt' : 'Chờ duyệt'}
                           </div>

@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const PUBLIC_PREFIXES = ['/auth']
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/forgot-password', '/auth/oauth2/fail']
 const HEAD_OF_DEPARTMENT_PREFIX = '/head-of-department'
+const ADMIN_PREFIX = '/admin'
 
 function isPublicPath(pathname: string) {
-  return PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))
+  return PUBLIC_PATHS.includes(pathname)
 }
 
 function decodeJwtPayload(token: string) {
@@ -29,12 +30,7 @@ export function middleware(req: NextRequest) {
   const pathname = nextUrl.pathname
   const token = req.cookies.get('access_token')?.value
 
-  if (token && isPublicPath(pathname)) {
-    const url = nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
-  }
-
+  // Nếu chưa có token mà vào private -> redirect login
   if (!token && !isPublicPath(pathname)) {
     const url = nextUrl.clone()
     url.pathname = '/auth/login'
@@ -42,14 +38,22 @@ export function middleware(req: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Decode token để lấy role
   let role: string | undefined
   if (token) {
     const payload = decodeJwtPayload(token)
     role = payload?.role
   }
 
+  // Phân quyền theo role
   if (pathname.startsWith(HEAD_OF_DEPARTMENT_PREFIX)) {
     if (role !== 'HEADOFDEPARTMENT' && role !== 'HEAD_OF_DEPARTMENT') {
+      const url = nextUrl.clone()
+      url.pathname = '/forbidden'
+      return NextResponse.redirect(url)
+    }
+  } else if (pathname.startsWith(ADMIN_PREFIX)) {
+    if (role !== 'ADMIN') {
       const url = nextUrl.clone()
       url.pathname = '/forbidden'
       return NextResponse.redirect(url)

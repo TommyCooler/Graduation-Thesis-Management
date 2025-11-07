@@ -5,6 +5,7 @@ import mss.project.accountservice.dtos.responses.AccountPerPageResponse;
 import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.ApiResponse;
 import mss.project.accountservice.dtos.responses.PageResponse;
+import mss.project.accountservice.enums.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -47,9 +48,11 @@ public class AccountController {
     @GetMapping("/all-paged")
     public ApiResponse<PageResponse<AccountPerPageResponse>> getAllAccounts(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        PageResponse<AccountPerPageResponse> response = accountService.getAccountsPaged(page - 1, size);
+        Account currentAccount = accountService.getAccountById(Long.parseLong(jwt.getSubject()));
+        PageResponse<AccountPerPageResponse> response = accountService.getAccountsPaged(page - 1, size, currentAccount);
         ApiResponse<PageResponse<AccountPerPageResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setData(response);
         return apiResponse;
@@ -73,6 +76,17 @@ public class AccountController {
         accountService.updateAccountProfile(id, request);
         ApiResponse<?> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Cập nhật thông tin tài khoản thành công.");
+        return apiResponse;
+    }
+
+    @PutMapping("/{id}/admin-update-role")
+    public ApiResponse<?> adminUpdateAccountRole(
+            @PathVariable Long id,
+            @RequestParam Role role
+    ) {
+        accountService.adminUpdateAccountRole(id, role);
+        ApiResponse<?> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Cập nhật vai trò tài khoản thành công.");
         return apiResponse;
     }
 
