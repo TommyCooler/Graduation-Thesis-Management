@@ -4,7 +4,7 @@ export interface CouncilCreateRequest {
   topicId: number[];
 }
 
-// Topic trong council response
+// Topic trong council response (matches TopicsDTOResponse)
 export interface CouncilTopic {
   id: number;
   title: string;
@@ -12,6 +12,7 @@ export interface CouncilTopic {
   submitedAt: string | null;
   status: string | null;
   filePathUrl: string | null;
+  createdBy: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 }
@@ -26,7 +27,7 @@ export interface CouncilMember {
   phoneNumber: string | null; // Có thể null
 }
 
-// Council response types
+// Council response types (matches CouncilResponse from backend)
 export interface CouncilResponse {
   id: number;
   councilName: string;
@@ -34,7 +35,7 @@ export interface CouncilResponse {
   date: string;
   status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   councilMembers: CouncilMember[];
-  topic: CouncilTopic[]; // Array of topics thay vì string
+  topic: CouncilTopic[]; // Array of topics
 }
 
 // API response wrapper

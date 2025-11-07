@@ -20,9 +20,9 @@ public class CouncilController {
     private ICouncilService councilService;
 
     @PostMapping("/create")
-    public ApiResponse<CouncilResponse> createCouncil(@RequestBody CouncilCreateRequest councilCreateRequest) {
-        CouncilResponse saved = councilService.addCouncil(councilCreateRequest);
-        return ApiResponse.<CouncilResponse>builder()
+    public ApiResponse<List<CouncilResponse>> createCouncil(@RequestBody CouncilCreateRequest councilCreateRequest) {
+        List<CouncilResponse> saved = councilService.addCouncil(councilCreateRequest);
+        return ApiResponse.<List<CouncilResponse>>builder()
                 .code(201)
                 .message("Council created successfully")
                 .data(saved)
@@ -48,10 +48,11 @@ public class CouncilController {
 
     @PutMapping("/{councilId}/status")
     public ApiResponse<CouncilResponse> updateCouncilStatus(@PathVariable int councilId, @RequestParam String status) {
-        councilService.updateCouncilStatus(councilId, status);
+        CouncilResponse councilResponse =councilService.updateCouncilStatus(councilId, status);
         return ApiResponse.<CouncilResponse>builder()
                 .code(200)
                 .message("Council status updated successfully")
+                .data(councilResponse)
                 .build();
     }
 }

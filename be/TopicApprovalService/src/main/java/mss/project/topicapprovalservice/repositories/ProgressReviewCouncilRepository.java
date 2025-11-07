@@ -15,6 +15,7 @@ public interface ProgressReviewCouncilRepository extends JpaRepository<ProgressR
     ProgressReviewCouncils findByCouncilID(Long councilID);
     ProgressReviewCouncils findByTopicAndMilestone(Topics topic, Milestone milestone);
     ProgressReviewCouncils findByCouncilName(String councilName);
+    List<ProgressReviewCouncils> findAllByTopic_IdInAndMilestone(List<Long> topicIds, Milestone milestone);
 
 
 }
