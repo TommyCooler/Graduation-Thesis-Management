@@ -1,12 +1,7 @@
 package mss.project.topicapprovalservice.controllers;
 
-import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
-import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
-import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.services.TopicService;
 import mss.project.topicapprovalservice.services.TopicHistoryService;
@@ -162,9 +157,16 @@ public class TopicsController {
     }
 
     @GetMapping("topic-count")
-    public ApiResponse<List<TopicsDTOResponse>>getTopicCount() {
-        List<TopicsDTOResponse> topicsDTOResponses= topicsService.getTopicsByCouncilNotNull();
-        ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+    public ApiResponse<List<TopicsWithCouncilIsNullResponse>>getTopicCount() {
+        List<TopicsWithCouncilIsNullResponse> topicsDTOResponses= topicsService.getTopicsByCouncilNotNull();
+        if(topicsDTOResponses.isEmpty()) {
+            ApiResponse<List<TopicsWithCouncilIsNullResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(404);
+            apiResponse.setMessage("No topics found with non-null council");
+            apiResponse.setData(topicsDTOResponses);
+            return apiResponse;
+        }
+        ApiResponse<List<TopicsWithCouncilIsNullResponse>> apiResponse = new ApiResponse<>();
         apiResponse.setCode(200);
         apiResponse.setMessage("Total Topic Count Retrieved Successfully");
         apiResponse.setData(topicsDTOResponses);

@@ -506,7 +506,7 @@ class TopicService {
   }
 
   async getAllTopicsForReviewCouncil(): Promise<Topic[]> {
-    const response = await fetch(`${this.baseUrl}/all`, {
+    const response = await fetch(`${this.baseUrl}/topic-count`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

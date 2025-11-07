@@ -10,7 +10,7 @@ public interface ICouncilService {
 
     public Council getCouncilById(int id);
     public List<CouncilResponse> getAllCouncils();
-    public CouncilResponse addCouncil(CouncilCreateRequest councilCreateRequest);
+    public List<CouncilResponse> addCouncil(CouncilCreateRequest councilCreateRequest);
     public CouncilResponse updateCouncil(int id, CouncilCreateRequest councilCreateRequest);
     public void deleteCouncil(int id);
     CouncilResponse updateCouncilStatus(int id, String status);

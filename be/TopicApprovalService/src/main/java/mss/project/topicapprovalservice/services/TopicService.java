@@ -2,11 +2,8 @@ package mss.project.topicapprovalservice.services;
 
 
 
-import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
-import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
 import mss.project.topicapprovalservice.enums.TopicStatus;
 
 import java.util.List;
@@ -26,8 +23,8 @@ public interface TopicService {
     AccountTopicsDTOResponse joinTopic(Long topicId, Long memberId, String memberName);
     AccountTopicsDTOResponse addTopicMember(Long topicId, Long accountId, String accountName);
     List<AccountTopicsDTOResponse> getTopicMembers(Long topicId);
+    List<TopicsWithCouncilIsNullResponse> getTopicsByCouncilNotNull();
     void removeTopicMember(Long topicId, Long accountId);
-    List<TopicsDTOResponse> getTopicsByCouncilNotNull();
     
     // New methods for 2-person approval workflow
     TopicWithApprovalStatusResponse approveTopicV2(Long topicId, String approverEmail, String approverName, String comment);

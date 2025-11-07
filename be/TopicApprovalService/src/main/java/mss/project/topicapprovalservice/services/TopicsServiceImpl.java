@@ -1,17 +1,15 @@
 package mss.project.topicapprovalservice.services;
 
-import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
-import mss.project.topicapprovalservice.dtos.responses.TopicApprovalDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
-import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
+import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
+import mss.project.topicapprovalservice.pojos.ProgressReviewCouncils;
 import mss.project.topicapprovalservice.pojos.TopicApproval;
 import mss.project.topicapprovalservice.pojos.Topics;
 import mss.project.topicapprovalservice.pojos.AccountTopics;
+import mss.project.topicapprovalservice.repositories.ProgressReviewCouncilRepository;
 import mss.project.topicapprovalservice.repositories.TopicApprovalRepository;
 import mss.project.topicapprovalservice.repositories.TopicsRepository;
 import mss.project.topicapprovalservice.repositories.AccountTopicsRepository;
@@ -25,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -44,6 +43,9 @@ public class TopicsServiceImpl implements TopicService {
 
     @Autowired
     private TopicApprovalRepository topicApprovalRepository;
+
+    @Autowired
+    private ProgressReviewCouncilRepository progressReviewCouncilRepository;
 
     @Autowired
     private AccountService accountService;
@@ -156,6 +158,35 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
+    public List<TopicsWithCouncilIsNullResponse> getTopicsByCouncilNotNull() {
+        List<Topics> topics = topicsRepository.findByCouncilIsNullAndStatus(TopicStatus.PASSED_REVIEW_3);
+
+        List<Long> topicIds = topics.stream().map(Topics::getId).toList();
+        List<ProgressReviewCouncils> councils = progressReviewCouncilRepository.findAllByTopic_IdInAndMilestone(topicIds, Milestone.WEEK_12);
+
+        Map<Long, LocalDateTime> reviewDateMap = councils.stream()
+                .collect(Collectors.toMap(
+                        c -> c.getTopic().getId(),
+                        ProgressReviewCouncils::getReviewDate
+                ));
+
+        return topics.stream()
+                .map(topic -> TopicsWithCouncilIsNullResponse.builder()
+                        .id(topic.getId())
+                        .title(topic.getTitle())
+                        .description(topic.getDescription())
+                        .submitedAt(String.valueOf(topic.getSubmitedAt()))
+                        .status(topic.getStatus().name())
+                        .filePathUrl(topic.getFilePathUrl())
+                        .createdBy(topic.getCreatedBy())
+                        .createdAt(String.valueOf(topic.getCreatedAt()))
+                        .updatedAt(String.valueOf(topic.getUpdatedAt()))
+                        .reviewDate(reviewDateMap.get(topic.getId()))
+                        .build()
+                )
+                .toList();
+    }
+
     @Transactional
     public void removeTopicMember(Long topicId, Long accountId) {
         // Kiểm tra topic có tồn tại không
@@ -182,14 +213,6 @@ public class TopicsServiceImpl implements TopicService {
         logger.info("Removed member {} from topic {}", accountId, topicId);
     }
 
-    @Override
-    public List<TopicsDTOResponse> getTopicsByCouncilNotNull() {
-        List<Topics> topics = topicsRepository.findByCouncilIsNullAndStatus(TopicStatus.APPROVED);
-        if (!topics.isEmpty()) {
-            return topics.stream().map(this::convertToDTO).toList();
-        }
-        return null;
-    }
     @Override
     @Transactional
     public TopicsDTOResponse updateTopic(Long Id, TopicsDTORequest topicsDTO) {
