@@ -15,5 +15,5 @@ public class GradeCouncilRequest {
     private String overallComments;
 
     @NotNull(message = "Quyết định của giảng viên không được để trống")
-    private Status decison;
+    private Status decision;
 }

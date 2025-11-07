@@ -34,6 +34,7 @@ public enum ErrorCode {
     ROOM_NUMBER_IS_NOT_VALID(813,"Số phòng không hợp lệ"),
     STATUS_OF_PREVIOS_COUNCIL_NOT_VALID(814, "Trạng thái của đề tài ở mốc trước đó phải là Đạt"),
     STATUS_OF_COUNCIL_IS_NOT_PLANNED(815,"Mốc review này đã được chấm"),
+    REVIEW_DATE_MUST_BE_AFTER_PREVIOUS(816,"Ngày review phải sau ngày review của mốc trước"),
     INVALID_SEMESTER(400, "Invalid semester"),
     NOT_ENOUGH_LECTURERS(400, "Not enough lecturers to approve the topic"),
     USER_ALREADY_JOINED_TOPIC(4001, "User has already joined this topic"),

@@ -63,11 +63,18 @@ public class ReviewCouncilMembersServiceImpl implements IReviewCouncilMembersSer
                         ReviewCouncilMembers::getAccountID,
                         member -> member.getOverallComments() != null ? member.getOverallComments() : ""
                 ));
+        Map<Long, String> decisionMap = members.stream()
+                .collect(Collectors.toMap(
+                        ReviewCouncilMembers::getAccountID,
+                        member -> member.getDecision() != null ? member.getDecision().getValue() : "Chưa chấm"
+                ));
         return memberAccounts.stream().map(account ->
                 GetMemberOfReviewCouncilResponse.builder()
                         .accountID(account.getId())
                         .accountName(account.getName())
                         .overallComments(commentsMap.get(account.getId()))
+                        .email(account.getEmail())
+                        .decision(decisionMap.get(account.getId()))
                         .build()
         ).toList();
     }
@@ -87,7 +94,7 @@ public class ReviewCouncilMembersServiceImpl implements IReviewCouncilMembersSer
             throw new AppException(ErrorCode.STATUS_OF_COUNCIL_IS_NOT_PLANNED);
         }
         member.setOverallComments(request.getOverallComments());
-        member.setDecision(request.getDecison());
+        member.setDecision(request.getDecision());
         reviewCouncilMembersRepository.save(member);
 
         if(reviewCouncilMembersRepository.findAllByProgressReviewCouncilAndDecision(council, Status.ACCEPT).size() == 2) {

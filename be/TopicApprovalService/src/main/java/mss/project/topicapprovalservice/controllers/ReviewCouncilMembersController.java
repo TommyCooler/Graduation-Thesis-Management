@@ -8,6 +8,7 @@ import mss.project.topicapprovalservice.dtos.responses.GradeCouncilResponse;
 import mss.project.topicapprovalservice.services.IReviewCouncilMembersService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +33,8 @@ public class ReviewCouncilMembersController {
                 .build();
     }
 
+
+    @PreAuthorize("hasRole('LECTURER')")
     @PutMapping("/{councilID}/grade")
     public ApiResponse<GradeCouncilResponse> gradeCouncil(@Valid @RequestBody GradeCouncilRequest request, @PathVariable Long councilID, @AuthenticationPrincipal Jwt jwt) {
         Long accountID = null;

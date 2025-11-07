@@ -13,4 +13,6 @@ public class GetMemberOfReviewCouncilResponse {
     private Long accountID;
     private String accountName;
     private String overallComments;
+    private String email;
+    private String decision;
 }

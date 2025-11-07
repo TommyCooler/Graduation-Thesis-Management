@@ -14,13 +14,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<?>> handleValidationError(MethodArgumentNotValidException ex) {
-        String enumKey = ex.getFieldError().getDefaultMessage();
-        ErrorCode errorCode = ErrorCode.valueOf(enumKey);
+        String message = ex.getFieldError().getDefaultMessage();
+        ApiResponse<?> response;
 
-        ApiResponse<?> response = ApiResponse.builder()
-                .code(errorCode.getCode())
-                .message(errorCode.getMessage())
-                .build();
+        try {
+            ErrorCode errorCode = ErrorCode.valueOf(message);
+            response = ApiResponse.builder()
+                    .code(errorCode.getCode())
+                    .message(errorCode.getMessage())
+                    .build();
+        } catch (IllegalArgumentException e) {
+            response = ApiResponse.builder()
+                    .code(HttpStatus.BAD_REQUEST.value())
+                    .message(message)
+                    .build();
+        }
 
         return ResponseEntity.badRequest().body(response);
     }
