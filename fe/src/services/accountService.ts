@@ -8,7 +8,13 @@ export interface Account {
   employeeId?: string;
   role?: string;
 }
-
+export interface CurrentUser {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string | null;
+  role: string;
+}
 class AccountService {
   private baseUrl: string;
 
@@ -23,7 +29,7 @@ class AccountService {
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
     };
-    
+
     // Get token from localStorage
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken');
@@ -31,7 +37,7 @@ class AccountService {
         headers['Authorization'] = `Bearer ${token}`;
       }
     }
-    
+
     return headers;
   }
 
@@ -77,6 +83,27 @@ class AccountService {
       return data;
     } catch (error) {
       console.error('Error fetching account by email:', error);
+      return null;
+    }
+  }
+
+  // hàm get current account
+  async getMe(): Promise<CurrentUser | null> {
+    try {
+      const response = await fetch(`${this.baseUrl}/current-account`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching current account', error);
       return null;
     }
   }
