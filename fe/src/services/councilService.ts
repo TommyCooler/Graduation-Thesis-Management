@@ -2,7 +2,9 @@ import {
   CouncilCreateRequest,
   CouncilResponse,
   CouncilApiResponse,
-  CouncilListApiResponse
+  CouncilListApiResponse,
+  MyCouncilItem,
+  MyCouncilApiResponse
 } from '../types/council';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
@@ -84,6 +86,35 @@ class CouncilService {
       return Array.isArray(data.data) ? data.data : [data.data];
     } catch (error) {
       console.error('Error fetching councils:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách hội đồng của người dùng hiện tại
+   */
+  async getMyCouncils(): Promise<MyCouncilItem[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/my-councils`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: MyCouncilApiResponse = await response.json();
+      console.log('📦 My councils API response:', data);
+      
+      if (data.code !== 200) {
+        throw new Error(data.message || 'Failed to fetch my councils');
+      }
+
+      return Array.isArray(data.data) ? data.data : [data.data];
+    } catch (error) {
+      console.error('Error fetching my councils:', error);
       throw error;
     }
   }

@@ -4,10 +4,16 @@ package mss.project.topicapprovalservice.controllers;
 import mss.project.topicapprovalservice.dtos.requests.CouncilCreateRequest;
 import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
 import mss.project.topicapprovalservice.dtos.responses.CouncilResponse;
+import mss.project.topicapprovalservice.dtos.responses.CouncilSummaryResponse;
+import mss.project.topicapprovalservice.exceptions.AppException;
+import mss.project.topicapprovalservice.exceptions.ErrorCode;
 import mss.project.topicapprovalservice.pojos.Council;
 import mss.project.topicapprovalservice.services.CouncilService;
 import mss.project.topicapprovalservice.services.ICouncilService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +25,7 @@ public class CouncilController {
     @Autowired
     private ICouncilService councilService;
 
+    @PreAuthorize("hasRole('HEADOFDEPARTMENT')")
     @PostMapping("/create")
     public ApiResponse<List<CouncilResponse>> createCouncil(@RequestBody CouncilCreateRequest councilCreateRequest) {
         List<CouncilResponse> saved = councilService.addCouncil(councilCreateRequest);
@@ -29,6 +36,7 @@ public class CouncilController {
                 .build();
     }
 
+    @PreAuthorize("hasRole('HEADOFDEPARTMENT')")
     @GetMapping("/all")
     public ApiResponse<List<CouncilResponse>> findAllCouncil() {
         List<CouncilResponse> councils = councilService.getAllCouncils();
@@ -53,6 +61,26 @@ public class CouncilController {
                 .code(200)
                 .message("Council status updated successfully")
                 .data(councilResponse)
+                .build();
+    }
+
+    @GetMapping("/my-councils")
+    public ApiResponse<List<CouncilSummaryResponse>> getCouncilsByAccountId(@AuthenticationPrincipal Jwt jwt) {
+
+        if (jwt == null || jwt.getSubject() == null) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        Long accountId;
+        try {
+            accountId = Long.parseLong(jwt.getSubject());
+        } catch (NumberFormatException e) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+        List<CouncilSummaryResponse> councils = councilService.getCouncilResponseByAccountId(accountId);
+        return ApiResponse.<List<CouncilSummaryResponse>>builder()
+                .code(200)
+                .message("Fetched councils for account successfully")
+                .data(councils)
                 .build();
     }
 }

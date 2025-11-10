@@ -2,10 +2,7 @@ package mss.project.topicapprovalservice.services;
 
 import jakarta.transaction.Transactional;
 import mss.project.topicapprovalservice.dtos.requests.CouncilCreateRequest;
-import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
-import mss.project.topicapprovalservice.dtos.responses.CouncilMemberResponse;
-import mss.project.topicapprovalservice.dtos.responses.CouncilResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.enums.Role;
 import mss.project.topicapprovalservice.enums.Status;
@@ -240,6 +237,39 @@ public class CouncilService implements ICouncilService {
     }
 
     @Override
+    public  List<CouncilSummaryResponse> getCouncilResponseByAccountId(Long accountId) {
+        List<CouncilMember> members = councilMemberRepository.findByAccountId(accountId);
+        if(members.isEmpty()){;
+            throw new AppException(ErrorCode.COUNCIL_MEMBER_NOT_FOUND);
+        }
+
+        List<CouncilSummaryResponse> summaries = new ArrayList<>();
+        for (CouncilMember member : members) {
+            Council council = member.getCouncil();
+            Role role = member.getRole();
+            Status status = council.getStatus();
+            String councilName = council.getCouncilName();
+            String semester = council.getSemester();
+            String defenseDate = council.getDefenseDate().toString();
+            for (Topics topic : council.getTopics()) {
+                summaries.add(CouncilSummaryResponse.builder()
+                        .role(role)
+                        .councilName(councilName)
+                        .semester(semester)
+                        .defenseDate(defenseDate)
+                        .defenseTime(topic.getDefenseTime())
+                        .topicsTitle(topic.getTitle())
+                        .fileUrl(topic.getFilePathUrl())
+                        .topicsDescription(topic.getDescription())
+                        .status(status)
+                        .build());
+            }
+        }
+
+        return summaries;
+    }
+
+    @Override
     public Council getCouncilById(int id) {
         return null;
     }
@@ -271,10 +301,15 @@ public class CouncilService implements ICouncilService {
             for(Topics topic : topics){
                 Topics checkTopic= topicsRepository.findById(topic.getId())
                         .orElseThrow(() -> new AppException(ErrorCode.TOPIC_NOT_FOUND));
+                AccountDTO creator = accountFeignClient.getAccountById(Long.valueOf(checkTopic.getCreatedBy()));
                 TopicsDTOResponse topicResponse = TopicsDTOResponse.builder()
                         .id(checkTopic.getId())
                         .title(checkTopic.getTitle())
                         .description(checkTopic.getDescription())
+                        .filePathUrl(checkTopic.getFilePathUrl())
+                        .defenseTime(checkTopic.getDefenseTime())
+                        .status(checkTopic.getStatus().toString())
+                        .createdBy(creator.getName())
                         .build();
                 topicResponses.add(topicResponse);
             }

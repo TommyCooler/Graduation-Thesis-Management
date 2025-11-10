@@ -14,6 +14,8 @@ public enum ErrorCode {
     UNAUTHORIZED_ACCESS(403, "Unauthorized access"),
     TOPIC_ALREADY_ASSIGNED_TO_COUNCIL(400, "Topic has already been assigned to a review council"),
     REVIEW_COUNCIL_NOT_APPROVED(400, "Review council has not approved the topic"),
+    COUNCIL_MEMBER_NOT_FOUND(404, "Council member not found"),
+    UNAUTHORIZED(403, "You are not authorized to perform this action"),
 
 
 

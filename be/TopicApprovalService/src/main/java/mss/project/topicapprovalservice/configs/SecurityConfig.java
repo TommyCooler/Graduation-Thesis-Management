@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/api/auth/**").permitAll()
-//                        .requestMatchers("/api/progress-review-councils/**").hasRole("LECTURER")
+                        .requestMatchers("/api/progress-review-councils/**").hasRole("LECTURER")
                         // Allow service-to-service calls from PlagiarismService
                         .requestMatchers(HttpMethod.GET, "/api/topics/**").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/topics/update/**").permitAll()

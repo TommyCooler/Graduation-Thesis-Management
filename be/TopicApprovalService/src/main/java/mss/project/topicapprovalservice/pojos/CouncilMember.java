@@ -33,5 +33,7 @@ public class CouncilMember {
     @Column(name ="account_id")
     private Long accountId;
 
+    @Column(name ="note")
+    private String note;
 }
 

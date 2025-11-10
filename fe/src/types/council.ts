@@ -96,3 +96,39 @@ export const COUNCIL_ROLE_COLORS = {
   [COUNCIL_ROLE.SECRETARY]: 'blue',
   [COUNCIL_ROLE.MEMBER]: 'default',
 } as const;
+
+// My Council types
+export interface MyCouncilItem {
+  role: string;
+  councilName: string;
+  semester: string;
+  defenseDate: string;
+  status: string;
+  topicsTitle: string;
+  topicsDescription: string;
+  fileUrl: string;
+  defenseTime: string;
+}
+
+export interface MyCouncilApiResponse {
+  code: number;
+  message: string;
+  data: MyCouncilItem[];
+}
+
+// Grouped council structure - nhóm theo ngày
+export interface GroupedByDate {
+  defenseDate: string;
+  councils: {
+    councilName: string;
+    semester: string;
+    status: string;
+    role: string;
+    topics: {
+      title: string;
+      description: string;
+      fileUrl: string;
+      defenseTime: string;
+    }[];
+  }[];
+}

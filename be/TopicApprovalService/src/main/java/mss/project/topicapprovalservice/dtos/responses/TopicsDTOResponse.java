@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalTime;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -16,6 +18,7 @@ public class TopicsDTOResponse {
     private String title;
     private String description;
     private String submitedAt;
+    private LocalTime defenseTime;
     private String status;
     private String filePathUrl;
     private String createdBy;
