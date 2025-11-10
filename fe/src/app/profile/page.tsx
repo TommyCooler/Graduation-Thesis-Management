@@ -1,4 +1,4 @@
-'use client';
+'use client'
 import { useEffect, useState } from 'react';
 import {
   Layout, Card, Typography, Avatar, Button, Spin, Tag, message,
@@ -39,7 +39,7 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Không thể tải hồ sơ');
-      setAccount(data);
+      setAccount(data.data);
     } catch (err: any) {
       message.error(err.message || 'Lỗi khi tải thông tin người dùng');
     } finally {
