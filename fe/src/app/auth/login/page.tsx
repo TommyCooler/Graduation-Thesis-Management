@@ -180,9 +180,9 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            <div className="text-center mt-6">
-              <Text type="secondary">Don't have an account? </Text>
-              <Link href="/auth/register" className="text-orange-500 font-semibold">Signup</Link>
+            <div className="text-center mt-11">
+              {/* <Text type="secondary">Don't have an account? </Text>
+              <Link href="/auth/register" className="text-orange-500 font-semibold">Signup</Link> */}
             </div>
           </div>
         </div>

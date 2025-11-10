@@ -130,15 +130,6 @@ export default function Header() {
                     Đăng nhập
                   </Button>
                 </Link>
-                <Link href="/auth/register">
-                  <Button
-                    type="primary"
-                    icon={<UserOutlined />}
-                    className="bg-orange-500 border-orange-500 hover:bg-orange-600 hover:border-orange-600"
-                  >
-                    Đăng ký
-                  </Button>
-                </Link>
               </>
             ) : (
               <Dropdown menu={menu} placement="bottomRight" trigger={['click']}>
