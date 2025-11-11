@@ -139,8 +139,8 @@ class _LoginScreenState extends State<LoginScreen> {
           print('➡️ First login - going to change password');
           Navigator.pushReplacementNamed(context, '/change-password');
         } else {
-          print('➡️ Not first login - navigating by role');
-          _navigateByRole(response.data!.role);
+          print('➡️ Not first login - showing post-login menu');
+          _showPostLoginMenu(response.data!.role);
         }
         
       } else {
@@ -203,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       
       print('📍 Step 5: Navigating by role...');
-      _navigateByRole(backendResponse.user.role);
+      _showPostLoginMenu(backendResponse.user.role);
 
     } catch (e) {
       print('❌ Google Sign-In Error: $e');
@@ -228,11 +228,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _navigateByRole(String role) {
-    print('🔄 Navigating by role: $role');
-    
+  void _showPostLoginMenu(String role) async {
+    // KHÔNG HIỂN THỊ BOTTOM SHEET NỮA
+    if (!mounted) return;
+
     String message = '';
-    
     switch (role) {
       case 'HEADOFDEPARTMENT':
         message = 'Chào mừng Trưởng khoa!';
@@ -247,16 +247,21 @@ class _LoginScreenState extends State<LoginScreen> {
         message = 'Chào mừng!';
         break;
     }
-    
-    print('➡️ Going to home...');
+
+    // LUÔN LUÔN ĐIỀU HƯỚNG ĐẾN TRANG CHỦ
     Navigator.pushReplacementNamed(context, AppRoutes.home);
-    
-    // Show welcome message sau khi navigate
+
+    // Hiển thị thông báo chào mừng SAU KHI đã điều hướng
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         _showBar(message, icon: Icons.home, color: Colors.blue);
       }
     });
+  }
+
+  void _navigateByRole(String role) {
+    // kept for backward compatibility — delegate to post-login menu
+    _showPostLoginMenu(role);
   }
 
   @override
