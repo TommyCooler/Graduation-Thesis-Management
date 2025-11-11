@@ -100,14 +100,19 @@ export const COUNCIL_ROLE_COLORS = {
 // My Council types
 export interface MyCouncilItem {
   role: string;
+  councilId?: number; // optional if BE provides
+  councilMemberId?: number; // ID của bản ghi CouncilMember
   councilName: string;
   semester: string;
   defenseDate: string;
   status: string;
+  topicStatus?: string; // Trạng thái của đề tài
   topicsTitle: string;
   topicsDescription: string;
   fileUrl: string;
   defenseTime: string;
+  topicId?: number; // optional if BE provides
+  retakeDate?: string | null; // Ngày chấm lại (chỉ có khi topicStatus là RETAKING)
 }
 
 export interface MyCouncilApiResponse {
@@ -124,11 +129,15 @@ export interface GroupedByDate {
     semester: string;
     status: string;
     role: string;
+    retakeDate?: string | null; // Ngày chấm lại
     topics: {
       title: string;
       description: string;
       fileUrl: string;
       defenseTime: string;
+      topicStatus?: string;
+      topicId?: number;
+      councilMemberId?: number; // ID của bản ghi CouncilMember
     }[];
   }[];
 }

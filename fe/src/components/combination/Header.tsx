@@ -111,7 +111,7 @@ export default function Header() {
               </Link>
               <Link href="/my-council">
                 <Button type="text" icon={<TeamOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                  Hội đồng của tôi
+                  Hội đồng khóa Luận
                 </Button>
               </Link>
               <Link href="/review-council">

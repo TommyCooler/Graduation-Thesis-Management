@@ -106,8 +106,8 @@ public class CouncilService implements ICouncilService {
                             if (reviewCouncil == null) {
                                 throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
                             }
-                            if (!reviewCouncil.getStatus().equals(Status.APPROVED)) {
-                                throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_APPROVED);
+                            if (!reviewCouncil.getStatus().equals(Status.COMPLETED)) {
+                                throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_COMPLETED);
                             }
                             return reviewCouncil.getReviewDate();
                         })
@@ -257,12 +257,16 @@ public class CouncilService implements ICouncilService {
             String defenseDate = council.getDefenseDate().toString();
             for (Topics topic : council.getTopics()) {
                 summaries.add(CouncilSummaryResponse.builder()
+                        .councilId(council.getId())
+                        .topicId(topic.getId())
                         .role(role)
+                        .councilMemberId(member.getId())
                         .councilName(councilName)
                         .semester(semester)
                         .defenseDate(defenseDate)
                         .defenseTime(topic.getDefenseTime())
                         .retakeDate(council.getRetakeDefenseDate() != null ? council.getRetakeDefenseDate().toString() : null)
+                        .topicStatus(topic.getStatus())
                         .topicsTitle(topic.getTitle())
                         .fileUrl(topic.getFilePathUrl())
                         .topicsDescription(topic.getDescription())

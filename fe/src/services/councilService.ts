@@ -91,6 +91,32 @@ class CouncilService {
   }
 
   /**
+   * Cập nhật trạng thái hội đồng
+   */
+  async updateCouncilStatus(councilId: number, status: string): Promise<CouncilResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${councilId}/status?status=${encodeURIComponent(status)}`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data: CouncilApiResponse = await response.json();
+      if (data.code !== 200) {
+        throw new Error(data.message || 'Failed to update council status');
+      }
+      return data.data;
+    } catch (error) {
+      console.error('Error updating council status:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Lấy danh sách hội đồng của người dùng hiện tại
    */
   async getMyCouncils(): Promise<MyCouncilItem[]> {
@@ -211,9 +237,10 @@ class CouncilService {
   
   getStatusDisplay(status: string): string {
     const statusMap: Record<string, string> = {
-      'PLANNED': 'Đã lên kế hoạch',
-      'IN_PROGRESS': 'Đang diễn ra', 
-      'COMPLETED': 'Đã hoàn thành',
+      'PLANNED': 'Đã lập',
+      'IN_PROGRESS': 'Đang chấm', 
+      'COMPLETED': 'Hoàn thành',
+      'RETAKING': 'Đang chấm lại',
       'CANCELLED': 'Đã hủy',
     };
     return statusMap[status] || status;
@@ -223,7 +250,8 @@ class CouncilService {
     const colorMap: Record<string, string> = {
       'PLANNED': 'blue',
       'IN_PROGRESS': 'orange',
-      'COMPLETED': 'green', 
+      'COMPLETED': 'green',
+      'RETAKING': 'purple',
       'CANCELLED': 'red',
     };
     return colorMap[status] || 'default';
