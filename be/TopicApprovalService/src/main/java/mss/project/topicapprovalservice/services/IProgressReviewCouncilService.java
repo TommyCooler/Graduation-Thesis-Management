@@ -14,4 +14,5 @@ public interface IProgressReviewCouncilService {
     List<GetReviewCouncilResponse> getAllReviewCouncilForCalendar(Long accountID);
     GetReviewCouncilResponse getReviewCouncil(Long councilID);
     UpdateCouncilResponse updateReviewCouncil(Long councilID, UpdateCouncilRequest request);
+//    List<GetReviewCouncilResponse> getAllMyReviewCouncil(Long accountID);
 }

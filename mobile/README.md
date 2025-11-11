@@ -90,7 +90,7 @@ lib/
 ```bash
 flutter pub get
 flutter run
-```
+f```
 
 ## Dependencies
 

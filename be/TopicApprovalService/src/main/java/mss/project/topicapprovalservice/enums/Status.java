@@ -16,7 +16,12 @@ public enum Status {
     // Status của mỗi giảng viên trong hội đồng review: NOT_DECIDED, ACCEPT, REJECT
     ACCEPT("Chấp nhận"),
     REJECT("Từ chối"),
-    NOT_DECIDED("Chưa chấm")
+    NOT_DECIDED("Chưa chấm"),
+
+    // Status cuar kết quả
+    PASSED("Đạt"),
+    NOT_PASSED("Không đạt"),
+    NOT_REVIEWED("Chưa có"),
     ;
 
 

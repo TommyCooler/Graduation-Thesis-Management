@@ -9,6 +9,7 @@ export interface ReviewCouncilApiModel {
   milestone: string;
   reviewDate?: string | null;
   status: string;
+  result: string;
   createdAt?: string;
   overallComment?: string | null;
   reviewFormat?: string | null;
@@ -32,6 +33,7 @@ export interface ReviewCouncilUIModel {
   milestone: string; 
   reviewDate?: string; 
   status: string;
+  result: string;
   lecturers: ReviewCouncilMember[];
   feedback?: string;
   reviewFormat?: string;
@@ -347,6 +349,33 @@ class ReviewCouncilService {
     console.log(`Cập nhật hội đồng ID ${councilID} thành công`);
   }
 
+  async getCouncilsForLecturer(): Promise<ReviewCouncilUIModel[]> {
+    const response = await fetch(`${this.baseUrl}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch lecturer's councils: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const councils: ReviewCouncilApiModel[] =
+      data.result ?? data.data ?? data ?? [];
+
+    // Lấy luôn danh sách giảng viên của từng hội đồng
+    const councilsWithMembers = await Promise.all(
+      councils.map(async (c) => {
+        const lecturers = await this.getCouncilLecturersSafe(c.councilID);
+        return this.mapToUIModel(c, lecturers);
+      })
+    );
+
+    return councilsWithMembers;
+  }
+
   // Map sang model dùng cho UI
   private mapToUIModel(
     api: ReviewCouncilApiModel,
@@ -360,6 +389,7 @@ class ReviewCouncilService {
       milestone: this.formatMilestoneForUI(api.milestone),
       reviewDate: api.reviewDate ? this.formatDateYYYYMMDD(api.reviewDate) : '',
       status: this.mapStatus(api.status),
+      result: api.result,
       lecturers,
       feedback: api.overallComment || '',
       reviewFormat: api.reviewFormat || '',

@@ -99,10 +99,12 @@ public class ReviewCouncilMembersServiceImpl implements IReviewCouncilMembersSer
 
         if(reviewCouncilMembersRepository.findAllByProgressReviewCouncilAndDecision(council, Status.ACCEPT).size() == 2) {
             council.setStatus(Status.COMPLETED);
+            council.setResult(Status.PASSED);
             setStatusForTopicByMilestone(council);
         }
         if (!reviewCouncilMembersRepository.findAllByProgressReviewCouncilAndDecision(council, Status.REJECT).isEmpty()) {
             council.setStatus(Status.COMPLETED);
+            council.setResult(Status.NOT_PASSED);
             council.getTopic().setStatus(TopicStatus.FAILED);
         }
         progressReviewCouncilRepository.save(council);

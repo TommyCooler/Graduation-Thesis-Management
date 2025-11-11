@@ -23,6 +23,7 @@ public class CreateReviewCouncilResponse {
     private Milestone milestone;
     private LocalDateTime reviewDate;
     private String status;
+    private String result;
     private LocalDateTime createdAt;
     private ReviewFormat reviewFormat;
     private String meetingLink;

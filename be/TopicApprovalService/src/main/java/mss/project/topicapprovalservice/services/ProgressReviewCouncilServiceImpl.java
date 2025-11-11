@@ -77,6 +77,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
             }
         }
         council.setStatus(Status.PLANNED);
+        council.setResult(Status.NOT_REVIEWED);
         council.setCreatedAt(LocalDateTime.now());
         if (request.getReviewFormat() == ReviewFormat.ONLINE) {
             council.setReviewFormat(ReviewFormat.ONLINE);
@@ -107,6 +108,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                 .milestone(council.getMilestone())
                 .reviewDate(council.getReviewDate())
                 .status(council.getStatus().getValue())
+                .result(council.getResult().getValue())
                 .topicID(council.getTopic().getId())
                 .createdAt(council.getCreatedAt())
                 .reviewFormat(council.getReviewFormat())
@@ -132,6 +134,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                                 .milestone(council.getMilestone())
                                 .reviewDate(council.getReviewDate())
                                 .status(council.getStatus().getValue())
+                                .result(council.getResult().getValue())
                                 .createdAt(council.getCreatedAt())
                                 .reviewFormat(council.getReviewFormat())
                                 .meetingLink(council.getMeetingLink())
@@ -182,6 +185,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                 .milestone(council.getMilestone())
                 .reviewDate(council.getReviewDate())
                 .status(council.getStatus().getValue())
+                .result(council.getResult().getValue())
                 .createdAt(council.getCreatedAt())
                 .reviewFormat(council.getReviewFormat())
                 .meetingLink(council.getMeetingLink())
@@ -207,6 +211,7 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                 .topicID(council.getTopic().getId())
                 .topicTitle(council.getTopic().getTitle())
                 .status(council.getStatus().getValue())
+                .result(council.getResult().getValue())
                 .build();
     }
 
@@ -268,6 +273,37 @@ public class ProgressReviewCouncilServiceImpl implements IProgressReviewCouncilS
                 .lecturerAccountIds(newMemberIDs)
                 .build();
     }
+
+//    @Override
+//    public List<GetReviewCouncilResponse> getAllMyReviewCouncil(Long accountID) {
+//        final List<ProgressReviewCouncils> councilsList = new ArrayList<>();
+//        AccountDTO accountDTO = accountService.getAccountById(accountID);
+//        if(accountDTO.getRole().equals("HEADOFDEPARTMENT") || accountDTO.getRole().equals("ADMIN")) {
+//            councilsList.addAll(progressReviewCouncilRepository.findAll());
+//            if(councilsList.isEmpty()) {
+//                throw new AppException(ErrorCode.REVIEW_COUNCIL_NOT_FOUND);
+//            }
+//        } else {
+//            List<ReviewCouncilMembers> joinedList = reviewCouncilMembersRepository.findAllByAccountID(accountID);
+//            joinedList.forEach(m -> {
+//                councilsList.add(m.getProgressReviewCouncil());
+//            });
+//        }
+//        return councilsList.stream().map(council -> GetReviewCouncilResponse.builder()
+//                .councilID(council.getCouncilID())
+//                .councilName(council.getCouncilName())
+//                .topicID(council.getTopic().getId())
+//                .topicTitle(council.getTopic().getTitle())
+//                .milestone(council.getMilestone())
+//                .reviewDate(council.getReviewDate())
+//                .status(council.getStatus().getValue())
+//                .result(council.getResult().getValue())
+//                .createdAt(council.getCreatedAt())
+//                .reviewFormat(council.getReviewFormat())
+//                .meetingLink(council.getMeetingLink())
+//                .roomNumber(council.getRoomNumber())
+//                .build()).toList();
+//    }
 
 
     private void validateForWeek4(Topics topic, List<Long> memberIDs, CreateReviewCouncilRequest request) {

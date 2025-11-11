@@ -33,14 +33,14 @@ export default function ReviewCouncilDetailPage() {
 
 
 
-// lấy thông tin người đang đăng nhập
+  // lấy thông tin người đang đăng nhập
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
         const response: any = await accountService.getMe();
         if (response && response.data && response.code === 200) {
           console.log('Lấy thông tin user thành công:', response.data);
-          setCurrentUser(response.data); 
+          setCurrentUser(response.data);
         } else {
           console.error('Lỗi khi lấy user, response không hợp lệ:', response);
           toast.error('Không thể xác thực người dùng.');
@@ -52,7 +52,7 @@ export default function ReviewCouncilDetailPage() {
     };
 
     fetchCurrentUser();
-  }, []); 
+  }, []);
 
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function ReviewCouncilDetailPage() {
     }
   };
 
-// kiểm tra người đang đăng nhập có phải người nằm trong hội đồng hay không
+  // kiểm tra người đang đăng nhập có phải người nằm trong hội đồng hay không
   const isLecturerInCouncil = useMemo(() => {
     if (!currentUser || !council) return false;
 
@@ -79,8 +79,8 @@ export default function ReviewCouncilDetailPage() {
 
     const inCouncil = council.lecturers?.some(
       (lec: any) =>
-        lec.accountEmail === currentUser.email || 
-        lec.accountName === currentUser.name      
+        lec.accountEmail === currentUser.email ||
+        lec.accountName === currentUser.name
     );
 
     console.log(`[Phân quyền] Là Lecturer: ${isLecturer}, Có trong hội đồng: ${inCouncil}`);
@@ -91,13 +91,13 @@ export default function ReviewCouncilDetailPage() {
   const submitGrade = async () => {
     if (!councilID) return;
 
-    setIsConfirmLoading(true); 
+    setIsConfirmLoading(true);
 
     try {
       await reviewCouncilService.gradeCouncilMember(Number(councilID), comment, decision);
       toast.success('Chấm bài thành công!');
 
-  
+
       setIsGrading(false);
       setComment('');
       setDecision('NOT_DECIDED');
@@ -109,7 +109,7 @@ export default function ReviewCouncilDetailPage() {
       toast.error(err.message || 'Không thể chấm bài');
     } finally {
       setIsConfirmLoading(false);
-      setIsConfirmOpen(false); 
+      setIsConfirmOpen(false);
     }
   };
 
@@ -137,6 +137,31 @@ export default function ReviewCouncilDetailPage() {
     return lecturer ? lecturer.decision : null;
   }, [currentUser, council]);
 
+  const getResultColor = (result: string) => {
+    switch (result) {
+      case 'Đạt':
+        return 'green';
+      case 'Không đạt':
+        return 'red';
+      case 'Chưa có':
+        return 'gray';
+      default:
+        return 'default';
+    }
+  };
+
+  const getMilestoneColor = (milestone: string) => {
+    switch (milestone) {
+      case 'WEEK 4':
+        return 'orange';
+      case 'WEEK 8':
+        return 'cyan';
+      case 'WEEK 12':
+        return 'purple';
+      default:
+        return 'default';
+    }
+  };
 
   return (
     <Layout className="min-h-screen">
@@ -162,22 +187,47 @@ export default function ReviewCouncilDetailPage() {
               className="shadow-md rounded-lg"
             >
               <Descriptions bordered column={2} size="small">
-                <Descriptions.Item label="Đề tài" span={2}>
+                <Descriptions.Item label="Đề tài" span={2} >
                   {council.topicTitle}
                 </Descriptions.Item>
 
                 <Descriptions.Item label="Mốc review">
-                  <Tag color="blue">{council.milestone}</Tag>
+                  <Tag color={getMilestoneColor(council.milestone)}>
+                    {council.milestone}
+                  </Tag>
                 </Descriptions.Item>
 
                 <Descriptions.Item label="Ngày review">
                   {dayjs(council.reviewDate).format('DD/MM/YYYY')}
                 </Descriptions.Item>
 
-                <Descriptions.Item label="Hình thức" span={2}>
+                <Descriptions.Item label="Hình thức" >
                   {council.reviewFormat}
                 </Descriptions.Item>
-                <Descriptions.Item label="Trạng thái" span={2}>
+
+                {council.reviewFormat === 'ONLINE' ? (
+                  <Descriptions.Item label="Link meeting" >
+                    {council.meetingLink ? (
+                      <a
+                        href={council.meetingLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      // style={{ color: '#1677ff', textDecoration: 'underline' }}
+                      >
+                        Link
+                      </a>
+                    ) : (
+                      <i>Chưa có link</i>
+                    )}
+                  </Descriptions.Item>
+                ) : (
+                  <Descriptions.Item label="Phòng" >
+                    {council.roomNumber || <i>Chưa có số phòng</i>}
+                  </Descriptions.Item>
+                )}
+
+
+                <Descriptions.Item label="Trạng thái" >
                   <Tag
                     color={
                       council.status === 'Đã lập'
@@ -193,27 +243,14 @@ export default function ReviewCouncilDetailPage() {
                   </Tag>
                 </Descriptions.Item>
 
+                <Descriptions.Item label="Kết quả" >
+                  <Tag color={getResultColor(council.result)}>
+                    {council.result}
+                  </Tag>
+                </Descriptions.Item>
 
-                {council.reviewFormat === 'ONLINE' ? (
-                  <Descriptions.Item label="Link meeting" span={2}>
-                    {council.meetingLink ? (
-                      <a
-                        href={council.meetingLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#1677ff', textDecoration: 'underline' }}
-                      >
-                        Link
-                      </a>
-                    ) : (
-                      <i>Chưa có link</i>
-                    )}
-                  </Descriptions.Item>
-                ) : (
-                  <Descriptions.Item label="Phòng" span={2}>
-                    {council.roomNumber || <i>Chưa có số phòng</i>}
-                  </Descriptions.Item>
-                )}
+
+
               </Descriptions>
 
               <Divider orientation="left" style={{ marginTop: 24 }}>
@@ -317,16 +354,16 @@ export default function ReviewCouncilDetailPage() {
       <Footer />
       <ToastContainer position="top-right" autoClose={3000} theme="colored" />
 
-        
+
       <Modal // modal xác nhận 
         title="Xác nhận chấm bài"
         open={isConfirmOpen}
-        onOk={submitGrade} 
+        onOk={submitGrade}
         onCancel={() => setIsConfirmOpen(false)}
         okText="Xác nhận"
         cancelText="Hủy"
         okType="primary"
-        confirmLoading={isConfirmLoading} 
+        confirmLoading={isConfirmLoading}
       >
         <div>
           <p>Bạn có chắc chắn muốn gửi chấm bài cho hội đồng này không?</p>

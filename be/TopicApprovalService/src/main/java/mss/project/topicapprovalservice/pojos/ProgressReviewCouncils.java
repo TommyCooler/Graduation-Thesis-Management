@@ -36,6 +36,10 @@ public class ProgressReviewCouncils {
     @Column(nullable=false)
     private Status status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable=false)
+    private Status result;
+
     @Column(nullable=false)
     private LocalDateTime createdAt;
 
