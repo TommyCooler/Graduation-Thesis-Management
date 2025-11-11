@@ -393,4 +393,21 @@ public class TopicsController {
         apiResponse.setData(Map.of("canEdit", canEdit));
         return apiResponse;
     }
+
+
+    @PutMapping("/{topicId}/status")
+    public ApiResponse<TopicsDTOResponse> updateTopicStatus(
+            @PathVariable Long topicId,
+            @RequestParam String status) {
+
+            TopicStatus topicStatus = TopicStatus.valueOf(status.toUpperCase());
+
+            TopicsDTOResponse updated = topicsService.updateTopicStatus(topicId, topicStatus);
+
+            ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(200);
+            apiResponse.setMessage("Topic status updated successfully");
+            apiResponse.setData(updated);
+            return apiResponse;
+    }
 }

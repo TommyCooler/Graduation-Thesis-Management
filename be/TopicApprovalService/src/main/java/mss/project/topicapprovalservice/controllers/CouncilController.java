@@ -25,7 +25,7 @@ public class CouncilController {
     @Autowired
     private ICouncilService councilService;
 
-    @PreAuthorize("hasRole('HEADOFDEPARTMENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
     public ApiResponse<List<CouncilResponse>> createCouncil(@RequestBody CouncilCreateRequest councilCreateRequest) {
         List<CouncilResponse> saved = councilService.addCouncil(councilCreateRequest);
@@ -36,7 +36,7 @@ public class CouncilController {
                 .build();
     }
 
-    @PreAuthorize("hasRole('HEADOFDEPARTMENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/all")
     public ApiResponse<List<CouncilResponse>> findAllCouncil() {
         List<CouncilResponse> councils = councilService.getAllCouncils();
@@ -81,6 +81,17 @@ public class CouncilController {
                 .code(200)
                 .message("Fetched councils for account successfully")
                 .data(councils)
+                .build();
+    }
+
+    @PutMapping("/{councilId}/update-retake-date")
+    public ApiResponse<CouncilResponse> updateRetakeDate(@PathVariable Long councilId) {
+        councilService.updateRetakeDateForFailedTopic(councilId);
+        CouncilResponse council = councilService.updateCouncilStatus((int) councilId.longValue(), ""); // Hoặc tạo method getCouncilResponseById
+        return ApiResponse.<CouncilResponse>builder()
+                .code(200)
+                .message("Đã cập nhật ngày chấm lại cho hội đồng")
+                .data(council)
                 .build();
     }
 }

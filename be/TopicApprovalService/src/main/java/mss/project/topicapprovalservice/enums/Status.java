@@ -12,6 +12,8 @@ public enum Status {
     CANCELLED("Đã hủy"),
     PENDING("Đang chờ"),
     APPROVED("Đã duyệt"),
+    IN_PROGRESS("Đang chấm"),
+    RETAKING("Đang chấm lại"),
 
     // Status của mỗi giảng viên trong hội đồng review: NOT_DECIDED, ACCEPT, REJECT
     ACCEPT("Chấp nhận"),

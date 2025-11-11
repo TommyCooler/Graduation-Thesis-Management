@@ -16,5 +16,6 @@ public interface ICouncilService {
     public void deleteCouncil(int id);
     CouncilResponse updateCouncilStatus(int id, String status);
     List<CouncilSummaryResponse> getCouncilResponseByAccountId(Long accountId);
+    void updateRetakeDateForFailedTopic(Long councilId);
 
 }

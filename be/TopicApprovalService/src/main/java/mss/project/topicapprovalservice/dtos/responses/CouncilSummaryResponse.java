@@ -17,6 +17,7 @@ public class CouncilSummaryResponse {
     private String semester;
     private String defenseDate;
     private Status status;
+    private String retakeDate;
     private String topicsTitle;
     private String topicsDescription;
     private String fileUrl;

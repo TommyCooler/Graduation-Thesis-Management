@@ -51,6 +51,9 @@ public class TopicsServiceImpl implements TopicService {
     @Autowired
     private AccountService accountService;
 
+    @Autowired
+    private CouncilService councilService;
+
     @Autowired(required = false)
     private PlagiarismService plagiarismService;
 
@@ -212,6 +215,24 @@ public class TopicsServiceImpl implements TopicService {
         // Xóa thành viên
         accountTopicsRepository.delete(member);
         logger.info("Removed member {} from topic {}", accountId, topicId);
+    }
+
+    @Override
+    @Transactional
+    public TopicsDTOResponse updateTopicStatus(Long topicId, TopicStatus status) {
+        Topics topic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+
+        if (status == null) {
+            throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
+        }
+        // Update status
+        topic.setStatus(status);
+        topicsRepository.save(topic);
+        if (topic.getStatus() == TopicStatus.FAILED && topic.getCouncil() != null) {
+            councilService.updateRetakeDateForFailedTopic(topic.getCouncil().getId());
+        }
+        return convertToDTO(topic);
     }
 
     @Override

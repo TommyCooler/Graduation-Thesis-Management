@@ -6,6 +6,7 @@ import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.enums.Role;
 import mss.project.topicapprovalservice.enums.Status;
+import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
 
@@ -138,6 +139,7 @@ public class CouncilService implements ICouncilService {
             council.setCouncilName("Hội Đồng Chấm ngày " + currentDefenseDate);
             council.setSemester("Học kỳ " + councilCreateRequest.getSemester());
             council.setStatus(Status.PLANNED);
+            council.setRetakeDefenseDate(null);
             council.setDefenseDate(currentDefenseDate);
             councilRepository.save(council);
 
@@ -150,6 +152,7 @@ public class CouncilService implements ICouncilService {
                 if (j >= 3) topicTime = topicTime.plusMinutes(45);
                 topic.setCouncil(council);
                 topic.setDefenseTime(topicTime);
+                topic.setStatus(TopicStatus.ASSIGNED_TO_COUNCIL);
             }
             topicsRepository.saveAll(topicList);
 
@@ -198,6 +201,7 @@ public class CouncilService implements ICouncilService {
                     .councilName(council.getCouncilName())
                     .semester(council.getSemester())
                     .date(council.getDefenseDate().toString())
+                    .retakeDate(council.getRetakeDefenseDate() != null ? council.getRetakeDefenseDate().toString() : null)
                     .status(council.getStatus())
                     .topic(topicResponses)
                     .councilMembers(memberResponses)
@@ -258,6 +262,7 @@ public class CouncilService implements ICouncilService {
                         .semester(semester)
                         .defenseDate(defenseDate)
                         .defenseTime(topic.getDefenseTime())
+                        .retakeDate(council.getRetakeDefenseDate() != null ? council.getRetakeDefenseDate().toString() : null)
                         .topicsTitle(topic.getTitle())
                         .fileUrl(topic.getFilePathUrl())
                         .topicsDescription(topic.getDescription())
@@ -267,6 +272,52 @@ public class CouncilService implements ICouncilService {
         }
 
         return summaries;
+    }
+
+    @Override
+    @Transactional
+    public void updateRetakeDateForFailedTopic(Long councilId) {
+        Council council = councilRepository.findById(councilId)
+                .orElseThrow(() -> new AppException(ErrorCode.COUNCIL_NOT_FOUND));
+
+        // Lấy tất cả topics trong council có status FAILED (rớt tốt nghiệp)
+        List<Topics> failedTopics = council.getTopics().stream()
+                .filter(t -> t.getStatus() == TopicStatus.FAILED)
+                .toList();
+
+        // Nếu có topic fail, cập nhật retake date và sắp xếp lại defenseTime
+        if (!failedTopics.isEmpty()) {
+            // Nếu council chưa có retake date, set = defenseDate + 28 ngày
+            if (council.getRetakeDefenseDate() == null) {
+                LocalDate retakeDate = council.getDefenseDate().plusDays(28);
+                council.setRetakeDefenseDate(retakeDate);
+                councilRepository.save(council);
+            }
+
+            // Sắp xếp lại defenseTime cho các topics rớt để không có khoảng trống
+            // Logic tương tự như khi tạo council ban đầu
+            LocalTime startTime = LocalTime.of(8, 0);
+            int totalMinutesPerTopic = 90 + 15; // 90 phút chấm + 15 phút nghỉ
+
+            // Sắp xếp các topics rớt theo thứ tự (có thể sort theo ID hoặc title)
+            List<Topics> sortedFailedTopics = failedTopics.stream()
+                    .sorted(Comparator.comparing(Topics::getId))
+                    .toList();
+
+            // Gán lại defenseTime liên tục cho các topics rớt
+            for (int j = 0; j < sortedFailedTopics.size(); j++) {
+                Topics topic = sortedFailedTopics.get(j);
+                LocalTime topicTime = startTime.plusMinutes((long) j * totalMinutesPerTopic);
+                // Nếu có hơn 3 topics, thêm 45 phút nghỉ trưa sau topic thứ 3
+                if (j >= 3) {
+                    topicTime = topicTime.plusMinutes(45);
+                }
+                topic.setDefenseTime(topicTime);
+                topic.setStatus(TopicStatus.RETAKING);
+            }
+
+            topicsRepository.saveAll(sortedFailedTopics);
+        }
     }
 
     @Override
@@ -319,6 +370,7 @@ public class CouncilService implements ICouncilService {
                     .councilName(council.getCouncilName())
                     .semester(council.getSemester())
                     .date(council.getDefenseDate().toString())
+                    .retakeDate(council.getRetakeDefenseDate() != null ? council.getRetakeDefenseDate().toString() : null)
                     .status(council.getStatus())
                     .topic(topicResponses)
                     .councilMembers(memberResponses)
