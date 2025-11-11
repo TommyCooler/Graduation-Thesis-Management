@@ -17,7 +17,7 @@ public interface TopicService {
     List<TopicsDTOResponse> getAllTopics();
     TopicsDTOResponse approveTopic(Long topicId, String email);
     TopicsDTOResponse rejectTopic(Long topicId, String email);
-    List<GetAllApprovedTopicsResponse> getApprovedTopics();
+    List<GetAllApprovedTopicsResponse> getApprovedTopics(Long accountID);
     List<TopicsDTOResponse> getTopicsByStatus(TopicStatus status);
     List<TopicsDTOResponse> getTopicsByCreatorId(Long creatorId);
     AccountTopicsDTOResponse joinTopic(Long topicId, Long memberId, String memberName);

@@ -240,8 +240,16 @@ public class TopicsController {
     }
 
     @GetMapping("/approved")
-    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics() {
-        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics();
+    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics( @AuthenticationPrincipal Jwt jwt) {
+        Long accountID = null;
+        if (jwt != null) {
+            try {
+                accountID = Long.parseLong(jwt.getSubject());
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
+            }
+        }
+        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics(accountID);
         return ApiResponse.<List<GetAllApprovedTopicsResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Fetch all approved topics successfully")

@@ -25,6 +25,7 @@ import {
   TeamOutlined,
   CheckCircleOutlined,
   EyeOutlined,
+  CheckCircleFilled,
 } from '@ant-design/icons';
 import Header from '../../components/combination/Header';
 import Footer from '../../components/combination/Footer';
@@ -557,9 +558,18 @@ export default function ReviewCouncilPage() {
   };
 
   const CustomEvent = ({ event }: { event: any }) => {
+    const council: ReviewCouncilUIModel | undefined = event.resource;
+
     return (
       <Tooltip title={event.title}>
-        <TeamOutlined style={{ color: '#1890ff', fontSize: 20 }} />
+        {council?.status === 'Hoàn thành' ? (
+          // (MỚI) Icon tick xanh nếu 'Hoàn thành'
+          // Dùng màu trắng để nổi bật trên nền xanh
+          <CheckCircleFilled style={{ color: 'white', fontSize: 20 }} />
+        ) : (
+          // Icon mặc định
+          <TeamOutlined style={{ color: 'white', fontSize: 20 }} />
+        )}
       </Tooltip>
     );
   };
@@ -916,7 +926,7 @@ export default function ReviewCouncilPage() {
         />
       </Modal>
 
-      {/* Modal TẠO/SỬA hội đồng (HOD only) */}
+    
       {/* Modal TẠO/SỬA hội đồng (HOD only) */}
       <Modal
         title={editingCouncil ? 'Chỉnh sửa hội đồng' : 'Tạo hội đồng mới'}
@@ -1058,14 +1068,23 @@ export default function ReviewCouncilPage() {
               placeholder="Chọn giảng viên"
               maxTagCount={3}
               showSearch
-              optionFilterProp="children"
+              optionFilterProp="children" // Giữ nguyên để search
               loading={loadingLecturers}
+              
+              // (FIXED) Cập nhật filter để đảm bảo có email (nếu email là bắt buộc)
+              filterOption={(input, option) =>
+                (option?.children as unknown as string)
+                  ?.toLowerCase()
+                  .includes(input.toLowerCase())
+              }
             >
               {lecturers
-                .filter((lec) => lec.accountID != null && lec.accountName)
+                // (FIXED) Cập nhật filter
+                .filter((lec) => lec.accountID != null && lec.accountName && lec.email) 
                 .map((lec) => (
+                  // (FIXED) Cập nhật hiển thị trong Option
                   <Option key={lec.accountID} value={lec.accountID}>
-                    {lec.accountName}
+                    {lec.accountName} ({lec.email})
                   </Option>
                 ))}
             </Select>

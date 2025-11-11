@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class GetAllLecturerResponse {
     private Long accountID;
     private String accountName;
+    private String email;
 }

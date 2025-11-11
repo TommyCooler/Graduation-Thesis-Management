@@ -15,4 +15,5 @@ public interface TopicApprovalRepository extends JpaRepository<TopicApproval, Lo
     long countByTopicId(Long topicId);
     void deleteByTopicId(Long topicId);
     List<TopicApproval> findByApproverEmail(String approverEmail);
+    TopicApproval findByApproverEmailAndTopicIdAndApprovedFirstIsTrue(String approverEmail, Long topicId);
 }

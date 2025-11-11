@@ -44,6 +44,7 @@ export interface ReviewCouncilUIModel {
 export interface Lecturer {
   accountID: number;
   accountName: string;
+  email: string;
 }
 
 const API_BASE_URL =
