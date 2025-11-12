@@ -32,6 +32,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(response);
     }
 
+    // Lỗi dữ liệu đầu vào không hợp lệ
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException ex) {
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.setCode(400);
+        response.setMessage(ex.getMessage());
+        return ResponseEntity.badRequest().body(response);
+    }
+
     // Lỗi validate @Validated trên @RequestParam, @PathVariable
 //    @ExceptionHandler(ConstraintViolationException.class)
 //    public ResponseEntity<ApiResponse<List<String>>> handleConstraintViolation(ConstraintViolationException ex) {

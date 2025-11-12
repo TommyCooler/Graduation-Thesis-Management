@@ -14,3 +14,7 @@ Service route prefix: `/plagiarism-service`
   - Params: `file` (form-data), `topicId` (query)
 - Receive report (webhook from n8n)
   - POST `/plagiarism-service/api/plagiarism/report`
+
+
+
+- run server in terminal: cloudflared tunnel run n8n-project

@@ -7,22 +7,34 @@ import mss.project.checkplagiarismservice.dtos.response.ApiResponse;
 import mss.project.checkplagiarismservice.dtos.response.TopicDTO;
 import mss.project.checkplagiarismservice.pojos.PlagiarismResult;
 import mss.project.checkplagiarismservice.repositories.PlagiarismResultRepository;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
+@Transactional
 public class PlagiarismServiceImpl implements PlagiarismService {
 
     private final WebClient n8nWebClient;
+    private final WebClient qdrantWebClient;
     private final S3Service s3Service;
     private final TopicService topicService;
     private final PlagiarismResultRepository plagiarismResultRepository;
@@ -42,12 +54,24 @@ public class PlagiarismServiceImpl implements PlagiarismService {
     @Value("${folder.prefix}")
     private String prefix;
 
+    @Value("${plagiarism.qdrant.collection:plagiarism-embedding}")
+    private String qdrantCollection;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final int QDRANT_SCROLL_LIMIT = 1000;
+    private static final int QDRANT_RECOMMEND_LIMIT = 5;
+    private static final int QDRANT_MAX_ATTEMPTS = 5;
+    private static final long QDRANT_RETRY_DELAY_MS = 2000L;
+
     // Constructor injection thay vì @Autowired
     public PlagiarismServiceImpl(
-            WebClient n8nWebClient,
+            @Qualifier("n8nWebClient") WebClient n8nWebClient,
+            @Qualifier("qdrantWebClient") WebClient qdrantWebClient,
             S3Service s3Service,
             TopicService topicService, PlagiarismResultRepository plagiarismResultRepository) {
         this.n8nWebClient = n8nWebClient;
+        this.qdrantWebClient = qdrantWebClient;
         this.s3Service = s3Service;
         this.topicService = topicService;
         this.plagiarismResultRepository = plagiarismResultRepository;
@@ -83,6 +107,9 @@ public class PlagiarismServiceImpl implements PlagiarismService {
                 
                 // Call N8N webhook
                 .flatMap(url -> callN8nWebhook(topicId, url, topicDTO.getDescription()))
+                // Fetch plagiarism candidates from Qdrant
+                .flatMap(result -> syncPlagiarismResultsFromQdrant(topicId)
+                        .thenReturn(result))
                 
                 .doOnSuccess(result -> log.info("Successfully completed processing for topic: {}", topicId))
                 .doOnError(e -> log.error("Error processing file for topic {}: {}", topicId, e.getMessage(), e))
@@ -161,7 +188,6 @@ public class PlagiarismServiceImpl implements PlagiarismService {
      * Process plagiarism report from N8N
      */
     @Override
-    @Transactional
     public void processPlagiarismReport(PlagiarismReportRequest reportRequest, Long topicId) {
         if (reportRequest == null || reportRequest.getPayloads() == null || reportRequest.getPayloads().isEmpty()) {
             log.warn("Received empty or null plagiarism report");
@@ -184,13 +210,13 @@ public class PlagiarismServiceImpl implements PlagiarismService {
             String content = payload.getContent();
 
             if (topicId == null) {
-                log.warn("Payload item missing topic_id, skipping");
-                continue;
+                log.error("Payload item missing topic_id");
+                throw new IllegalArgumentException("Payload item missing topic_id");
             }
 
             if (fileUrl == null || fileUrl.isEmpty()) {
-                log.warn("Payload item missing file_url for topic {}, skipping", topicId);
-                continue;
+                log.error("Payload item missing file_url for topic {}", topicId);
+                throw new IllegalArgumentException("Payload item missing file_url for topic " + topicId);
             }
 
             log.info("Processing plagiarism report for topic ID: {}, file URL: {}", topicId, fileUrl);
@@ -221,6 +247,273 @@ public class PlagiarismServiceImpl implements PlagiarismService {
         log.info("Finished processing plagiarism report");
     }
 
+    /**
+     * Fetch and persist plagiarism results for a topic directly from Qdrant.
+     */
+    private Mono<Void> syncPlagiarismResultsFromQdrant(Long topicId) {
+        return Mono.fromCallable(() -> {
+            if (topicId == null) {
+                throw new IllegalArgumentException("TopicId is required");
+            }
+
+            List<String> positiveIds = fetchPositivePointIds(topicId);
+
+            if (CollectionUtils.isEmpty(positiveIds)) {
+                log.warn("No embeddings found in Qdrant for topic {} after {} attempt(s). Skipping plagiarism persistence.", topicId, QDRANT_MAX_ATTEMPTS);
+                plagiarismResultRepository.deleteByTopicId(topicId);
+                return Boolean.FALSE;
+            }
+
+            List<PlagiarismResult> recommendations = fetchRecommendations(topicId, positiveIds);
+
+            // Update database with new results
+            plagiarismResultRepository.deleteByTopicId(topicId);
+
+            if (recommendations.isEmpty()) {
+                log.info("No plagiarism candidates returned for topic {}.", topicId);
+                return Boolean.FALSE;
+            }
+
+            plagiarismResultRepository.saveAll(recommendations);
+            log.info("Saved {} plagiarism result(s) for topic {}.", recommendations.size(), topicId);
+            return Boolean.TRUE;
+        }).subscribeOn(Schedulers.boundedElastic())
+                .timeout(Duration.ofSeconds(30))
+                .doOnError(e -> log.error("Failed to sync plagiarism results from Qdrant for topic {}: {}", topicId, e.getMessage(), e))
+                .then();
+    }
+
+    private List<String> fetchPositivePointIds(Long topicId) {
+        String scrollPath = buildScrollPath();
+        log.info("Using Qdrant collection: {}", qdrantCollection);
+        
+        Map<String, Object> requestBody = new LinkedHashMap<>();
+        requestBody.put("limit", QDRANT_SCROLL_LIMIT);
+        requestBody.put("with_payload", List.of("metadata.topic_id", "metadata.chunk_index", "metadata.file_url"));
+        requestBody.put("with_vectors", Boolean.FALSE);
+
+        Map<String, Object> matchValue = Map.of("value", topicId);
+        Map<String, Object> filterEntry = Map.of("key", "metadata.topic_id", "match", matchValue);
+        Map<String, Object> filter = Map.of("must", List.of(filterEntry));
+        requestBody.put("filter", filter);
+
+        List<String> positiveIds = new ArrayList<>();
+        Exception lastException = null;
+
+        for (int attempt = 1; attempt <= QDRANT_MAX_ATTEMPTS; attempt++) {
+            try {
+                // Log JSON request body before sending to Qdrant
+                try {
+                    String jsonRequest = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestBody);
+                    log.info("Sending request to Qdrant (scroll) - Attempt {}/{}:\nCollection: {}\nURL: {}\nRequest Body:\n{}", 
+                            attempt, QDRANT_MAX_ATTEMPTS, qdrantCollection, scrollPath, jsonRequest);
+                } catch (Exception e) {
+                    log.warn("Failed to serialize request body to JSON: {}", e.getMessage());
+                }
+
+                JsonNode responseNode = qdrantWebClient.post()
+                        .uri(scrollPath)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(requestBody)
+                        .retrieve()
+                        .bodyToMono(JsonNode.class)
+                        .timeout(Duration.ofSeconds(10))
+                        .block();
+
+                if (responseNode == null) {
+                    log.warn("Received null response when fetching embeddings for topic {} (attempt {}/{}).", topicId, attempt, QDRANT_MAX_ATTEMPTS);
+                } else {
+                    // Log response for debugging
+                    try {
+                        String jsonResponse = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(responseNode);
+                        log.debug("Qdrant response (scroll) - Attempt {}/{}:\n{}", attempt, QDRANT_MAX_ATTEMPTS, jsonResponse);
+                    } catch (Exception e) {
+                        log.debug("Failed to serialize response to JSON: {}", e.getMessage());
+                    }
+                    
+                    JsonNode pointsNode = responseNode.path("result").path("points");
+                    if (pointsNode.isArray()) {
+                        pointsNode.forEach(point -> {
+                            JsonNode idNode = point.get("id");
+                            if (idNode != null && !idNode.isNull()) {
+                                String id = idNode.asText();
+                                if (StringUtils.hasText(id)) {
+                                    positiveIds.add(id);
+                                }
+                            }
+                        });
+                    }
+                }
+
+                if (!positiveIds.isEmpty()) {
+                    log.info("Fetched {} embedding id(s) for topic {} from Qdrant.", positiveIds.size(), topicId);
+                    return positiveIds;
+                }
+
+                log.info("No embeddings found for topic {} on attempt {}/{}. Retrying after delay...", topicId, attempt, QDRANT_MAX_ATTEMPTS);
+            } catch (WebClientResponseException ex) {
+                lastException = ex;
+                // Log detailed error response from Qdrant
+                try {
+                    String responseBody = ex.getResponseBodyAsString();
+                    log.error("Qdrant error response (scroll) - Attempt {}/{}:\nStatus: {}\nResponse Body: {}", 
+                            attempt, QDRANT_MAX_ATTEMPTS, ex.getStatusCode(), responseBody);
+                } catch (Exception e) {
+                    log.error("Error fetching embeddings for topic {} on attempt {}/{}: {} - Status: {}", 
+                            topicId, attempt, QDRANT_MAX_ATTEMPTS, ex.getMessage(), ex.getStatusCode());
+                }
+            } catch (Exception ex) {
+                lastException = ex;
+                log.warn("Error fetching embeddings for topic {} on attempt {}/{}: {}", topicId, attempt, QDRANT_MAX_ATTEMPTS, ex.getMessage());
+            }
+
+            try {
+                Thread.sleep(QDRANT_RETRY_DELAY_MS);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("Thread interrupted while waiting to retry Qdrant fetch", ie);
+            }
+        }
+
+        if (lastException != null) {
+            throw new RuntimeException("Failed to fetch embeddings for topic " + topicId + " from Qdrant", lastException);
+        }
+
+        return positiveIds;
+    }
+
+    private List<PlagiarismResult> fetchRecommendations(Long topicId, List<String> positiveIds) {
+        String recommendPath = buildRecommendPath();
+        Map<String, Object> requestBody = new LinkedHashMap<>();
+        requestBody.put("positive", positiveIds);
+        requestBody.put("limit", QDRANT_RECOMMEND_LIMIT);
+        requestBody.put("with_payload", List.of("content", "metadata.topic_id", "metadata.chunk_index", "metadata.file_url"));
+        requestBody.put("with_vectors", Boolean.FALSE);
+
+        Map<String, Object> mustNotEntry = Map.of(
+                "key", "metadata.topic_id",
+                "match", Map.of("value", topicId)
+        );
+        Map<String, Object> filter = Map.of("must_not", List.of(mustNotEntry));
+        requestBody.put("filter", filter);
+
+        // Log JSON request body before sending to Qdrant
+        try {
+            String jsonRequest = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(requestBody);
+            log.info("Sending request to Qdrant (recommend) - Topic ID: {}\nCollection: {}\nURL: {}\nRequest Body:\n{}", 
+                    topicId, qdrantCollection, recommendPath, jsonRequest);
+        } catch (Exception e) {
+            log.warn("Failed to serialize request body to JSON: {}", e.getMessage());
+        }
+
+        JsonNode responseNode = null;
+        try {
+            responseNode = qdrantWebClient.post()
+                            .uri(recommendPath)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(requestBody)
+                            .retrieve()
+                            .bodyToMono(JsonNode.class)
+                            .timeout(Duration.ofSeconds(10))
+                            .block();
+        } catch (WebClientResponseException ex) {
+            // Log detailed error response from Qdrant
+            try {
+                String responseBody = ex.getResponseBodyAsString();
+                log.error("Qdrant error response (recommend) - Topic ID: {}\nStatus: {}\nResponse Body: {}", 
+                        topicId, ex.getStatusCode(), responseBody);
+            } catch (Exception e) {
+                log.error("Error fetching recommendations for topic {}: {} - Status: {}", 
+                        topicId, ex.getMessage(), ex.getStatusCode());
+            }
+            throw ex;
+        }
+
+        List<PlagiarismResult> results = new ArrayList<>();
+
+        if (responseNode == null) {
+            log.warn("Received null response when fetching plagiarism recommendations for topic {}.", topicId);
+            return results;
+        }
+        
+        // Log response for debugging
+        try {
+            String jsonResponse = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(responseNode);
+            log.debug("Qdrant response (recommend) - Topic ID: {}\n{}", topicId, jsonResponse);
+        } catch (Exception e) {
+            log.debug("Failed to serialize response to JSON: {}", e.getMessage());
+        }
+
+        JsonNode resultNode = responseNode.path("result");
+        if (!resultNode.isArray()) {
+            log.warn("Unexpected Qdrant recommendation response format for topic {}: {}", topicId, responseNode);
+            return results;
+        }
+
+        resultNode.forEach(item -> {
+            JsonNode payloadNode = item.path("payload");
+            if (payloadNode.isMissingNode() || payloadNode.isNull()) {
+                return;
+            }
+
+            JsonNode metadataNode = payloadNode.path("metadata");
+            JsonNode plagiarizedTopicIdNode = metadataNode.path("topic_id");
+            Long plagiarizedTopicId = plagiarizedTopicIdNode.isNumber() ? plagiarizedTopicIdNode.longValue() : null;
+
+            if (plagiarizedTopicId == null) {
+                log.debug("Skipping recommendation without metadata.topic_id for topic {}.", topicId);
+                return;
+            }
+
+            String plagiarizedFileUrl = metadataNode.path("file_url").asText("");
+            if (StringUtils.hasText(plagiarizedFileUrl)) {
+                plagiarizedFileUrl = plagiarizedFileUrl.trim();
+            }
+
+            String plagiarizedContent = payloadNode.path("content").asText("");
+
+            // Skip recommendations referencing the same topic (safety guard)
+            if (plagiarizedTopicId.equals(topicId)) {
+                return;
+            }
+
+            PlagiarismResult result = PlagiarismResult.builder()
+                    .topicId(topicId)
+                    .plagiarizedTopicId(plagiarizedTopicId)
+                    .plagiarizedContent(plagiarizedContent)
+                    .plagiarizedFileUrl(plagiarizedFileUrl)
+                    .build();
+
+            results.add(result);
+        });
+
+        log.info("Retrieved {} plagiarism recommendation(s) for topic {}.", results.size(), topicId);
+        return results;
+    }
+
+    private String buildScrollPath() {
+        return "/collections/" + qdrantCollection + "/points/scroll";
+    }
+
+    private String buildRecommendPath() {
+        return "/collections/" + qdrantCollection + "/points/recommend";
+    }
+
+    /**
+     * Get plagiarism results for a topic
+     */
+    @Override
+    public List<PlagiarismResult> getPlagiarismResults(Long topicId) {
+        if (topicId == null) {
+            log.error("TopicId is null");
+            throw new IllegalArgumentException("TopicId is required");
+        }
+
+        log.info("Fetching plagiarism results for topic ID: {}", topicId);
+        List<PlagiarismResult> results = plagiarismResultRepository.findByTopicId(topicId);
+        log.info("Found {} plagiarism result(s) for topic ID: {}", results.size(), topicId);
+        return results;
+    }
 
     /**
      * Delete topic from Qdrant via N8N webhook

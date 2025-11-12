@@ -97,6 +97,35 @@ public class PlagiarismController {
                 });
     }
 
+    @GetMapping("/results")
+    public ResponseEntity<ApiResponse<?>> getPlagiarismResults(@RequestParam Long topicId) {
+        try {
+            if (topicId == null) {
+                ApiResponse<?> errorResponse = ApiResponse.builder()
+                        .code(400)
+                        .message("TopicId is required")
+                        .data(null)
+                        .build();
+                return ResponseEntity.badRequest().body(errorResponse);
+            }
+
+            var results = plagiarismService.getPlagiarismResults(topicId);
+            return ResponseEntity.ok(ApiResponse.builder()
+                    .code(200)
+                    .message("Plagiarism results retrieved successfully")
+                    .data(results)
+                    .build());
+        } catch (Exception e) {
+            log.error("Error getting plagiarism results: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.builder()
+                            .code(500)
+                            .message("Error getting plagiarism results: " + e.getMessage())
+                            .data(null)
+                            .build());
+        }
+    }
+
     @PostMapping("/report/{id}")
     public ResponseEntity<ApiResponse<?>> receiveN8NResponse(@PathVariable Long id, @RequestBody PlagiarismReportRequest reportRequest) {
         try {

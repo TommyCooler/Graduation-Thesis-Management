@@ -4,6 +4,8 @@ import mss.project.checkplagiarismservice.dtos.request.PlagiarismReportRequest;
 import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
+
 /**
  * Interface for plagiarism checking service operations
  */
@@ -32,5 +34,13 @@ public interface PlagiarismService {
      * @return Mono<Boolean> indicating success or failure
      */
     Mono<Boolean> deleteTopicFromQdrant(Long topicId);
+    
+    /**
+     * Get plagiarism results for a topic
+     * 
+     * @param topicId the topic ID to get results for
+     * @return List of plagiarism results
+     */
+    List<mss.project.checkplagiarismservice.pojos.PlagiarismResult> getPlagiarismResults(Long topicId);
 
 }

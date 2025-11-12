@@ -50,8 +50,8 @@ management:
 plagiarism:
  qdrant:
   url: ${QDRANT_URL}
-  apiKey: ${QDRANT_API_KEY}         # nếu bật auth
-  collection: plagiarism_docs
+  apiKey: ${QDRANT_API_KEY}
+  collection: plagiarism-embedding
   vectorSize: 3072
   distance: Cosine
  google:

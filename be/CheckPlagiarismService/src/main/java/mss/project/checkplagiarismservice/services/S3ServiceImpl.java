@@ -4,6 +4,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.stereotype.Service;
+
+import jakarta.transaction.Transactional;
+
 import org.springframework.core.io.buffer.DataBufferUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -18,6 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Objects;
 
 @Service
+@Transactional
 public class S3ServiceImpl implements S3Service {
 
     @Autowired

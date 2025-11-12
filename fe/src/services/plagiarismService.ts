@@ -9,6 +9,21 @@ export interface PlagiarismCheckResponse {
   };
 }
 
+export interface PlagiarismResult {
+  id: number;
+  topicId: number;
+  plagiarizedTopicId: number;
+  plagiarizedContent: string;
+  plagiarizedFileUrl: string;
+  createdAt: string;
+}
+
+export interface ApiResponse<T> {
+  code: number;
+  message: string;
+  data: T;
+}
+
 class PlagiarismService {
   private baseUrl: string;
 
@@ -120,6 +135,44 @@ class PlagiarismService {
       return data;
     } catch (error) {
       console.error('Error deleting topic from Qdrant:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy danh sách kết quả đạo văn cho một topic
+   */
+  async getPlagiarismResults(topicId: number): Promise<PlagiarismResult[]> {
+    try {
+      console.log('PlagiarismService.getPlagiarismResults called with topicId:', topicId);
+      
+      // Build URL with query parameters
+      const url = new URL(`${this.baseUrl}/results`);
+      url.searchParams.append('topicId', topicId.toString());
+
+      console.log('Sending GET request to:', url.toString());
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      console.log('Response received:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response body:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const apiResponse: ApiResponse<PlagiarismResult[]> = await response.json();
+      console.log('Get plagiarism results successful:', apiResponse);
+      
+      // Return the data array, or empty array if data is null/undefined
+      return apiResponse.data || [];
+    } catch (error) {
+      console.error('Error getting plagiarism results:', error);
       throw error;
     }
   }
