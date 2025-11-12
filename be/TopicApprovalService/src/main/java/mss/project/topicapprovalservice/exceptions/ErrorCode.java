@@ -13,7 +13,9 @@ public enum ErrorCode {
     INVALID_TOPIC_STATUS(400, "Invalid topic status"),
     UNAUTHORIZED_ACCESS(403, "Unauthorized access"),
     TOPIC_ALREADY_ASSIGNED_TO_COUNCIL(400, "Topic has already been assigned to a review council"),
-    REVIEW_COUNCIL_NOT_APPROVED(400, "Review council has not approved the topic"),
+    REVIEW_COUNCIL_NOT_COMPLETED(400, "Review council has not COMPLETED status"),
+    COUNCIL_MEMBER_NOT_FOUND(404, "Council member not found"),
+    UNAUTHORIZED(403, "You are not authorized to perform this action"),
 
 
 
@@ -34,6 +36,7 @@ public enum ErrorCode {
     ROOM_NUMBER_IS_NOT_VALID(813,"Số phòng không hợp lệ"),
     STATUS_OF_PREVIOS_COUNCIL_NOT_VALID(814, "Trạng thái của đề tài ở mốc trước đó phải là Đạt"),
     STATUS_OF_COUNCIL_IS_NOT_PLANNED(815,"Mốc review này đã được chấm"),
+    REVIEW_DATE_MUST_BE_AFTER_PREVIOUS(816,"Ngày review phải sau ngày review của mốc trước"),
     INVALID_SEMESTER(400, "Invalid semester"),
     NOT_ENOUGH_LECTURERS(400, "Not enough lecturers to approve the topic"),
     USER_ALREADY_JOINED_TOPIC(4001, "User has already joined this topic"),
@@ -51,7 +54,7 @@ public enum ErrorCode {
     CANNOT_EDIT_TOPIC(403, "Bạn không có quyền chỉnh sửa đề tài này. Chỉ người tạo và người tham gia mới được chỉnh sửa"),
     USER_NOT_FOUND_IN_TOPIC(404, "Người dùng không phải là thành viên của đề tài này"),
     CANNOT_REMOVE_CREATOR(403, "Không thể xóa chủ nhiệm đề tài"),
-    ;
+    COUNCIL_MEMBER_NOT_IN_TOPIC_COUNCIL(403,"Không có quyền được note" );
     private int code;
     private String message;
 

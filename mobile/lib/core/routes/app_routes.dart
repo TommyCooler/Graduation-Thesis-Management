@@ -3,6 +3,7 @@ import 'package:mobile/presentation/screens/change-password/change_password_scre
 import 'package:mobile/presentation/screens/login/login_screen.dart';
 import 'package:mobile/presentation/screens/home/home_screen.dart';
 import 'package:mobile/presentation/screens/profile/user_profile_screen.dart';
+import 'package:mobile/presentation/screens/review-council/review_council_screen.dart';
 
 /// App Routes
 class AppRoutes {
@@ -16,13 +17,14 @@ class AppRoutes {
   static const String topicDetail = '/topic-detail';
   static const String createTopic = '/create-topic';
   static const String changePassword = '/change-password';
-  
+  static const String reviewCouncil = '/review-council';
   // Routes Map
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
         home: (context) => const HomeScreen(),
         profile: (context) => const UserProfileScreen(),
         changePassword: (context) => const ChangePasswordScreen(),
+        reviewCouncil: (context) => const ReviewCouncilScreen(),
         // Thêm các routes khác ở đây
       };
 

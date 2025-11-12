@@ -1,4 +1,5 @@
-type CouncilStatus = 'PLANNED' | 'APPROVED' | 'CANCELLED' | string;
+import dayjs from 'dayjs';
+type CouncilStatus = 'PLANNED' | 'COMPLETED' | 'CANCELLED' | string;
 
 export interface ReviewCouncilApiModel {
   councilID: number;
@@ -8,6 +9,7 @@ export interface ReviewCouncilApiModel {
   milestone: string;
   reviewDate?: string | null;
   status: string;
+  result: string;
   createdAt?: string;
   overallComment?: string | null;
   reviewFormat?: string | null;
@@ -19,6 +21,8 @@ export interface ReviewCouncilMember {
   accountID: number;
   accountName: string;
   overallComments: string;
+  email: string;
+  decision: string;
 }
 
 export interface ReviewCouncilUIModel {
@@ -26,9 +30,10 @@ export interface ReviewCouncilUIModel {
   name: string;
   topicID: number;
   topicTitle: string;
-  milestone: string; // hiển thị đẹp (WEEK 4)
-  reviewDate?: string; // hiển thị YYYY-MM-DD
+  milestone: string; 
+  reviewDate?: string; 
   status: string;
+  result: string;
   lecturers: ReviewCouncilMember[];
   feedback?: string;
   reviewFormat?: string;
@@ -39,6 +44,7 @@ export interface ReviewCouncilUIModel {
 export interface Lecturer {
   accountID: number;
   accountName: string;
+  email: string;
 }
 
 const API_BASE_URL =
@@ -102,7 +108,7 @@ class ReviewCouncilService {
       body.reviewDate = payload.reviewDate;
     }
 
-    const response = await fetch(`${this.baseUrl}/${payload.topicID}`, {
+    const response = await fetch(`${this.baseUrl}/topic/${payload.topicID}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
@@ -148,6 +154,8 @@ class ReviewCouncilService {
         accountID: m.accountID,
         accountName: m.accountName,
         overallComments: m.overallComments || '',
+        email: m.email,
+        decision: m.decision,
       })
     );
   }
@@ -173,7 +181,7 @@ class ReviewCouncilService {
   async getCouncilsByTopicID(
     topicID: number
   ): Promise<ReviewCouncilUIModel[]> {
-    const response = await fetch(`${this.baseUrl}/${topicID}`, {
+    const response = await fetch(`${this.baseUrl}/topic/${topicID}`, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
       cache: 'no-store',
@@ -253,16 +261,121 @@ class ReviewCouncilService {
   }
 
   async getCouncilsForCalendar(): Promise<ReviewCouncilUIModel[]> {
-  const response = await fetch(`${this.baseUrl}`, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  });
-  if (!response.ok) throw new Error('Không thể tải danh sách lịch hội đồng');
-  return response.json();
-}
+    const response = await fetch(`${this.baseUrl}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error('Không thể tải danh sách lịch hội đồng');
+    return response.json();
+  }
 
+  // Lấy chi tiết 1 hội đồng theo ID (và kèm danh sách giảng viên)
+  async getCouncilById(councilId: number): Promise<ReviewCouncilUIModel> {
+    const response = await fetch(`${this.baseUrl}/${councilId}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      credentials: 'include',
+    });
 
+    if (!response.ok) {
+      throw new Error(`Không thể tải thông tin hội đồng ID ${councilId}: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const council: ReviewCouncilApiModel = data.result ?? data.data ?? data;
+
+   
+    const lecturers = await this.getCouncilLecturersSafe(council.councilID);
+
+    // Trả về dạng UI model
+    return this.mapToUIModel(council, lecturers);
+  }
+
+  // Giảng viên chấm bài (grade)
+  async gradeCouncilMember(
+    councilID: number,
+    overallComments: string,
+    decision: 'ACCEPT' | 'REJECT' | 'NOT_DECIDED'
+  ): Promise<void> {
+    const body = {
+      overallComments,
+      decision,
+    };
+
+    const response = await fetch(
+      `${API_BASE_URL}${this.gatewayPrefix}/api/review-council-members/${councilID}/grade`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body),
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Không thể chấm bài hội đồng');
+    }
+
+    console.log(`Giảng viên đã chấm hội đồng ${councilID} thành công`);
+  }
+
+  async updateCouncilDetails(
+    councilID: number,
+    payload: {
+      reviewDate: string | null;
+      reviewFormat: string;
+      meetingLink: string | null;
+      roomNumber: string | null;
+      lecturerAccountIds: number[];
+    }
+  ): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/${councilID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        ...payload,
+        reviewDate: payload.reviewDate ? payload.reviewDate : null,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Cập nhật hội đồng thất bại.');
+    }
+
+    console.log(`Cập nhật hội đồng ID ${councilID} thành công`);
+  }
+
+  async getCouncilsForLecturer(): Promise<ReviewCouncilUIModel[]> {
+    const response = await fetch(`${this.baseUrl}`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store',
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch lecturer's councils: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const councils: ReviewCouncilApiModel[] =
+      data.result ?? data.data ?? data ?? [];
+
+    // Lấy luôn danh sách giảng viên của từng hội đồng
+    const councilsWithMembers = await Promise.all(
+      councils.map(async (c) => {
+        const lecturers = await this.getCouncilLecturersSafe(c.councilID);
+        return this.mapToUIModel(c, lecturers);
+      })
+    );
+
+    return councilsWithMembers;
+  }
 
   // Map sang model dùng cho UI
   private mapToUIModel(
@@ -277,6 +390,7 @@ class ReviewCouncilService {
       milestone: this.formatMilestoneForUI(api.milestone),
       reviewDate: api.reviewDate ? this.formatDateYYYYMMDD(api.reviewDate) : '',
       status: this.mapStatus(api.status),
+      result: api.result,
       lecturers,
       feedback: api.overallComment || '',
       reviewFormat: api.reviewFormat || '',
@@ -290,11 +404,14 @@ class ReviewCouncilService {
     if (!status) return 'Đã lập';
     const map: Record<string, string> = {
       PLANNED: 'Đã lập',
-      APPROVED: 'Đã duyệt',
+      COMPLETED: 'Hoàn thành',
       CANCELLED: 'Đã hủy',
     };
     return map[status] || status;
   }
+
+
+
 
   // Backend → UI
   private formatMilestoneForUI(m: string): string {

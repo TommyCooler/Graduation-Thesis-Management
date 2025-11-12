@@ -35,6 +35,9 @@ public class Council {
     @Column(name= "semester")
     private String semester;
 
+    @Column(name = "retake_defense_date")
+    private LocalDate retakeDefenseDate;
+
     @Column(name = "status")
     private Status status;
 

@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public enum ErrorCode {
-    ACCOUNT_NOT_FOUND(404, "Không tìm thấy tài khoản"),
+    ACCOUNT_NOT_FOUND(404, "Tài khoản chưa được cấp phép"),
     INVALID_PASSWORD(400, "Mật khẩu không chính xác"),
     ACCOUNT_INACTIVE(403, "Tài khoản của bạn đã bị vô hiệu hóa"),
     EMAIL_ALREADY_EXISTS(400, "Email đã được sử dụng"),
@@ -22,7 +22,10 @@ public enum ErrorCode {
     OTP_EXPIRED(400, "Mã OTP đã hết hạn hoặc chưa được tạo. Vui lòng yêu cầu mã mới."),
     MAX_OTP_ATTEMPT(429, "Bạn đã nhập sai quá số lần cho phép. Vui lòng yêu cầu mã mới."),
     ACCOUNT_NOT_ACTIVE(403, "Tài khoản chưa được kích hoạt. Vui lòng kiểm tra email để xác thực."),
-    INVALID_CREDENTIALS(401, "Thông tin đăng nhập không hợp lệ")
+    INVALID_CREDENTIALS(401, "Thông tin đăng nhập không hợp lệ"),
+    // Trong ErrorCode enum
+    INVALID_GOOGLE_TOKEN(401, "Google token không hợp lệ"),
+    GOOGLE_AUTH_FAILED(500, "Xác thực Google thất bại"),
     ;
     private int code;
     private String message;

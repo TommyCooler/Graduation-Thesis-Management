@@ -96,3 +96,48 @@ export const COUNCIL_ROLE_COLORS = {
   [COUNCIL_ROLE.SECRETARY]: 'blue',
   [COUNCIL_ROLE.MEMBER]: 'default',
 } as const;
+
+// My Council types
+export interface MyCouncilItem {
+  role: string;
+  councilId?: number; // optional if BE provides
+  councilMemberId?: number; // ID của bản ghi CouncilMember
+  councilName: string;
+  semester: string;
+  defenseDate: string;
+  status: string;
+  topicStatus?: string; // Trạng thái của đề tài
+  topicsTitle: string;
+  topicsDescription: string;
+  fileUrl: string;
+  defenseTime: string;
+  topicId?: number; // optional if BE provides
+  retakeDate?: string | null; // Ngày chấm lại (chỉ có khi topicStatus là RETAKING)
+}
+
+export interface MyCouncilApiResponse {
+  code: number;
+  message: string;
+  data: MyCouncilItem[];
+}
+
+// Grouped council structure - nhóm theo ngày
+export interface GroupedByDate {
+  defenseDate: string;
+  councils: {
+    councilName: string;
+    semester: string;
+    status: string;
+    role: string;
+    retakeDate?: string | null; // Ngày chấm lại
+    topics: {
+      title: string;
+      description: string;
+      fileUrl: string;
+      defenseTime: string;
+      topicStatus?: string;
+      topicId?: number;
+      councilMemberId?: number; // ID của bản ghi CouncilMember
+    }[];
+  }[];
+}

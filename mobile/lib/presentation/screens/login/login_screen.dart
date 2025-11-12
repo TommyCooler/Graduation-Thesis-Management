@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/routes/app_routes.dart';
 import 'package:mobile/data/services/auth_service.dart';
+import 'package:mobile/data/services/google_auth_service.dart';
 import 'package:mobile/data/storage/token_storage.dart';
 
 // AppColors - định nghĩa màu sắc
@@ -30,6 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passCtl = TextEditingController();
   bool _obscure = true;
   bool _isSubmitting = false;
+  bool _isGoogleSigningIn = false;
 
   String? _emailError;
   String? _passError;
@@ -71,122 +73,196 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _onLogin() async {
-  print('📍 Step 1: _onLogin started');
-  
-  // Validate
-  setState(() {
-    _emailError = _validateEmail(_emailCtl.text);
-    _passError = _validatePassword(_passCtl.text);
-  });
+    print('📍 Step 1: _onLogin started');
+    
+    // Validate
+    setState(() {
+      _emailError = _validateEmail(_emailCtl.text);
+      _passError = _validatePassword(_passCtl.text);
+    });
 
-  if (_emailError != null || _passError != null) {
-    print('❌ Validation failed');
-    return;
+    if (_emailError != null || _passError != null) {
+      print('❌ Validation failed');
+      return;
+    }
+
+    print('📍 Step 2: Validation passed');
+    setState(() => _isSubmitting = true);
+
+    try {
+      print('📍 Step 3: Calling API...');
+      
+      final response = await AuthService.login(
+        email: _emailCtl.text.trim(),
+        password: _passCtl.text,
+      );
+
+      print('📍 Step 4: API response received');
+      setState(() => _isSubmitting = false);
+
+      if (response.isSuccess && response.data != null) {
+        print('✅ Login successful!');
+        
+        // ==================== LƯU TOKEN ====================
+        print('📍 Step 5: Saving login data...');
+        await TokenStorage.saveLoginData(
+          token: response.data!.token,
+          role: response.data!.role,
+          email: _emailCtl.text.trim(),
+          firstLogin: response.data!.firstLogin,
+        );
+        print('✅ Login data saved!');
+        
+        // Print để kiểm tra
+        await TokenStorage.printUserInfo();
+        // ===================================================
+        
+        // Show success message
+        _showBar(
+          response.message,
+          icon: Icons.check_circle,
+          color: Colors.green,
+        );
+        
+        print('📍 Step 6: Waiting 1 second...');
+        await Future.delayed(const Duration(seconds: 1));
+        
+        print('📍 Step 7: Checking mounted...');
+        if (!mounted) {
+          print('❌ Widget not mounted');
+          return;
+        }
+        print('✅ Widget mounted');
+
+        print('📍 Step 8: Checking firstLogin...');
+        if (response.data!.firstLogin) {
+          print('➡️ First login - going to change password');
+          Navigator.pushReplacementNamed(context, '/change-password');
+        } else {
+          print('➡️ Not first login - showing post-login menu');
+          _showPostLoginMenu(response.data!.role);
+        }
+        
+      } else {
+        print('❌ Login failed');
+      }
+    } catch (e) {
+      print('❌ Error: $e');
+      setState(() => _isSubmitting = false);
+
+      _showBar(
+        e.toString().replaceAll('Exception: ', ''),
+        icon: Icons.error_outline,
+        color: Colors.red,
+      );
+    }
   }
 
-  print('📍 Step 2: Validation passed');
-  setState(() => _isSubmitting = true);
+  Future<void> _onGoogleSignIn() async {
+    print('📍 Google Sign-In started');
+    setState(() => _isGoogleSigningIn = true);
 
-  try {
-    print('📍 Step 3: Calling API...');
-    
-    final response = await AuthService.login(
-      email: _emailCtl.text.trim(),
-      password: _passCtl.text,
-    );
+    try {
+      // Step 1: Sign in với Google
+      print('📍 Step 1: Starting Google Sign-In...');
+      final googleResponse = await GoogleAuthService.signInWithGoogle();
+      print('✅ Got Google credentials for: ${googleResponse.email}');
 
-    print('📍 Step 4: API response received');
-    setState(() => _isSubmitting = false);
-
-    if (response.isSuccess && response.data != null) {
-      print('✅ Login successful!');
-      
-      // ==================== LƯU TOKEN ====================
-      print('📍 Step 5: Saving login data...');
-      await TokenStorage.saveLoginData(
-        token: response.data!.token,
-        role: response.data!.role,
-        email: _emailCtl.text.trim(),
-        firstLogin: response.data!.firstLogin,
-        // refreshToken: response.data!.refreshToken, // Nếu có
+      // Step 2: Xác thực với backend
+      print('📍 Step 2: Authenticating with backend...');
+      final backendResponse = await GoogleAuthService.authenticateWithBackend(
+        googleResponse.idToken,
       );
-      print('✅ Login data saved!');
       
-      // Print để kiểm tra
+      print('✅ Backend authentication successful!');
+      
+      setState(() => _isGoogleSigningIn = false);
+
+      // Step 3: Lưu token và thông tin user
+      print('📍 Step 3: Saving login data...');
+      await TokenStorage.saveLoginData(
+        token: backendResponse.accessToken,
+        role: backendResponse.user.role,
+        email: backendResponse.user.email,
+        firstLogin: false, // Google login không cần change password
+      );
+      
+      print('✅ Token saved!');
       await TokenStorage.printUserInfo();
-      // ===================================================
-      
-      // Show success message
+
+      // Step 4: Hiển thị thông báo thành công
       _showBar(
-        response.message,
+        'Đăng nhập thành công với ${googleResponse.email}',
         icon: Icons.check_circle,
         color: Colors.green,
       );
-      
-      print('📍 Step 6: Waiting 1 second...');
+
       await Future.delayed(const Duration(seconds: 1));
+
+      // Step 5: Navigate theo role
+      if (!mounted) return;
       
-      print('📍 Step 7: Checking mounted...');
-      if (!mounted) {
-        print('❌ Widget not mounted');
-        return;
-      }
-      print('✅ Widget mounted');
+      print('📍 Step 5: Navigating by role...');
+      _showPostLoginMenu(backendResponse.user.role);
 
-      print('📍 Step 8: Checking firstLogin...');
-      if (response.data!.firstLogin) {
-        print('➡️ First login - going to change password');
-        Navigator.pushReplacementNamed(context, '/change-password');
-      } else {
-        print('➡️ Not first login - navigating by role');
-        _navigateByRole(response.data!.role);
-      }
+    } catch (e) {
+      print('❌ Google Sign-In Error: $e');
+      setState(() => _isGoogleSigningIn = false);
+
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
       
-    } else {
-      print('❌ Login failed');
-    }
-  } catch (e) {
-    print('❌ Error: $e');
-    setState(() => _isSubmitting = false);
+      // Xử lý các lỗi cụ thể
+      if (errorMessage.contains('sign_in_failed')) {
+        errorMessage = 'Đăng nhập Google thất bại. Vui lòng thử lại.';
+      } else if (errorMessage.contains('network_error')) {
+        errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet.';
+      } else if (errorMessage.contains('Tài khoản chưa được cấp phép')) {
+        errorMessage = 'Tài khoản Google này chưa được đăng ký trong hệ thống.';
+      }
 
-    _showBar(
-      e.toString().replaceAll('Exception: ', ''),
-      icon: Icons.error_outline,
-      color: Colors.red,
-    );
-  }
-}
-
-void _navigateByRole(String role) {
-  print('🔄 Navigating by role: $role');
-  
-  String message = '';
-  
-  switch (role) {
-    case 'HEADOFDEPARTMENT':
-      message = 'Chào mừng Trưởng khoa!';
-      break;
-    case 'LECTURER':
-      message = 'Chào mừng Giảng viên!';
-      break;
-    case 'ADMIN':
-      message = 'Chào mừng Admin!';
-      break;
-    default:
-      message = 'Chào mừng!';
-      break;
-  }
-  
-  print('➡️ Going to home...');
-  Navigator.pushReplacementNamed(context, AppRoutes.home);
-  
-  // Show welcome message sau khi navigate
-  Future.delayed(const Duration(milliseconds: 500), () {
-    if (mounted) {
-      _showBar(message, icon: Icons.home, color: Colors.blue);
+      _showBar(
+        errorMessage,
+        icon: Icons.error_outline,
+        color: Colors.red,
+      );
     }
-  });
-}
+  }
+
+  void _showPostLoginMenu(String role) async {
+    // KHÔNG HIỂN THỊ BOTTOM SHEET NỮA
+    if (!mounted) return;
+
+    String message = '';
+    switch (role) {
+      case 'HEADOFDEPARTMENT':
+        message = 'Chào mừng Trưởng khoa!';
+        break;
+      case 'LECTURER':
+        message = 'Chào mừng Giảng viên!';
+        break;
+      case 'ADMIN':
+        message = 'Chào mừng Admin!';
+        break;
+      default:
+        message = 'Chào mừng!';
+        break;
+    }
+
+    // LUÔN LUÔN ĐIỀU HƯỚNG ĐẾN TRANG CHỦ
+    Navigator.pushReplacementNamed(context, AppRoutes.home);
+
+    // Hiển thị thông báo chào mừng SAU KHI đã điều hướng
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _showBar(message, icon: Icons.home, color: Colors.blue);
+      }
+    });
+  }
+
+  void _navigateByRole(String role) {
+    // kept for backward compatibility — delegate to post-login menu
+    _showPostLoginMenu(role);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -361,18 +437,29 @@ void _navigateByRole(String role) {
                     Column(
                       children: [
                         _buildSocialButtonWithText(
-                          onTap: () => _showBar("Tính năng đang phát triển"),
-                          icon: Image.asset(
-                            'assets/icons/google.png',
-                            width: 24,
-                            height: 24,
-                            errorBuilder: (_, __, ___) => const Icon(
-                              Icons.g_mobiledata,
-                              color: AppColors.fptOrange,
-                              size: 28,
-                            ),
-                          ),
-                          text: "Đăng nhập bằng Google",
+                          onTap: _isGoogleSigningIn ? () {} : _onGoogleSignIn,
+                          icon: _isGoogleSigningIn
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.fptOrange,
+                                  ),
+                                )
+                              : Image.asset(
+                                  'assets/icons/google.png',
+                                  width: 24,
+                                  height: 24,
+                                  errorBuilder: (_, __, ___) => const Icon(
+                                    Icons.g_mobiledata,
+                                    color: AppColors.fptOrange,
+                                    size: 28,
+                                  ),
+                                ),
+                          text: _isGoogleSigningIn 
+                              ? "Đang đăng nhập..." 
+                              : "Đăng nhập bằng Google",
                         ),
                       ],
                     ),

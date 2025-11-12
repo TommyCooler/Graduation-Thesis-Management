@@ -4,6 +4,7 @@ import mss.project.accountservice.dtos.requests.UpdateAccountRequest;
 import mss.project.accountservice.dtos.responses.AccountPerPageResponse;
 import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.PageResponse;
+import mss.project.accountservice.enums.Role;
 import mss.project.accountservice.exceptions.AppException;
 import mss.project.accountservice.exceptions.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,24 +62,29 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
-    public PageResponse<AccountPerPageResponse> getAccountsPaged(int page, int size) {
+    public PageResponse<AccountPerPageResponse> getAccountsPaged(int page, int size, Account currentAccount) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
         Page<Account> accountPage = accountRepository.findAll(pageable);
 
+        List<Account> filtered = accountPage.getContent().stream()
+                .filter(acc -> !acc.getId().equals(currentAccount.getId()))
+                .toList();
+
         return PageResponse.<AccountPerPageResponse>builder()
-                .content(accountPage.getContent().stream()
+                .content(filtered.stream()
                         .map(acc -> AccountPerPageResponse.builder()
                                 .id(acc.getId())
                                 .name(acc.getName())
                                 .email(acc.getEmail())
                                 .role(acc.getRole().toString())
                                 .isActive(acc.isActive())
+                                .phoneNumber(acc.getPhoneNumber())
                                 .createdAt(acc.getCreatedAt())
                                 .build())
                         .collect(Collectors.toList()))
                 .currentPage(accountPage.getNumber() + 1)
                 .totalPages(accountPage.getTotalPages())
-                .totalElements(accountPage.getTotalElements())
+                .totalElements(accountPage.getTotalElements() - 1) // 👈 trừ bớt 1
                 .pageSize(accountPage.getSize())
                 .build();
     }
@@ -106,6 +112,14 @@ public class AccountServiceImpl implements AccountService {
             throw new AppException(ErrorCode.INVALID_PHONE_NUMBER);
         }
         account.setPhoneNumber(request.getPhoneNumber());
+        accountRepository.save(account);
+    }
+
+    @Override
+    public void adminUpdateAccountRole(Long id, Role role) {
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.ACCOUNT_NOT_FOUND));
+        account.setRole(role);
         accountRepository.save(account);
     }
 

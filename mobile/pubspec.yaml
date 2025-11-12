@@ -38,6 +38,8 @@ dependencies:
   flutter_dotenv: ^6.0.0
   another_flushbar: ^1.12.32
   intl: ^0.18.1
+  google_sign_in: ^6.2.1
+  table_calendar: ^3.0.9
 
 dev_dependencies:
   flutter_test:

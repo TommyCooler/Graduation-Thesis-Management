@@ -240,8 +240,16 @@ public class TopicsController {
     }
 
     @GetMapping("/approved")
-    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics() {
-        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics();
+    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics( @AuthenticationPrincipal Jwt jwt) {
+        Long accountID = null;
+        if (jwt != null) {
+            try {
+                accountID = Long.parseLong(jwt.getSubject());
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
+            }
+        }
+        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics(accountID);
         return ApiResponse.<List<GetAllApprovedTopicsResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Fetch all approved topics successfully")
@@ -392,5 +400,22 @@ public class TopicsController {
         apiResponse.setMessage("Edit permission checked successfully");
         apiResponse.setData(Map.of("canEdit", canEdit));
         return apiResponse;
+    }
+
+
+    @PutMapping("/{topicId}/status")
+    public ApiResponse<TopicsDTOResponse> updateTopicStatus(
+            @PathVariable Long topicId,
+            @RequestParam String status) {
+
+            TopicStatus topicStatus = TopicStatus.valueOf(status.toUpperCase());
+
+            TopicsDTOResponse updated = topicsService.updateTopicStatus(topicId, topicStatus);
+
+            ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(200);
+            apiResponse.setMessage("Topic status updated successfully");
+            apiResponse.setData(updated);
+            return apiResponse;
     }
 }

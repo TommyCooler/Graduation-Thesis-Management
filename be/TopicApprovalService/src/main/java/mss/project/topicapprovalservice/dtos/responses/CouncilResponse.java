@@ -15,6 +15,7 @@ public class CouncilResponse {
     private String councilName;
     private String semester;
     private String date;
+    private String retakeDate;
     private Status status;
     private List<CouncilMemberResponse> councilMembers;
     private List<TopicsDTOResponse> topic;

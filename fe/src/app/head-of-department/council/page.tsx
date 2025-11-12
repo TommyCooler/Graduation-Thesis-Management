@@ -14,7 +14,8 @@ import {
   Tag, 
   Spin, 
   Empty,
-  Tooltip
+  Tooltip,
+  Result
 } from 'antd';
 import { 
   TeamOutlined, 
@@ -24,12 +25,12 @@ import {
   PlusOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
-import { Topic } from '../../types/topic';
-import { CouncilCreateRequest } from '../../types/council';
-import { topicService } from '../../services/topicService';
-import { councilService } from '../../services/councilService';
-import Header from '../../components/combination/Header';
-import Footer from '../../components/combination/Footer';
+import { Topic } from '../../../types/topic';
+import { CouncilCreateRequest } from '../../../types/council';
+import { topicService } from '../../../services/topicService';
+import { councilService } from '../../../services/councilService';
+import Header from '../../../components/combination/Header';
+import Footer from '../../../components/combination/Footer';
 
 const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
@@ -46,6 +47,8 @@ const CouncilPage: React.FC = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [totalItems, setTotalItems] = useState(0);
   const [isMounted, setIsMounted] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
+  const [isChecking, setIsChecking] = useState<boolean>(true);
 
   // Tự động tính học kỳ dựa trên tháng hiện tại
   const getCurrentSemester = (): string => {
@@ -70,7 +73,34 @@ const CouncilPage: React.FC = () => {
     setCurrentSemester(getCurrentSemester());
   };
 
+  // Kiểm tra quyền truy cập
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('accessToken');
+      const role = localStorage.getItem('role');
+      
+      if (!token) {
+        messageApi.error('Vui lòng đăng nhập');
+        router.push('/auth/login');
+        setIsChecking(false);
+        return;
+      }
+      
+      // Kiểm tra role (hỗ trợ cả HEADOFDEPARTMENT và HEAD_OF_DEPARTMENT)
+      const normalizedRole = role?.toUpperCase().replace(/_/g, '');
+      if (normalizedRole === 'HEADOFDEPARTMENT') {
+        setIsAuthorized(true);
+      } else {
+        messageApi.error('Bạn không có quyền truy cập trang này');
+        router.push('/');
+      }
+      setIsChecking(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthorized) return; // Chỉ chạy các logic khác nếu đã được authorize
+    
     setIsMounted(true);
     updateSemester(); // Cập nhật học kỳ khi component mount
     fetchTopics();
@@ -81,7 +111,7 @@ const CouncilPage: React.FC = () => {
     }, 60 * 60 * 1000); // Mỗi 1 giờ
     
     return () => clearInterval(interval); // Cleanup khi component unmount
-  }, [currentPage]);
+  }, [currentPage, isAuthorized]);
 
   const formatDate = (dateString: string | null | undefined): string => {
     if (!dateString) return 'N/A';
@@ -170,7 +200,7 @@ const CouncilPage: React.FC = () => {
       
       // Chuyển đến trang danh sách sau 1.5 giây
       setTimeout(() => {
-        router.push('/council/council-list');
+        router.push('/head-of-department/council-list');
       }, 1500);
     } catch (error) {
       console.error('Error creating council:', error);
@@ -202,8 +232,32 @@ const CouncilPage: React.FC = () => {
     }
   };
 
-  if (!isMounted) {
-    return null;
+  // Kiểm tra quyền truy cập
+  if (isChecking || !isMounted) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Spin size="large" tip="Đang kiểm tra quyền truy cập..." />
+      </div>
+    );
+  }
+
+  if (!isAuthorized) {
+    return (
+      <Layout className="min-h-screen">
+        <div className="flex items-center justify-center min-h-screen bg-gray-50">
+          <Result
+            status="403"
+            title="Không có quyền truy cập"
+            subTitle="Chỉ có Trưởng bộ môn mới được phép truy cập trang này."
+            extra={
+              <Button type="primary" onClick={() => router.push('/')}>
+                Về trang chủ
+              </Button>
+            }
+          />
+        </div>
+      </Layout>
+    );
   }
 
   return (
@@ -380,3 +434,4 @@ const CouncilPage: React.FC = () => {
 };
 
 export default CouncilPage;
+

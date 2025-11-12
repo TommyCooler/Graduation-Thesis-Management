@@ -72,6 +72,7 @@ export interface ApprovedTopic {
   topicID: number;
   topicTitle: string;
   description: string;
+  topicStatus: string;
 }
 
 // 2-Person Approval Types

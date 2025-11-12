@@ -35,4 +35,7 @@ class EnvConfig {
   
   // Is Staging
   static bool get isStaging => environment == 'staging';
+
+  
 }
+

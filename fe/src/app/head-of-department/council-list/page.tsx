@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     Layout,
     Card,
@@ -16,7 +17,8 @@ import {
     Input,
     Select,
     message,
-    Modal
+    Modal,
+    Result
 } from 'antd';
 import {
     TeamOutlined,
@@ -28,7 +30,11 @@ import {
     EditOutlined,
     DeleteOutlined,
     CheckCircleOutlined,
-    ClockCircleOutlined
+    ClockCircleOutlined,
+    FileTextOutlined,
+    UserOutlined,
+    LinkOutlined,
+    FieldTimeOutlined
 } from '@ant-design/icons';
 import { CouncilResponse } from '../../../types/council';
 import { councilService } from '../../../services/councilService';
@@ -39,12 +45,36 @@ const { Content } = Layout;
 const { Title, Paragraph, Text } = Typography;
 const { Option } = Select;
 
+// Helper function để lấy màu và text cho status đề tài
+const getTopicStatusColor = (status: string) => {
+    switch (status) {
+        case 'APPROVED': return 'green';
+        case 'PENDING': return 'orange';
+        case 'REJECTED': return 'red';
+        case 'PASSED_REVIEW_3': return 'green';
+        default: return 'default';
+    }
+};
+
+const getTopicStatusText = (status: string) => {
+    switch (status) {
+        case 'PASSED_REVIEW_3': return 'Đã qua review';
+        case 'APPROVED': return 'Đã duyệt';
+        case 'PENDING': return 'Chờ xử lý';
+        case 'REJECTED': return 'Từ chối';
+        default: return status;
+    }
+};
+
 const CouncilListPage: React.FC = () => {
+    const router = useRouter();
     const [councils, setCouncils] = useState<CouncilResponse[]>([]);
     const [filteredCouncils, setFilteredCouncils] = useState<CouncilResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const [messageApi, contextHolder] = message.useMessage();
     const [isMounted, setIsMounted] = useState(false);
+    const [isAuthorized, setIsAuthorized] = useState<boolean>(false);
+    const [isChecking, setIsChecking] = useState<boolean>(true);
 
     // Filter states
     const [searchText, setSearchText] = useState('');
@@ -55,10 +85,37 @@ const CouncilListPage: React.FC = () => {
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
     const [selectedCouncil, setSelectedCouncil] = useState<CouncilResponse | null>(null);
 
+    // Kiểm tra quyền truy cập
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const token = localStorage.getItem('accessToken');
+            const role = localStorage.getItem('role');
+            
+            if (!token) {
+                messageApi.error('Vui lòng đăng nhập');
+                router.push('/auth/login');
+                setIsChecking(false);
+                return;
+            }
+            
+            // Kiểm tra role (hỗ trợ cả HEADOFDEPARTMENT và HEAD_OF_DEPARTMENT)
+            const normalizedRole = role?.toUpperCase().replace(/_/g, '');
+            if (normalizedRole === 'HEADOFDEPARTMENT') {
+                setIsAuthorized(true);
+            } else {
+                messageApi.error('Bạn không có quyền truy cập trang này');
+                router.push('/');
+            }
+            setIsChecking(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isAuthorized) return; // Chỉ chạy các logic khác nếu đã được authorize
+        
         setIsMounted(true);
         fetchCouncils();
-    }, []);
+    }, [isAuthorized]);
 
     useEffect(() => {
         applyFilters();
@@ -138,8 +195,32 @@ const CouncilListPage: React.FC = () => {
         }
     };
 
-    if (!isMounted) {
-        return null;
+    // Kiểm tra quyền truy cập
+    if (isChecking || !isMounted) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Spin size="large" tip="Đang kiểm tra quyền truy cập..." />
+            </div>
+        );
+    }
+
+    if (!isAuthorized) {
+        return (
+            <Layout className="min-h-screen">
+                <div className="flex items-center justify-center min-h-screen bg-gray-50">
+                    <Result
+                        status="403"
+                        title="Không có quyền truy cập"
+                        subTitle="Chỉ có Trưởng bộ môn mới được phép truy cập trang này."
+                        extra={
+                            <Button type="primary" onClick={() => router.push('/')}>
+                                Về trang chủ
+                            </Button>
+                        }
+                    />
+                </div>
+            </Layout>
+        );
     }
 
     return (
@@ -289,7 +370,7 @@ const CouncilListPage: React.FC = () => {
                                     <Space>
                                         <Button
                                             type="primary"
-                                            href="/council"
+                                            href="/head-of-department/council"
                                         >
                                             <TeamOutlined className="mr-2" />
                                             Tạo hội đồng mới
@@ -390,9 +471,18 @@ const CouncilListPage: React.FC = () => {
                                                 <Col xs={24} sm={12} md={6}>
                                                     <div className="p-3 bg-gray-50 rounded-lg">
                                                         <Text type="secondary" className="text-sm">Thành viên</Text>
-                                                        <div className="font-medium text-gray-800 mt-1">
-                                                            <TeamOutlined className="mr-1" />
-                                                            {council.councilMembers.length} người
+                                                        <div className="font-medium text-gray-800 mt-1 text-sm">
+                                                            {council.councilMembers.slice(0, 4).map((member, index) => (
+                                                                <div key={member.id} className="flex items-center gap-1 mb-1">
+                                                                    <TeamOutlined className="text-orange-500 text-xs" />
+                                                                    <span>{member.fullName}</span>
+                                                                </div>
+                                                            ))}
+                                                            {council.councilMembers.length > 4 && (
+                                                                <div className="text-gray-500 text-xs mt-1">
+                                                                    +{council.councilMembers.length - 4} người khác
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </Col>
@@ -419,114 +509,178 @@ const CouncilListPage: React.FC = () => {
                 open={isDetailModalVisible}
                 onCancel={() => setIsDetailModalVisible(false)}
                 footer={null}
-                width={900}
+                width={1200}
+                style={{ top: 20 }}
+                bodyStyle={{ maxHeight: 'calc(100vh - 120px)', padding: '20px' }}
             >
                 {selectedCouncil && (
-                    <div className="space-y-4 mt-4">
-                        {/* Council Basic Info */}
-                        <Card title="Thông tin hội đồng" className="border-0 shadow-sm">
-                            <Row gutter={[16, 16]}>
-                                <Col span={12}>
-                                    <div>
-                                        <Text type="secondary" className="text-sm">Tên hội đồng</Text>
-                                        <div className="font-semibold text-gray-800 mt-1">
-                                            {selectedCouncil.councilName}
-                                        </div>
-                                    </div>
-                                </Col>
-                                <Col span={12}>
-                                    <div>
-                                        <Text type="secondary" className="text-sm">Trạng thái</Text>
-                                        <div className="mt-1">
-                                            <Tag
-                                                color={councilService.getStatusColor(selectedCouncil.status)}
-                                                className="text-sm font-semibold px-3 py-1"
-                                            >
-                                                {councilService.getStatusDisplay(selectedCouncil.status)}
-                                            </Tag>
-                                        </div>
-                                    </div>
-                                </Col>
-                            </Row>
-                            
-                            <div className="mt-4">
-                                <Text type="secondary" className="text-sm">Đề tài ({selectedCouncil.topic.length})</Text>
-                                <div className="space-y-2 mt-2">
-                                    {selectedCouncil.topic.length > 0 ? (
-                                        selectedCouncil.topic.map((topic, index) => (
-                                            <div key={topic.id} className="p-2 bg-gray-50 rounded border-l-4 border-orange-500">
-                                                <Text strong className="text-gray-800">
-                                                    {index + 1}. {topic.title}
-                                                </Text>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <Text className="text-gray-500">Chưa có đề tài</Text>
-                                    )}
+                    <div className="space-y-3">
+                        {/* Header Info - Compact */}
+                        <Row gutter={[16, 8]} className="mb-3 pb-3 border-b">
+                            <Col span={8}>
+                                <Text type="secondary" className="text-xs">Tên hội đồng</Text>
+                                <div className="font-semibold text-gray-800 mt-0.5 text-sm">
+                                    {selectedCouncil.councilName}
                                 </div>
-                            </div>
+                            </Col>
+                            <Col span={4}>
+                                <Text type="secondary" className="text-xs">Trạng thái</Text>
+                                <div className="mt-0.5">
+                                    <Tag
+                                        color={councilService.getStatusColor(selectedCouncil.status)}
+                                        className="text-xs font-semibold px-2 py-0.5"
+                                    >
+                                        {councilService.getStatusDisplay(selectedCouncil.status)}
+                                    </Tag>
+                                </div>
+                            </Col>
+                            <Col span={6}>
+                                <Text type="secondary" className="text-xs">Học kỳ</Text>
+                                <div className="mt-0.5">
+                                    <Tag color="orange" className="text-xs">{selectedCouncil.semester}</Tag>
+                                </div>
+                            </Col>
+                            <Col span={6}>
+                                <Text type="secondary" className="text-xs">Ngày tổ chức</Text>
+                                <div className="flex items-center mt-0.5">
+                                    <CalendarOutlined className="mr-1 text-gray-400 text-xs" />
+                                    <Text className="text-xs">{councilService.formatDate(selectedCouncil.date)}</Text>
+                                </div>
+                            </Col>
+                        </Row>
 
-                            <Row gutter={[16, 16]} className="mt-4">
-                                <Col span={12}>
-                                    <div>
-                                        <Text type="secondary" className="text-sm">Học kỳ</Text>
-                                        <div className="mt-1">
-                                            <Tag color="orange">{selectedCouncil.semester}</Tag>
-                                        </div>
+                        {/* Main Content - 2 Columns */}
+                        <Row gutter={[16, 0]}>
+                            {/* Left Column - Topics */}
+                            <Col span={14}>
+                                <div className="pr-2">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Text strong className="text-sm">Đề tài ({selectedCouncil.topic.length})</Text>
                                     </div>
-                                </Col>
-                                <Col span={12}>
-                                    <div>
-                                        <Text type="secondary" className="text-sm">Ngày tổ chức</Text>
-                                        <div className="flex items-center mt-1">
-                                            <CalendarOutlined className="mr-2 text-gray-500" />
-                                            <Text>{councilService.formatDate(selectedCouncil.date)}</Text>
-                                        </div>
+                                    <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
+                                        {selectedCouncil.topic.length > 0 ? (
+                                            selectedCouncil.topic.map((topic, index) => (
+                                                <Card
+                                                    key={topic.id}
+                                                    className="border-l-2 border-l-orange-500 shadow-sm mb-2"
+                                                    size="small"
+                                                    bodyStyle={{ padding: '12px' }}
+                                                >
+                                                    <div className="flex items-start gap-2 mb-2">
+                                                        <span className="w-6 h-6 bg-orange-500 text-white rounded flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                                            {index + 1}
+                                                        </span>
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-start justify-between gap-2 mb-1">
+                                                                <Text strong className="text-sm !mb-0 line-clamp-1">
+                                                                    {topic.title}
+                                                                </Text>
+                                                                <Tag color={getTopicStatusColor(topic.status || '')} className="flex-shrink-0 text-xs">
+                                                                    {getTopicStatusText(topic.status || '')}
+                                                                </Tag>
+                                                            </div>
+                                                            {topic.description && (
+                                                                <Text className="text-xs text-gray-600 line-clamp-1 mb-1">
+                                                                    {topic.description}
+                                                                </Text>
+                                                            )}
+                                                            <div className="grid grid-cols-4 gap-2 mt-1.5">
+                                                                {topic.createdBy && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <UserOutlined className="text-gray-400 text-xs" />
+                                                                        <Text className="text-xs text-gray-600 truncate" title={topic.createdBy}>
+                                                                            {topic.createdBy}
+                                                                        </Text>
+                                                                    </div>
+                                                                )}
+                                                                {topic.submitedAt && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <CalendarOutlined className="text-gray-400 text-xs" />
+                                                                        <Text className="text-xs text-gray-600">
+                                                                            {new Date(topic.submitedAt).toLocaleDateString('vi-VN')}
+                                                                        </Text>
+                                                                    </div>
+                                                                )}
+                                                                {(topic as any).defenseTime && (
+                                                                    <div className="flex items-center gap-1">
+                                                                        <FieldTimeOutlined className="text-orange-500 text-xs" />
+                                                                        <Text className="text-xs text-gray-700 font-semibold">
+                                                                            {(topic as any).defenseTime.substring(0, 5)}
+                                                                        </Text>
+                                                                    </div>
+                                                                )}
+                                                                {topic.filePathUrl && (
+                                                                    <div>
+                                                                        <a
+                                                                            href={topic.filePathUrl}
+                                                                            target="_blank"
+                                                                            rel="noopener noreferrer"
+                                                                            className="text-orange-600 hover:text-orange-700 text-xs flex items-center gap-1"
+                                                                        >
+                                                                            <LinkOutlined />
+                                                                            <span>File</span>
+                                                                        </a>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            ))
+                                        ) : (
+                                            <Text className="text-gray-500 text-sm">Chưa có đề tài</Text>
+                                        )}
                                     </div>
-                                </Col>
-                            </Row>
-                        </Card>
+                                </div>
+                            </Col>
 
-                        {/* Council Members */}
-                        <Card title={`Thành viên hội đồng (${selectedCouncil.councilMembers.length})`} className="border-0 shadow-sm">
-                            <div className="space-y-3">
-                                {selectedCouncil.councilMembers.map((member) => (
-                                    <div key={member.id} className="p-3 bg-gray-50 rounded-lg">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                                                {member.fullName.charAt(0).toUpperCase()}
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <Text strong className="text-gray-800">
-                                                        {member.fullName}
-                                                    </Text>
-                                                    <Tag color={councilService.getRoleColor(member.role)}>
-                                                        {councilService.getRoleDisplay(member.role)}
-                                                    </Tag>
+                            {/* Right Column - Members */}
+                            <Col span={10}>
+                                <div className="pl-2 border-l">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <Text strong className="text-sm">Thành viên ({selectedCouncil.councilMembers.length})</Text>
+                                    </div>
+                                    <div className="space-y-2 max-h-[calc(100vh-280px)] overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+                                        {selectedCouncil.councilMembers.map((member) => (
+                                            <div key={member.id} className="p-2 bg-gray-50 rounded-lg">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 text-xs">
+                                                        {member.fullName.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                                                            <Text strong className="text-xs text-gray-800">
+                                                                {member.fullName}
+                                                            </Text>
+                                                            <Tag color={councilService.getRoleColor(member.role)} className="text-xs px-1.5 py-0">
+                                                                {councilService.getRoleDisplay(member.role)}
+                                                            </Tag>
+                                                        </div>
+                                                        <Text className="text-xs text-gray-600 block truncate" title={member.email}>
+                                                            {member.email}
+                                                        </Text>
+                                                        {member.phoneNumber && (
+                                                            <Text className="text-xs text-gray-600">
+                                                                {member.phoneNumber}
+                                                            </Text>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <Text className="text-gray-600 text-sm block">
-                                                    {member.email}
-                                                </Text>
-                                                {member.phoneNumber && (
-                                                    <Text className="text-gray-600 text-sm">
-                                                        {member.phoneNumber}
-                                                    </Text>
-                                                )}
                                             </div>
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
-                        </Card>
+                                </div>
+                            </Col>
+                        </Row>
 
                         {/* Action Buttons */}
-                        <div className="flex justify-end gap-3 pt-4 border-t">
-                            <Button onClick={() => setIsDetailModalVisible(false)}>
+                        <div className="flex justify-end gap-2 pt-3 border-t mt-3">
+                            <Button size="small" onClick={() => setIsDetailModalVisible(false)}>
                                 Đóng
                             </Button>
                             <Button
                                 type="primary"
+                                size="small"
                                 icon={<EditOutlined />}
                                 onClick={() => {
                                     setIsDetailModalVisible(false);
@@ -545,3 +699,4 @@ const CouncilListPage: React.FC = () => {
 };
 
 export default CouncilListPage;
+

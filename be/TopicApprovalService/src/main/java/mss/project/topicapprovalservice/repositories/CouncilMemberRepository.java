@@ -17,4 +17,6 @@ public interface CouncilMemberRepository extends JpaRepository<CouncilMember, Lo
     List<CouncilMember> findByCouncil_DefenseDate(LocalDate date);
 
     List<CouncilMember> findByCouncil_Id(long id);
+
+    List<CouncilMember> findByAccountId(long accountId);
 }

@@ -139,10 +139,10 @@ export default function AccountProvisionPage() {
       render: (role: string) => {
         const color =
           role === 'HEADOFDEPARTMENT'
-            ? 'orange'
+            ? 'green'
             : role === 'LECTURER'
             ? 'blue'
-            : 'green';
+            : 'orange';
         const roleText =
           role === 'HEADOFDEPARTMENT'
             ? 'Trưởng bộ môn'

@@ -561,6 +561,29 @@ class TopicService {
     }
   }
 
+  /**
+   * Cập nhật trạng thái đề tài
+   */
+  async updateTopicStatus(topicId: number, status: string) {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/status?status=${encodeURIComponent(status)}`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error updating topic status:', error);
+      throw error;
+    }
+  }
+
   // ========== 2-Person Approval Workflow Methods ==========
 
   /**

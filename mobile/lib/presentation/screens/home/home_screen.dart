@@ -20,6 +20,13 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Trang chủ'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'Xem lịch chấm',
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.reviewCouncil);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {},
           ),
@@ -58,17 +65,37 @@ class HomeScreen extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout),
-              label: const Text('Đăng xuất'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.reviewCouncil);
+                  },
+                  icon: const Icon(Icons.calendar_month),
+                  label: const Text('Xem lịch chấm'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.fptOrange,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _logout(context),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Đăng xuất'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

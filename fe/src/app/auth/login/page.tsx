@@ -48,6 +48,7 @@ export default function LoginPage() {
           const token = parsed?.data?.token as string | undefined;
           const role = parsed?.data?.role as string | undefined;
           const firstLogin = parsed?.data?.firstLogin as boolean | undefined;
+          console.log(firstLogin)
           if (firstLogin) {
             router.push(`/auth/change-password?email=${encodeURIComponent(values.email.trim())}`);
             return;
@@ -58,6 +59,7 @@ export default function LoginPage() {
           if (role) localStorage.setItem('role', role);
 
           if (role === 'HEAD_OF_DEPARTMENT' || role === 'HEADOFDEPARTMENT') router.push('/head-of-department/dashboard');
+          else if (role === 'ADMIN') router.push('/admin');
           else router.push('/');
         })(),
         {
@@ -178,9 +180,9 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            <div className="text-center mt-6">
-              <Text type="secondary">Don't have an account? </Text>
-              <Link href="/auth/register" className="text-orange-500 font-semibold">Signup</Link>
+            <div className="text-center mt-11">
+              {/* <Text type="secondary">Don't have an account? </Text>
+              <Link href="/auth/register" className="text-orange-500 font-semibold">Signup</Link> */}
             </div>
           </div>
         </div>

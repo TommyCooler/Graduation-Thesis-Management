@@ -17,7 +17,7 @@ public interface TopicService {
     List<TopicsDTOResponse> getAllTopics();
     TopicsDTOResponse approveTopic(Long topicId, String email);
     TopicsDTOResponse rejectTopic(Long topicId, String email);
-    List<GetAllApprovedTopicsResponse> getApprovedTopics();
+    List<GetAllApprovedTopicsResponse> getApprovedTopics(Long accountID);
     List<TopicsDTOResponse> getTopicsByStatus(TopicStatus status);
     List<TopicsDTOResponse> getTopicsByCreatorId(Long creatorId);
     AccountTopicsDTOResponse joinTopic(Long topicId, Long memberId, String memberName);
@@ -25,6 +25,7 @@ public interface TopicService {
     List<AccountTopicsDTOResponse> getTopicMembers(Long topicId);
     List<TopicsWithCouncilIsNullResponse> getTopicsByCouncilNotNull();
     void removeTopicMember(Long topicId, Long accountId);
+    TopicsDTOResponse updateTopicStatus(Long topicId, TopicStatus status);
     
     // New methods for 2-person approval workflow
     TopicWithApprovalStatusResponse approveTopicV2(Long topicId, String approverEmail, String approverName, String comment);

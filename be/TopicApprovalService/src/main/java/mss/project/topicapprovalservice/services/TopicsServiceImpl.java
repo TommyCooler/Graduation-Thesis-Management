@@ -22,9 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -49,6 +47,9 @@ public class TopicsServiceImpl implements TopicService {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private CouncilService councilService;
 
     @Autowired(required = false)
     private PlagiarismService plagiarismService;
@@ -215,6 +216,24 @@ public class TopicsServiceImpl implements TopicService {
 
     @Override
     @Transactional
+    public TopicsDTOResponse updateTopicStatus(Long topicId, TopicStatus status) {
+        Topics topic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+
+        if (status == null) {
+            throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
+        }
+        // Update status
+        topic.setStatus(status);
+        topicsRepository.save(topic);
+        if (topic.getStatus() == TopicStatus.FAILED && topic.getCouncil() != null) {
+            councilService.updateRetakeDateForFailedTopic(topic.getCouncil().getId());
+        }
+        return convertToDTO(topic);
+    }
+
+    @Override
+    @Transactional
     public TopicsDTOResponse updateTopic(Long Id, TopicsDTORequest topicsDTO) {
         Topics existingTopic = topicsRepository.findById(Id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
@@ -325,7 +344,6 @@ public class TopicsServiceImpl implements TopicService {
         if (existingTopic.getStatus() != TopicStatus.PENDING) {
             throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
         }
-        
         existingTopic.setStatus(TopicStatus.APPROVED);
         topicsRepository.save(existingTopic);
         return convertToDTO(existingTopic);
@@ -348,13 +366,22 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
-    public List<GetAllApprovedTopicsResponse> getApprovedTopics() {
-        List<Topics> topicsList = topicsRepository.findByStatus(TopicStatus.APPROVED);
-        return topicsList.stream().map(topic ->
+    public List<GetAllApprovedTopicsResponse> getApprovedTopics(Long accountID) {
+        AccountDTO accountDTO = accountService.getAccountById(accountID);
+        List<TopicStatus> statusList = Arrays.asList(TopicStatus.APPROVED, TopicStatus.PASSED_REVIEW_1, TopicStatus.PASSED_REVIEW_2, TopicStatus.PASSED_REVIEW_3,TopicStatus.FAILED);
+        List<Topics> topicsList = topicsRepository.findByStatusIn(statusList);
+        List<Topics> myApprovedTopicsList = new ArrayList<>();
+        topicsList.forEach(topics -> {
+            if(topicApprovalRepository.findByApproverEmailAndTopicIdAndApprovedFirstIsTrue(accountDTO.getEmail(), topics.getId()) != null) {
+                myApprovedTopicsList.add(topics);
+            }
+        });
+        return myApprovedTopicsList.stream().map(topic ->
                 GetAllApprovedTopicsResponse.builder()
                         .topicID(topic.getId())
                         .topicTitle(topic.getTitle())
                         .description(topic.getDescription())
+                        .topicStatus(topic.getStatus().getDisplayName())
                         .build()).toList();
     }
 
@@ -488,6 +515,7 @@ public class TopicsServiceImpl implements TopicService {
                 .approverEmail(approverEmail)
                 .approverName(approverName)
                 .comment(comment)
+                .approvedFirst((topicApprovalRepository.countByTopicId(topicId) == 0))
                 .build();
         topicApprovalRepository.save(approval);
         logger.info("Saved approval record: topicId={}, approverEmail={}, approverName={}", 
