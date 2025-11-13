@@ -102,7 +102,7 @@ export default function TopicUpload(): JSX.Element {
     try {
       // Lấy thông tin chủ nhiệm từ user đang đăng nhập
       const piFullName = userInfo?.name || 'N/A';
-      const piLecturerId = userInfo?.lecturerId || userInfo?.employeeId || userInfo?.id?.toString() || 'N/A';
+      const piEmail = userInfo?.email || 'N/A';
       
       const membersText =
         members.length > 0
@@ -111,7 +111,7 @@ export default function TopicUpload(): JSX.Element {
               .join('\n')}`
           : '\n\nThành viên: (trống)';
 
-      const piText = `Chủ nhiệm: ${piFullName} - ${piLecturerId}`;
+      const piText = `Chủ nhiệm: ${piFullName} - ${piEmail}`;
       const headerText = `[${SCHOOL_NAME} | ${formattedDocDateForHeader}]`;
 
       const descriptionWithKeywords =
@@ -152,7 +152,7 @@ export default function TopicUpload(): JSX.Element {
               formTitle: FORM_TITLE,
               topicTitle: values.title,
               piFullName,
-              piLecturerId,
+              piEmail,
               description: values.description,
               members,
               format: 'docx',
@@ -296,7 +296,7 @@ export default function TopicUpload(): JSX.Element {
       
       // Lấy thông tin chủ nhiệm từ user đang đăng nhập
       const piFullName = userInfo?.name || 'N/A';
-      const piLecturerId = userInfo?.lecturerId || userInfo?.employeeId || userInfo?.id?.toString() || 'N/A';
+      const piEmail = userInfo?.email || 'N/A';
 
       const res = await fetch('/api/generate-topic-file', {
         method: 'POST',
@@ -307,7 +307,7 @@ export default function TopicUpload(): JSX.Element {
           formTitle: FORM_TITLE,
           topicTitle: v.title,
           piFullName,
-          piLecturerId,
+          piEmail,
           description: v.description,
           members,
           format: downloadFormat,
