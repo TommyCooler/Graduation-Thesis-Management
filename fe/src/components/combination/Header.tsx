@@ -5,7 +5,6 @@ import {
   LoginOutlined,
   UserOutlined,
   FileAddOutlined,
-  SearchOutlined,
   LogoutOutlined,
   UnorderedListOutlined,
   DashboardOutlined,
@@ -92,11 +91,6 @@ export default function Header() {
               <Link href="/topics">
                 <Button type="text" icon={<FileAddOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
                   Đăng tải đề tài
-                </Button>
-              </Link>
-              <Link href="/check-plagiarism">
-                <Button type="text" icon={<SearchOutlined />} className="text-gray-600 h-10 px-4 hover:text-orange-500">
-                  Kiểm tra đạo văn
                 </Button>
               </Link>
               <Link href="/topics/list">
