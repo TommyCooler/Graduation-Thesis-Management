@@ -535,6 +535,9 @@ public class TopicsServiceImpl implements TopicService {
             topic.setStatus(TopicStatus.APPROVED);
             logger.info("Topic {} status changed to APPROVED ({}/{})", 
                         topicId, topic.getApprovalCount(), topic.getRequiredApprovals());
+            
+            // Send email notification to topic owners (creator and members)
+            sendTopicApprovedEmails(topic);
         }
 
         topicsRepository.save(topic);
@@ -666,5 +669,55 @@ public class TopicsServiceImpl implements TopicService {
                 .hasUserApproved(hasUserApproved)
                 .approvals(approvalDTOs)
                 .build();
+    }
+
+    /**
+     * Send email notification to all topic owners (creator and members) when topic is fully approved
+     */
+    private void sendTopicApprovedEmails(Topics topic) {
+        if (accountService == null) {
+            logger.warn("AccountService is not available, skipping email notification for topic {}", topic.getId());
+            return;
+        }
+
+        try {
+            // Get all topic members (creator and members)
+            List<AccountTopics> accountTopics = accountTopicsRepository.findByTopicsId(topic.getId());
+            
+            if (accountTopics.isEmpty()) {
+                logger.warn("No members found for topic {}, skipping email notification", topic.getId());
+                return;
+            }
+
+            String topicTitle = topic.getTitle() != null ? topic.getTitle() : "Đề tài của bạn";
+            String topicId = topic.getId().toString();
+
+            // Send email to each member
+            for (AccountTopics accountTopic : accountTopics) {
+                try {
+                    Long accountId = accountTopic.getAccountId();
+                    if (accountId == null) {
+                        logger.warn("AccountId is null for AccountTopic {}, skipping", accountTopic.getId());
+                        continue;
+                    }
+
+                    // Get account info to get email
+                    AccountDTO account = accountService.getAccountById(accountId);
+                    if (account != null && account.getEmail() != null && !account.getEmail().isEmpty()) {
+                        accountService.sendTopicApprovedEmail(account.getEmail(), topicTitle, topicId);
+                        logger.info("Sent approval email to {} for topic {}", account.getEmail(), topic.getId());
+                    } else {
+                        logger.warn("Could not get email for accountId {} for topic {}", accountId, topic.getId());
+                    }
+                } catch (Exception e) {
+                    // Log error but continue sending to other members
+                    logger.error("Failed to send approval email to accountId {} for topic {}: {}", 
+                                accountTopic.getAccountId(), topic.getId(), e.getMessage(), e);
+                }
+            }
+        } catch (Exception e) {
+            // Don't throw exception, just log error
+            logger.error("Failed to send approval emails for topic {}: {}", topic.getId(), e.getMessage(), e);
+        }
     }
 }

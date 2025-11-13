@@ -4,6 +4,7 @@
 // =====================================================
 // 1) API route: app/api/generate-topic-file/route.ts
 //    - Returns .docx or .pdf depending on `format`
+//    - Match với form create topic (email thay vì lecturerId)
 // =====================================================
 import { NextRequest } from 'next/server';
 import {
@@ -21,7 +22,7 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 
 export const runtime = 'nodejs';
 
-type Member = { fullName: string; lecturerId: string; note?: string };
+type Member = { fullName: string; email: string; note?: string };
 
 type Body = {
   docDateStr: string;
@@ -92,29 +93,66 @@ export async function POST(req: NextRequest) {
 }
 
 async function buildDocx(data: Omit<Body, 'format'>) {
-  const headerLines = [
-    'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',
-    'Độc lập - Tự do - Hạnh phúc',
-    '',
-    data.university.toUpperCase(),
-    '',
-    data.docDateStr || '',
-  ];
+  // Header table with 2 columns: left and right aligned
+  const headerTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    borders: {
+      top: { style: 'none', size: 0, color: 'FFFFFF' },
+      bottom: { style: 'none', size: 0, color: 'FFFFFF' },
+      left: { style: 'none', size: 0, color: 'FFFFFF' },
+      right: { style: 'none', size: 0, color: 'FFFFFF' },
+      insideHorizontal: { style: 'none', size: 0, color: 'FFFFFF' },
+      insideVertical: { style: 'none', size: 0, color: 'FFFFFF' },
+    },
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [new TextRun({ text: 'BỘ GIÁO DỤC VÀ ĐÀO TẠO', bold: true })],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [new TextRun({ text: 'TRƯỜNG ĐẠI HỌC FPT', bold: true })],
+              }),
+            ],
+            borders: {
+              top: { style: 'none', size: 0 },
+              bottom: { style: 'none', size: 0 },
+              left: { style: 'none', size: 0 },
+              right: { style: 'none', size: 0 },
+            },
+          }),
+          new TableCell({
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true })],
+              }),
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                children: [new TextRun({ text: 'Độc lập - Tự do - Hạnh phúc', bold: false })],
+              }),
+            ],
+            borders: {
+              top: { style: 'none', size: 0 },
+              bottom: { style: 'none', size: 0 },
+              left: { style: 'none', size: 0 },
+              right: { style: 'none', size: 0 },
+            },
+          }),
+        ],
+      }),
+    ],
+  });
 
-  const headerParagraphs = headerLines.map((line) =>
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [
-        new TextRun({
-          text: line,
-          bold:
-            line.includes('CỘNG HÒA') ||
-            line.includes('Độc lập') ||
-            line === data.university.toUpperCase(),
-        }),
-      ],
-    })
-  );
+  const spacer = new Paragraph({ text: '' });
+  const datePara = new Paragraph({
+    alignment: AlignmentType.CENTER,
+    children: [new TextRun({ text: data.docDateStr || '', italics: true })],
+  });
 
   const formTitlePara = new Paragraph({
     alignment: AlignmentType.CENTER,
@@ -131,20 +169,20 @@ async function buildDocx(data: Omit<Body, 'format'>) {
     children: [
       new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'STT', bold: true })] })] }),
       new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Họ và tên', bold: true })] })] }),
-      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Mã số giảng viên', bold: true })] })] }),
+      new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Email', bold: true })] })] }),
       new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Ghi chú', bold: true })] })] }),
     ],
   });
 
   const memberRows = (data.members && data.members.length
     ? data.members
-    : [{ fullName: '', lecturerId: '', note: '' }]
+    : [{ fullName: '', email: '', note: '' }]
   ).map((m, idx) =>
     new TableRow({
       children: [
         new TableCell({ children: [new Paragraph(String(idx + 1))] }),
         new TableCell({ children: [new Paragraph(m.fullName || '')] }),
-        new TableCell({ children: [new Paragraph(m.lecturerId || '')] }),
+        new TableCell({ children: [new Paragraph(m.email || '')] }),
         new TableCell({ children: [new Paragraph(m.note || '')] }),
       ],
     })
@@ -160,7 +198,7 @@ async function buildDocx(data: Omit<Body, 'format'>) {
 
   const doc = new Document({
     sections: [
-      { properties: {}, children: [...headerParagraphs, formTitlePara, ...infoParas, membersTable, descTitle, ...descParas] },
+      { properties: {}, children: [headerTable, spacer, datePara, formTitlePara, ...infoParas, membersTable, descTitle, ...descParas] },
     ],
   });
 
@@ -189,14 +227,63 @@ async function buildPdf(data: Omit<Body, 'format'>) {
     y -= dy;
   };
 
-  center('CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', true);
-  center('Độc lập - Tự do - Hạnh phúc');
-  y -= 6;
-  page.drawLine({ start: { x: width / 2 - 90, y }, end: { x: width / 2 + 90, y }, thickness: 0.5, color: rgb(0, 0, 0) });
-  y -= 18;
-  center(data.university.toUpperCase(), true);
-  center(data.docDateStr || '', false); // Add fallback
-  y -= 8;
+  // Left side header
+  const leftX = margin;
+  let leftY = y;
+  const size = 12;
+  
+  page.drawText('BỘ GIÁO DỤC VÀ ĐÀO TẠO', { x: leftX, y: leftY, size, font: fontBold, color: rgb(0, 0, 0) });
+  leftY -= lineHeight;
+  page.drawText('TRƯỜNG ĐẠI HỌC FPT', { x: leftX, y: leftY, size, font: fontBold, color: rgb(0, 0, 0) });
+  
+  // Right side header (aligned to the right)
+  let rightY = y;
+  const rightText1 = 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM';
+  const rightText2 = 'Độc lập - Tự do - Hạnh phúc';
+  
+  page.drawText(rightText1, { 
+    x: width - margin - fontBold.widthOfTextAtSize(rightText1, size), 
+    y: rightY, 
+    size, 
+    font: fontBold, 
+    color: rgb(0, 0, 0) 
+  });
+  rightY -= lineHeight;
+  page.drawText(rightText2, { 
+    x: width - margin - font.widthOfTextAtSize(rightText2, size), 
+    y: rightY, 
+    size, 
+    font, 
+    color: rgb(0, 0, 0) 
+  });
+  
+  // Underline for "Độc lập - Tự do - Hạnh phúc"
+  const underlineY = rightY - 3;
+  const underlineStart = width - margin - font.widthOfTextAtSize(rightText2, size);
+  const underlineEnd = width - margin;
+  page.drawLine({ 
+    start: { x: underlineStart, y: underlineY }, 
+    end: { x: underlineEnd, y: underlineY }, 
+    thickness: 0.5, 
+    color: rgb(0, 0, 0) 
+  });
+  
+  // Move y down to continue with title
+  y = Math.min(leftY, rightY) - 20;
+  
+  // Date (centered)
+  if (data.docDateStr) {
+    const dateText = data.docDateStr;
+    const dateWidth = font.widthOfTextAtSize(dateText, 11);
+    page.drawText(dateText, { 
+      x: (width - dateWidth) / 2, 
+      y, 
+      size: 11, 
+      font, 
+      color: rgb(0, 0, 0) 
+    });
+    y -= lineHeight + 4;
+  }
   center(data.formTitle.toUpperCase(), true, 22);
   y -= 10;
 
@@ -239,21 +326,21 @@ async function buildPdf(data: Omit<Body, 'format'>) {
   // Header row
   let tx = tableX;
   let ty = tableYStart;
-  const headers = ['STT', 'Họ và tên', 'Mã số giảng viên', 'Ghi chú'];
+  const headers = ['STT', 'Họ và tên', 'Email', 'Ghi chú'];
   colWidths.forEach((w, i) => {
     drawCell(tx, ty, w, rowHeight, headers[i], true, i === 0);
     tx += w;
   });
   ty -= rowHeight;
 
-  const list = data.members && data.members.length ? data.members : [{ fullName: '', lecturerId: '', note: '' }];
+  const list = data.members && data.members.length ? data.members : [{ fullName: '', email: '', note: '' }];
   list.forEach((m, idx) => {
     tx = tableX;
     drawCell(tx, ty, colWidths[0], rowHeight, String(idx + 1), false, true); 
     tx += colWidths[0];
     drawCell(tx, ty, colWidths[1], rowHeight, m.fullName || ''); 
     tx += colWidths[1];
-    drawCell(tx, ty, colWidths[2], rowHeight, m.lecturerId || ''); 
+    drawCell(tx, ty, colWidths[2], rowHeight, m.email || ''); 
     tx += colWidths[2];
     drawCell(tx, ty, colWidths[3], rowHeight, m.note || '');
     ty -= rowHeight;
