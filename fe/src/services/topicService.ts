@@ -506,7 +506,7 @@ class TopicService {
   }
 
   async getAllTopicsForReviewCouncil(): Promise<Topic[]> {
-    const response = await fetch(`${this.baseUrl}/all`, {
+    const response = await fetch(`${this.baseUrl}/topic-count`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -557,6 +557,29 @@ class TopicService {
       return this.mapToTopics(data);
     } catch (error) {
       console.error(`Error fetching topics by status ${status}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Cập nhật trạng thái đề tài
+   */
+  async updateTopicStatus(topicId: number, status: string) {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/status?status=${encodeURIComponent(status)}`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error updating topic status:', error);
       throw error;
     }
   }
@@ -658,6 +681,46 @@ class TopicService {
   }
 
   /**
+   * Lấy danh sách đề tài của người dùng đăng nhập
+   */
+  async getMyTopics(): Promise<Topic[]> {
+    try {
+      console.log('Calling getMyTopics API...');
+      const response = await fetch(`${this.baseUrl}/my-topics`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      console.log('getMyTopics response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('getMyTopics error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      console.log('getMyTopics API response:', apiResponse);
+      
+      const data = this.extractResponseData(apiResponse);
+      console.log('getMyTopics extracted data:', data);
+      
+      if (Array.isArray(data)) {
+        const topics = this.mapToTopics(data);
+        console.log('getMyTopics mapped topics:', topics);
+        return topics;
+      }
+      
+      console.warn('getMyTopics: data is not an array:', data);
+      return [];
+    } catch (error) {
+      console.error('Error fetching my topics:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Kiểm tra user có quyền chỉnh sửa topic không
    */
   async canUserEditTopic(topicId: number): Promise<boolean> {
@@ -678,6 +741,74 @@ class TopicService {
     } catch (error) {
       console.error('Error checking edit permission:', error);
       return false;
+    }
+  }
+
+  /**
+   * Lấy danh sách thành viên của đề tài
+   */
+  async getTopicMembers(topicId: number): Promise<any[]> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/members`, {
+        method: 'GET',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse) || [];
+    } catch (error) {
+      console.error('Error fetching topic members:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Thêm thành viên vào đề tài (admin/creator có thể thêm member khác)
+   */
+  async addTopicMember(topicId: number, accountId: number): Promise<any> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/members/${accountId}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error adding topic member:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa thành viên khỏi đề tài
+   */
+  async removeTopicMember(topicId: number, accountId: number): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseUrl}/${topicId}/members/${accountId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Error removing topic member:', error);
+      throw error;
     }
   }
 

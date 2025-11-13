@@ -1,7 +1,7 @@
 package mss.project.topicapprovalservice.services;
 
 import mss.project.topicapprovalservice.dtos.requests.CreateReviewCouncilRequest;
-import mss.project.topicapprovalservice.dtos.requests.GiveCommentRequest;
+import mss.project.topicapprovalservice.dtos.requests.UpdateCouncilRequest;
 import mss.project.topicapprovalservice.dtos.responses.*;
 
 import java.util.List;
@@ -9,8 +9,10 @@ import java.util.List;
 public interface IProgressReviewCouncilService {
 
     CreateReviewCouncilResponse createReviewCouncil(Long topicID, CreateReviewCouncilRequest request);
-    List<GetAllReviewCouncilResponse> getAllReviewCouncil(Long topicID);
+    List<GetReviewCouncilResponse> getAllReviewCouncil(Long topicID);
     List<GetAllLecturerResponse> getAllLecturer();
-    void updateCouncilStatus(Long councilID, Long accountID);
-    List<GetAllReviewCouncilResponse> getAllReviewCouncilForCalendar();
+    List<GetReviewCouncilResponse> getAllReviewCouncilForCalendar(Long accountID);
+    GetReviewCouncilResponse getReviewCouncil(Long councilID);
+    UpdateCouncilResponse updateReviewCouncil(Long councilID, UpdateCouncilRequest request);
+//    List<GetReviewCouncilResponse> getAllMyReviewCouncil(Long accountID);
 }

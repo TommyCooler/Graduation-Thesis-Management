@@ -7,6 +7,9 @@ spring:
     url: ${PLAGIARISM_DB_URL}
     username: ${PLAGIARISM_DB_USERNAME}
     password: ${PLAGIARISM_DB_PASSWORD}
+#    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:plagiarismdb}
+#    username: ${DB_USERNAME:postgres}
+#    password: ${DB_PASSWORD:postgres123}
     hikari:
       maximum-pool-size: 2
       minimum-idle: 1
@@ -25,6 +28,7 @@ spring:
 
   servlet:
     multipart:
+      enabled: true
       max-file-size: 50MB
       max-request-size: 50MB
   # Database and RabbitMQ configurations removed
@@ -49,9 +53,9 @@ management:
 plagiarism:
  qdrant:
   url: ${QDRANT_URL}
-  apiKey: ${QDRANT_API_KEY}         # nếu bật auth
-  collection: plagiarism_docs
-  vectorSize: 768
+  apiKey: ${QDRANT_API_KEY}
+  collection: plagiarism-embedding
+  vectorSize: 3072
   distance: Cosine
  google:
   apiKey: ${GOOGLE_API_KEY}
@@ -93,6 +97,7 @@ folder:
 n8n:
  base-url: ${N8N_BASE_URL}
  ingest-path: ${N8N_INGEST_PATH}
+ delete-path: ${N8N_DELETE_PATH}
  token: ${N8N_INGEST_TOKEN}
 
 

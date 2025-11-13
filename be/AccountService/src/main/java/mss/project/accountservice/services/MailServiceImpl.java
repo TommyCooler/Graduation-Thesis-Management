@@ -5,7 +5,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import jakarta.mail.MessagingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
@@ -81,6 +80,13 @@ public class MailServiceImpl implements MailService {
                 </div>
             </div>
         """.formatted(to, tempPassword);
+        sendHtmlViaResend(to, subject, html);
+    }
+
+    @Override
+    public void sendTopicApprovedEmail(String to, String topicTitle, String topicId) {
+        String subject = "Đề tài của bạn đã được duyệt";
+        String html = buildTopicApprovedHtml(topicTitle, topicId);
         sendHtmlViaResend(to, subject, html);
     }
 
@@ -210,6 +216,202 @@ public class MailServiceImpl implements MailService {
               </div>
             </div>
         """.formatted(url);
+    }
+
+    private String buildTopicApprovedHtml(String topicTitle, String topicId) {
+        String topicUrl = "http://localhost:3000/topics/" + topicId;
+        return """
+            <!DOCTYPE html>
+            <html lang="vi">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            </head>
+            <body style="margin: 0; padding: 0; background-color: #667eea; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color: #667eea; padding: 40px 20px;">
+                    <tr>
+                        <td align="center">
+                            <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.15); max-width: 600px;">
+                                
+                                <!-- Header with Gradient Background -->
+                                <tr>
+                                    <td style="background-color: #28a745; padding: 40px 30px; text-align: center;">
+                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center" style="padding-bottom: 20px;">
+                                                    <img src="https://icolor.vn/wp-content/uploads/2024/08/logo-fpt-04.jpg"
+                                                         alt="FPT Logo"
+                                                         width="100" style="display: block; margin: 0 auto;">
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td align="center" style="padding-bottom: 15px;">
+                                                    <table role="presentation" cellpadding="0" cellspacing="0" style="background-color: rgba(255,255,255,0.25); border-radius: 50px; margin: 0 auto;">
+                                                        <tr>
+                                                            <td style="padding: 12px 24px;">
+                                                                <span style="font-size: 48px; line-height: 1;">🎉</span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td align="center">
+                                                    <h1 style="margin: 0; color: #ffffff; font-weight: 700; font-size: 28px; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                                                        ĐỀ TÀI ĐÃ ĐƯỢC DUYỆT
+                                                    </h1>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td align="center" style="padding-top: 10px;">
+                                                    <p style="margin: 0; color: #ffffff; font-size: 16px; font-weight: 400; opacity: 0.95;">
+                                                        Chúc mừng bạn!
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                                <!-- Content Section -->
+                                <tr>
+                                    <td style="padding: 40px 30px;">
+                                        <p style="margin: 0 0 20px 0; font-size: 16px; color: #333333; line-height: 1.6;">
+                                            Xin chào,
+                                        </p>
+                                        <p style="margin: 0 0 30px 0; font-size: 16px; color: #555555; line-height: 1.7;">
+                                            Chúc mừng! Đề tài của bạn đã được <strong style="color: #28a745;">duyệt thành công</strong> bởi <strong style="color: #28a745;">2/2 người phê duyệt</strong>. Đây là một cột mốc quan trọng trong hành trình tốt nghiệp của bạn.
+                                        </p>
+                                        
+                                        <!-- Topic Info Card -->
+                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color: #f0fdf4; border-radius: 12px; border: 2px solid #86efac; margin: 30px 0;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
+                                                        <tr>
+                                                            <td width="60" valign="top" style="padding-right: 16px;">
+                                                                <table role="presentation" cellpadding="0" cellspacing="0" style="background-color: #28a745; border-radius: 12px; width: 48px; height: 48px;">
+                                                                    <tr>
+                                                                        <td align="center" valign="middle">
+                                                                            <span style="font-size: 24px;">📋</span>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                            <td valign="top">
+                                                                <p style="margin: 0 0 8px 0; font-size: 13px; color: #15803d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                                    Thông tin đề tài
+                                                                </p>
+                                                                <p style="margin: 0 0 12px 0; font-size: 18px; color: #166534; font-weight: 700; line-height: 1.4;">
+                                                                    %s
+                                                                </p>
+                                                                <table role="presentation" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border: 1px solid #86efac; border-radius: 6px;">
+                                                                    <tr>
+                                                                        <td style="padding: 6px 12px;">
+                                                                            <span style="font-size: 13px; color: #15803d; font-weight: 600;">
+                                                                                Mã đề tài: <span style="color: #166534;">#%s</span>
+                                                                            </span>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Status Badge -->
+                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                            <tr>
+                                                <td align="center">
+                                                    <table role="presentation" cellpadding="0" cellspacing="0" style="background-color: #28a745; border-radius: 50px;">
+                                                        <tr>
+                                                            <td style="padding: 12px 24px;">
+                                                                <span style="color: #ffffff; font-weight: 600; font-size: 14px; letter-spacing: 0.5px;">
+                                                                    ✓ ĐÃ DUYỆT THÀNH CÔNG
+                                                                </span>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <p style="margin: 30px 0 20px 0; font-size: 15px; color: #666666; line-height: 1.7;">
+                                            Đề tài của bạn đã trải qua quá trình xem xét kỹ lưỡng và được chấp nhận. Bây giờ bạn có thể tiếp tục thực hiện các bước tiếp theo trong quy trình tốt nghiệp.
+                                        </p>
+
+                                        <!-- CTA Button -->
+                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="margin: 35px 0;">
+                                            <tr>
+                                                <td align="center">
+                                                    <table role="presentation" cellpadding="0" cellspacing="0" style="background-color: #28a745; border-radius: 50px;">
+                                                        <tr>
+                                                            <td align="center" style="padding: 16px 40px;">
+                                                                <a href="%s"
+                                                                   style="color: #ffffff; text-decoration: none; font-weight: 700; font-size: 16px; letter-spacing: 0.3px; display: inline-block;">
+                                                                    🔍 XEM CHI TIẾT ĐỀ TÀI
+                                                                </a>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <!-- Next Steps Box -->
+                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border-left: 4px solid #667eea; border-radius: 8px; margin: 30px 0;">
+                                            <tr>
+                                                <td style="padding: 20px;">
+                                                    <p style="margin: 0 0 10px 0; font-size: 14px; color: #667eea; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                        📌 Bước tiếp theo
+                                                    </p>
+                                                    <p style="margin: 0; font-size: 14px; color: #475569; line-height: 1.6;">
+                                                        Bạn có thể tiếp tục phát triển đề tài, chuẩn bị cho các buổi báo cáo tiếp theo và hoàn thiện các yêu cầu của quy trình tốt nghiệp.
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <p style="margin: 30px 0 0 0; font-size: 15px; color: #666666; line-height: 1.7;">
+                                            Nếu bạn có bất kỳ câu hỏi nào, vui lòng liên hệ với đội ngũ hỗ trợ của chúng tôi.
+                                        </p>
+                                        <p style="margin: 20px 0 0 0; font-size: 15px; color: #333333;">
+                                            Trân trọng,<br>
+                                            <strong style="color: #28a745; font-size: 16px;">Đội ngũ Hỗ trợ FPT</strong>
+                                        </p>
+                                    </td>
+                                </tr>
+
+                                <!-- Footer -->
+                                <tr>
+                                    <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+                                        <p style="margin: 0 0 8px 0; font-size: 13px; color: #64748b; line-height: 1.6;">
+                                            © 2025 <strong style="color: #475569;">FPT Corporation</strong>. All rights reserved.
+                                        </p>
+                                        <p style="margin: 0; font-size: 12px; color: #94a3b8;">
+                                            Email này được gửi tự động, vui lòng không trả lời.
+                                        </p>
+                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                                            <tr>
+                                                <td align="center">
+                                                    <p style="margin: 0; font-size: 11px; color: #cbd5e1;">
+                                                        Hệ thống Quản lý Đề tài Tốt nghiệp - FPT University
+                                                    </p>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </body>
+            </html>
+        """.formatted(topicTitle, topicId, topicUrl);
     }
 
     // ============ UTILS ============

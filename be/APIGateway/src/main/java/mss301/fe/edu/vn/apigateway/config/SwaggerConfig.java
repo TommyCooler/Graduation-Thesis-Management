@@ -3,8 +3,6 @@ package mss301.fe.edu.vn.apigateway.config;
 import java.util.List;
 
 import org.springdoc.core.customizers.OpenApiCustomizer;
-import org.springframework.cloud.gateway.route.RouteLocator;
-import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

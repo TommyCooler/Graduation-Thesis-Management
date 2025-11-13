@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.util.StringUtils;
 import reactor.netty.http.client.HttpClient;
 
 import java.time.Duration;
@@ -14,18 +15,28 @@ public class WebClientConfig {
 
     @Bean
     WebClient n8nWebClient(@Value("${n8n.base-url}") String baseUrl) {
-        // Force HTTP for localhost (N8N doesn't use HTTPS in development)
         String actualBaseUrl = baseUrl.replace("https://localhost", "http://localhost");
-        
-        System.out.println("N8N WebClient configured with base URL: " + actualBaseUrl);
-        
         HttpClient httpClient = HttpClient.create()
                 .responseTimeout(Duration.ofSeconds(30));
-        
         return WebClient.builder()
                 .baseUrl(actualBaseUrl)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
+    }
+
+    @Bean
+    WebClient qdrantWebClient(
+            @Value("${plagiarism.qdrant.url}") String baseUrl,
+            @Value("${plagiarism.qdrant.apiKey}") String apiKey) {
+        HttpClient httpClient = HttpClient.create()
+                .responseTimeout(Duration.ofSeconds(30));
+
+        WebClient.Builder builder = WebClient.builder()
+                .baseUrl(baseUrl)
+                .defaultHeader("api-key", apiKey)
+                .clientConnector(new ReactorClientHttpConnector(httpClient));
+
+        return builder.build();
     }
 
 }

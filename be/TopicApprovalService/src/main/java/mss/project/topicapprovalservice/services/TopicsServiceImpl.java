@@ -1,17 +1,15 @@
 package mss.project.topicapprovalservice.services;
 
-import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
-import mss.project.topicapprovalservice.dtos.responses.TopicApprovalDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
-import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
+import mss.project.topicapprovalservice.enums.Milestone;
 import mss.project.topicapprovalservice.exceptions.AppException;
 import mss.project.topicapprovalservice.exceptions.ErrorCode;
+import mss.project.topicapprovalservice.pojos.ProgressReviewCouncils;
 import mss.project.topicapprovalservice.pojos.TopicApproval;
 import mss.project.topicapprovalservice.pojos.Topics;
 import mss.project.topicapprovalservice.pojos.AccountTopics;
+import mss.project.topicapprovalservice.repositories.ProgressReviewCouncilRepository;
 import mss.project.topicapprovalservice.repositories.TopicApprovalRepository;
 import mss.project.topicapprovalservice.repositories.TopicsRepository;
 import mss.project.topicapprovalservice.repositories.AccountTopicsRepository;
@@ -24,7 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,7 +43,19 @@ public class TopicsServiceImpl implements TopicService {
     private TopicApprovalRepository topicApprovalRepository;
 
     @Autowired
+    private ProgressReviewCouncilRepository progressReviewCouncilRepository;
+
+    @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private CouncilService councilService;
+
+    @Autowired(required = false)
+    private PlagiarismService plagiarismService;
+
+    @Autowired
+    private S3Service s3Service;
 
     @Override
     public TopicsDTOResponse getTopicbById(Long topicId) {
@@ -59,7 +69,20 @@ public class TopicsServiceImpl implements TopicService {
     public TopicsDTOResponse createTopic(TopicsDTORequest topicsDTO, Long creatorId, String creatorName) {
         // Tạo và lưu topic
         Topics topics = convertToEntity(topicsDTO);
+        
+        // Lưu ID người tạo vào trường createdBy
+        if (creatorId != null) {
+            topics.setCreatedBy(creatorId.toString());
+            logger.info("Setting createdBy for topic: {}", creatorId);
+        } else {
+            logger.warn("creatorId is null, createdBy will not be set");
+        }
+        
         Topics savedTopic = topicsRepository.save(topics);
+        
+        // Log để verify createdBy đã được lưu
+        logger.info("Topic created with ID: {}, createdBy: {}, filePathUrl: {}", 
+                    savedTopic.getId(), savedTopic.getCreatedBy(), savedTopic.getFilePathUrl());
         
         // Tạo AccountTopics cho người tạo với role CREATOR
         AccountTopics creatorAccountTopic = new AccountTopics();
@@ -98,6 +121,31 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
+    @Transactional
+    public AccountTopicsDTOResponse addTopicMember(Long topicId, Long accountId, String accountName) {
+        // Kiểm tra topic có tồn tại không
+        Topics topic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+        
+        // Kiểm tra user đã tham gia topic chưa
+        if (accountTopicsRepository.existsByTopicsIdAndAccountId(topicId, accountId)) {
+            throw new AppException(ErrorCode.USER_ALREADY_JOINED_TOPIC);
+        }
+        
+        // Tạo AccountTopics cho member với role MEMBER
+        AccountTopics memberAccountTopic = new AccountTopics();
+        memberAccountTopic.setTopics(topic);
+        memberAccountTopic.setAccountId(accountId);
+        memberAccountTopic.setAccountName(accountName);
+        memberAccountTopic.setRole(TopicRole.MEMBER);
+        
+        AccountTopics savedMember = accountTopicsRepository.save(memberAccountTopic);
+        logger.info("Added member {} to topic {} by admin/creator", accountId, topicId);
+        
+        return convertAccountTopicToDTO(savedMember);
+    }
+
+    @Override
     public List<AccountTopicsDTOResponse> getTopicMembers(Long topicId) {
         // Kiểm tra topic có tồn tại không
         if (!topicsRepository.existsById(topicId)) {
@@ -111,12 +159,93 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
+    public List<TopicsWithCouncilIsNullResponse> getTopicsByCouncilNotNull() {
+        List<Topics> topics = topicsRepository.findByCouncilIsNullAndStatus(TopicStatus.PASSED_REVIEW_3);
+
+        List<Long> topicIds = topics.stream().map(Topics::getId).toList();
+        List<ProgressReviewCouncils> councils = progressReviewCouncilRepository.findAllByTopic_IdInAndMilestone(topicIds, Milestone.WEEK_12);
+
+        Map<Long, LocalDateTime> reviewDateMap = councils.stream()
+                .collect(Collectors.toMap(
+                        c -> c.getTopic().getId(),
+                        ProgressReviewCouncils::getReviewDate
+                ));
+
+        return topics.stream()
+                .map(topic -> TopicsWithCouncilIsNullResponse.builder()
+                        .id(topic.getId())
+                        .title(topic.getTitle())
+                        .description(topic.getDescription())
+                        .submitedAt(String.valueOf(topic.getSubmitedAt()))
+                        .status(topic.getStatus().name())
+                        .filePathUrl(topic.getFilePathUrl())
+                        .createdBy(topic.getCreatedBy())
+                        .createdAt(String.valueOf(topic.getCreatedAt()))
+                        .updatedAt(String.valueOf(topic.getUpdatedAt()))
+                        .reviewDate(reviewDateMap.get(topic.getId()))
+                        .build()
+                )
+                .toList();
+    }
+
+    @Transactional
+    public void removeTopicMember(Long topicId, Long accountId) {
+        // Kiểm tra topic có tồn tại không
+        if (!topicsRepository.existsById(topicId)) {
+            throw new AppException(ErrorCode.TOPICS_NOT_FOUND);
+        }
+        
+        // Tìm AccountTopics để xóa
+        Optional<AccountTopics> accountTopic = accountTopicsRepository.findByTopicsIdAndAccountId(topicId, accountId);
+        
+        if (accountTopic.isEmpty()) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND_IN_TOPIC);
+        }
+        
+        AccountTopics member = accountTopic.get();
+        
+        // Không cho xóa CREATOR
+        if (member.getRole() == TopicRole.CREATOR) {
+            throw new AppException(ErrorCode.CANNOT_REMOVE_CREATOR);
+        }
+        
+        // Xóa thành viên
+        accountTopicsRepository.delete(member);
+        logger.info("Removed member {} from topic {}", accountId, topicId);
+    }
+
+    @Override
+    @Transactional
+    public TopicsDTOResponse updateTopicStatus(Long topicId, TopicStatus status) {
+        Topics topic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+
+        if (status == null) {
+            throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
+        }
+        // Update status
+        topic.setStatus(status);
+        topicsRepository.save(topic);
+        if (topic.getStatus() == TopicStatus.FAILED && topic.getCouncil() != null) {
+            councilService.updateRetakeDateForFailedTopic(topic.getCouncil().getId());
+        }
+        return convertToDTO(topic);
+    }
+
+    @Override
     @Transactional
     public TopicsDTOResponse updateTopic(Long Id, TopicsDTORequest topicsDTO) {
         Topics existingTopic = topicsRepository.findById(Id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
-        existingTopic.setTitle(topicsDTO.getTitle());
-        existingTopic.setDescription(topicsDTO.getDescription());
+        
+        // Chỉ update các trường khi chúng không null
+        if (topicsDTO.getTitle() != null) {
+            existingTopic.setTitle(topicsDTO.getTitle());
+        }
+        
+        if (topicsDTO.getDescription() != null) {
+            existingTopic.setDescription(topicsDTO.getDescription());
+        }
         
         // Parse status from string to enum
         if (topicsDTO.getStatus() != null && !topicsDTO.getStatus().isEmpty()) {
@@ -128,8 +257,44 @@ public class TopicsServiceImpl implements TopicService {
             }
         }
         
-        existingTopic.setFilePathUrl(topicsDTO.getFilePathUrl());
-        existingTopic.setSubmitedAt(LocalDateTime.parse(topicsDTO.getSubmitedAt()));
+        // Xóa file cũ trên S3 nếu có filePathUrl cũ
+        // File mới sẽ được upload thông qua plagiarism check service
+        String oldFilePathUrl = existingTopic.getFilePathUrl();
+        if (oldFilePathUrl != null && !oldFilePathUrl.isEmpty()) {
+            try {
+                String oldFileName = s3Service.extractFileNameFromUrl(oldFilePathUrl);
+                if (oldFileName != null && !oldFileName.isEmpty()) {
+                    s3Service.deleteFile(oldFileName);
+                    logger.info("Deleted old file from S3: {} for topic {}", oldFileName, Id);
+                } else {
+                    logger.warn("Could not extract file name from old filePathUrl: {} for topic {}", oldFilePathUrl, Id);
+                }
+            } catch (Exception e) {
+                logger.error("Failed to delete old file from S3 for topic {}: {}", Id, e.getMessage(), e);
+                // Continue with update even if deletion fails
+            }
+        }
+        
+        // Luôn update filePathUrl khi có giá trị (kể cả empty string để clear)
+        if (topicsDTO.getFilePathUrl() != null) {
+            existingTopic.setFilePathUrl(topicsDTO.getFilePathUrl());
+            logger.info("Updated topic {} filePathUrl to: {}", Id, topicsDTO.getFilePathUrl());
+        }
+        
+        // Xử lý submitedAt an toàn
+        if (topicsDTO.getSubmitedAt() != null && !topicsDTO.getSubmitedAt().isEmpty()) {
+            try {
+                String dateStr = topicsDTO.getSubmitedAt().replace("Z", "");
+                if (dateStr.contains(".")) {
+                    dateStr = dateStr.substring(0, dateStr.indexOf("."));
+                }
+                existingTopic.setSubmitedAt(LocalDateTime.parse(dateStr));
+            } catch (Exception e) {
+                // Giữ nguyên giá trị hiện có nếu parse lỗi
+                logger.warn("Failed to parse submitedAt: {}", topicsDTO.getSubmitedAt());
+            }
+        }
+        
         topicsRepository.save(existingTopic);
         return convertToDTO(existingTopic);
     }
@@ -140,6 +305,20 @@ public class TopicsServiceImpl implements TopicService {
         if (!topicsRepository.existsById(topicId)) {
             throw new AppException(ErrorCode.TOPICS_NOT_FOUND);
         }
+        
+        // Xóa topic khỏi Qdrant (vector database) trước
+        try {
+            if (plagiarismService != null) {
+                plagiarismService.deleteTopicFromQdrant(topicId);
+                logger.info("Successfully deleted topic {} from Qdrant", topicId);
+            } else {
+                logger.warn("PlagiarismService is not available, skipping Qdrant deletion for topic {}", topicId);
+            }
+        } catch (Exception e) {
+            // Log error nhưng vẫn tiếp tục xóa topic (có thể topic không có trong Qdrant)
+            logger.warn("Error deleting topic {} from Qdrant (continuing with topic deletion): {}", topicId, e.getMessage());
+        }
+        
         // Xóa tất cả AccountTopics liên quan trước
         accountTopicsRepository.deleteByTopicsId(topicId);
         // Sau đó xóa topic
@@ -165,7 +344,6 @@ public class TopicsServiceImpl implements TopicService {
         if (existingTopic.getStatus() != TopicStatus.PENDING) {
             throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
         }
-        
         existingTopic.setStatus(TopicStatus.APPROVED);
         topicsRepository.save(existingTopic);
         return convertToDTO(existingTopic);
@@ -188,13 +366,22 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
-    public List<GetAllApprovedTopicsResponse> getApprovedTopics() {
-        List<Topics> topicsList = topicsRepository.findByStatus(TopicStatus.APPROVED);
-        return topicsList.stream().map(topic ->
+    public List<GetAllApprovedTopicsResponse> getApprovedTopics(Long accountID) {
+        AccountDTO accountDTO = accountService.getAccountById(accountID);
+        List<TopicStatus> statusList = Arrays.asList(TopicStatus.APPROVED, TopicStatus.PASSED_REVIEW_1, TopicStatus.PASSED_REVIEW_2, TopicStatus.PASSED_REVIEW_3,TopicStatus.FAILED);
+        List<Topics> topicsList = topicsRepository.findByStatusIn(statusList);
+        List<Topics> myApprovedTopicsList = new ArrayList<>();
+        topicsList.forEach(topics -> {
+            if(topicApprovalRepository.findByApproverEmailAndTopicIdAndApprovedFirstIsTrue(accountDTO.getEmail(), topics.getId()) != null) {
+                myApprovedTopicsList.add(topics);
+            }
+        });
+        return myApprovedTopicsList.stream().map(topic ->
                 GetAllApprovedTopicsResponse.builder()
                         .topicID(topic.getId())
                         .topicTitle(topic.getTitle())
                         .description(topic.getDescription())
+                        .topicStatus(topic.getStatus().getDisplayName())
                         .build()).toList();
     }
 
@@ -202,6 +389,39 @@ public class TopicsServiceImpl implements TopicService {
     public List<TopicsDTOResponse> getTopicsByStatus(TopicStatus status) {
         List<Topics> topics = topicsRepository.findByStatus(status);
         return topics.stream()
+                .map(this::convertToDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TopicsDTOResponse> getTopicsByCreatorId(Long creatorId) {
+        if (creatorId == null) {
+            logger.warn("getTopicsByCreatorId called with null creatorId");
+            return List.of();
+        }
+        
+        logger.info("Finding topics for creatorId: {}", creatorId);
+        
+        // CHỈ tìm theo createdBy field (chính xác nhất, không bao gồm topics có createdBy = null)
+        List<Topics> topicsByCreatedBy = topicsRepository.findByCreatedBy(creatorId.toString());
+        logger.info("Found {} topics by createdBy field for creatorId: {}", topicsByCreatedBy.size(), creatorId);
+        
+        // Log để verify
+        if (!topicsByCreatedBy.isEmpty()) {
+            List<Long> topicIds = topicsByCreatedBy.stream()
+                    .map(Topics::getId)
+                    .collect(Collectors.toList());
+            logger.info("Topic IDs found by createdBy: {}", topicIds);
+            
+            // Verify createdBy của từng topic
+            for (Topics topic : topicsByCreatedBy) {
+                logger.debug("Topic ID: {}, createdBy: {}", topic.getId(), topic.getCreatedBy());
+            }
+        } else {
+            logger.warn("No topics found with createdBy = '{}'", creatorId.toString());
+        }
+        
+        return topicsByCreatedBy.stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
     }
@@ -248,6 +468,7 @@ public class TopicsServiceImpl implements TopicService {
         topicsDTO.setSubmitedAt(topics.getSubmitedAt() != null ? topics.getSubmitedAt().toString() : null);
         topicsDTO.setStatus(topics.getStatus() != null ? topics.getStatus().name() : null);
         topicsDTO.setFilePathUrl(topics.getFilePathUrl());
+        topicsDTO.setCreatedBy(topics.getCreatedBy());
         topicsDTO.setCreatedAt(topics.getCreatedAt() != null ? topics.getCreatedAt().toString() : null);
         topicsDTO.setUpdatedAt(topics.getUpdatedAt() != null ? topics.getUpdatedAt().toString() : null);
         return topicsDTO;
@@ -294,6 +515,7 @@ public class TopicsServiceImpl implements TopicService {
                 .approverEmail(approverEmail)
                 .approverName(approverName)
                 .comment(comment)
+                .approvedFirst((topicApprovalRepository.countByTopicId(topicId) == 0))
                 .build();
         topicApprovalRepository.save(approval);
         logger.info("Saved approval record: topicId={}, approverEmail={}, approverName={}", 
@@ -313,6 +535,9 @@ public class TopicsServiceImpl implements TopicService {
             topic.setStatus(TopicStatus.APPROVED);
             logger.info("Topic {} status changed to APPROVED ({}/{})", 
                         topicId, topic.getApprovalCount(), topic.getRequiredApprovals());
+            
+            // Send email notification to topic owners (creator and members)
+            sendTopicApprovedEmails(topic);
         }
 
         topicsRepository.save(topic);
@@ -435,6 +660,7 @@ public class TopicsServiceImpl implements TopicService {
                 .submitedAt(topic.getSubmitedAt() != null ? topic.getSubmitedAt().toString() : null)
                 .status(topic.getStatus() != null ? topic.getStatus().name() : null)
                 .filePathUrl(topic.getFilePathUrl())
+                .createdBy(topic.getCreatedBy())
                 .createdAt(topic.getCreatedAt() != null ? topic.getCreatedAt().toString() : null)
                 .updatedAt(topic.getUpdatedAt() != null ? topic.getUpdatedAt().toString() : null)
                 .approvalCount(topic.getApprovalCount())
@@ -443,5 +669,55 @@ public class TopicsServiceImpl implements TopicService {
                 .hasUserApproved(hasUserApproved)
                 .approvals(approvalDTOs)
                 .build();
+    }
+
+    /**
+     * Send email notification to all topic owners (creator and members) when topic is fully approved
+     */
+    private void sendTopicApprovedEmails(Topics topic) {
+        if (accountService == null) {
+            logger.warn("AccountService is not available, skipping email notification for topic {}", topic.getId());
+            return;
+        }
+
+        try {
+            // Get all topic members (creator and members)
+            List<AccountTopics> accountTopics = accountTopicsRepository.findByTopicsId(topic.getId());
+            
+            if (accountTopics.isEmpty()) {
+                logger.warn("No members found for topic {}, skipping email notification", topic.getId());
+                return;
+            }
+
+            String topicTitle = topic.getTitle() != null ? topic.getTitle() : "Đề tài của bạn";
+            String topicId = topic.getId().toString();
+
+            // Send email to each member
+            for (AccountTopics accountTopic : accountTopics) {
+                try {
+                    Long accountId = accountTopic.getAccountId();
+                    if (accountId == null) {
+                        logger.warn("AccountId is null for AccountTopic {}, skipping", accountTopic.getId());
+                        continue;
+                    }
+
+                    // Get account info to get email
+                    AccountDTO account = accountService.getAccountById(accountId);
+                    if (account != null && account.getEmail() != null && !account.getEmail().isEmpty()) {
+                        accountService.sendTopicApprovedEmail(account.getEmail(), topicTitle, topicId);
+                        logger.info("Sent approval email to {} for topic {}", account.getEmail(), topic.getId());
+                    } else {
+                        logger.warn("Could not get email for accountId {} for topic {}", accountId, topic.getId());
+                    }
+                } catch (Exception e) {
+                    // Log error but continue sending to other members
+                    logger.error("Failed to send approval email to accountId {} for topic {}: {}", 
+                                accountTopic.getAccountId(), topic.getId(), e.getMessage(), e);
+                }
+            }
+        } catch (Exception e) {
+            // Don't throw exception, just log error
+            logger.error("Failed to send approval emails for topic {}: {}", topic.getId(), e.getMessage(), e);
+        }
     }
 }

@@ -102,7 +102,7 @@ export default function TopicUpload(): JSX.Element {
     try {
       // Lấy thông tin chủ nhiệm từ user đang đăng nhập
       const piFullName = userInfo?.name || 'N/A';
-      const piLecturerId = userInfo?.lecturerId || userInfo?.employeeId || userInfo?.id?.toString() || 'N/A';
+      const piEmail = userInfo?.email || 'N/A';
       
       const membersText =
         members.length > 0
@@ -111,7 +111,7 @@ export default function TopicUpload(): JSX.Element {
               .join('\n')}`
           : '\n\nThành viên: (trống)';
 
-      const piText = `Chủ nhiệm: ${piFullName} - ${piLecturerId}`;
+      const piText = `Chủ nhiệm: ${piFullName} - ${piEmail}`;
       const headerText = `[${SCHOOL_NAME} | ${formattedDocDateForHeader}]`;
 
       const descriptionWithKeywords =
@@ -152,7 +152,7 @@ export default function TopicUpload(): JSX.Element {
               formTitle: FORM_TITLE,
               topicTitle: values.title,
               piFullName,
-              piLecturerId,
+              piEmail,
               description: values.description,
               members,
               format: 'docx',
@@ -181,7 +181,7 @@ export default function TopicUpload(): JSX.Element {
 
             // Gửi file đến plagiarism check
             console.log('Sending file to plagiarism check...');
-            const result = await plagiarismService.checkPlagiarism(file, newTopic.id, 'topics');
+            const result = await plagiarismService.checkPlagiarism(file, newTopic.id);
             console.log('Plagiarism check result:', result);
             
             plagiarismLoadingMsg();
@@ -296,7 +296,7 @@ export default function TopicUpload(): JSX.Element {
       
       // Lấy thông tin chủ nhiệm từ user đang đăng nhập
       const piFullName = userInfo?.name || 'N/A';
-      const piLecturerId = userInfo?.lecturerId || userInfo?.employeeId || userInfo?.id?.toString() || 'N/A';
+      const piEmail = userInfo?.email || 'N/A';
 
       const res = await fetch('/api/generate-topic-file', {
         method: 'POST',
@@ -307,7 +307,7 @@ export default function TopicUpload(): JSX.Element {
           formTitle: FORM_TITLE,
           topicTitle: v.title,
           piFullName,
-          piLecturerId,
+          piEmail,
           description: v.description,
           members,
           format: downloadFormat,
@@ -337,23 +337,39 @@ export default function TopicUpload(): JSX.Element {
       <Content className="p-10 bg-gray-50">
         <div className="max-w-5xl mx-auto">
           {/* Header banner */}
-          <Card className="mb-6 rounded-2xl" styles={{ body: { padding: 20 } }}>
-            <div style={{ textAlign: 'center' }}>
-              <Text style={{ letterSpacing: 0.5 }} strong>
-                CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
-              </Text>
-              <div>
-                <Text>Độc lập - Tự do - Hạnh phúc</Text>
-              </div>
-              <Divider style={{ margin: '12px auto', width: 260 }} />
-              <Title level={4} style={{ margin: 0 }}>
-                {SCHOOL_NAME}
-              </Title>
-              <Text type="secondary">{formattedDocDateForHeader}</Text>
-              <Title level={2} style={{ marginTop: 10, letterSpacing: 1 }}>
+          <Card className="mb-6 rounded-2xl" styles={{ body: { padding: '32px 20px' } }}>
+            <Row justify="space-between" align="top">
+              <Col span={12} style={{ textAlign: 'left' }}>
+                <Space direction="vertical" size={2}>
+                  <Text strong style={{ fontSize: '13px', letterSpacing: 0.5 }}>
+                    BỘ GIÁO DỤC VÀ ĐÀO TẠO
+                  </Text>
+                  <Text strong style={{ fontSize: '13px', letterSpacing: 0.5 }}>
+                    TRƯỜNG ĐẠI HỌC FPT
+                  </Text>
+                </Space>
+              </Col>
+              <Col span={12} style={{ textAlign: 'right' }}>
+                <Space direction="vertical" size={2}>
+                  <Text strong style={{ fontSize: '13px', letterSpacing: 0.5 }}>
+                    CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                  </Text>
+                  <Text strong style={{ fontSize: '13px', letterSpacing: 0.3 }}>
+                    Độc lập - Tự do - Hạnh phúc
+                  </Text>
+                  <Divider style={{ margin: '8px 0', borderColor: '#000', borderWidth: 1.5 }} />
+                </Space>
+              </Col>
+            </Row>
+            
+            <div style={{ textAlign: 'center', marginTop: '32px' }}>
+              <Title level={2} style={{ margin: 0, letterSpacing: 2, fontSize: '24px', fontWeight: 700 }}>
                 {FORM_TITLE}
-            </Title>
-          </div>
+              </Title>
+              <Text type="secondary" style={{ fontSize: '13px', marginTop: '8px', display: 'block' }}>
+                {formattedDocDateForHeader}
+              </Text>
+            </div>
           </Card>
 
           <Card className="rounded-2xl shadow-lg">
@@ -377,11 +393,11 @@ export default function TopicUpload(): JSX.Element {
                     </Col>
                   </Row>
 
-                <Row gutter={24}>
-                  <Col xs={24} lg={16}>
+                  <Row gutter={24}>
+                    <Col xs={24} lg={16}>
                       <Form.Item label={<Space><BookOutlined /><Text strong>Tên đề tài</Text></Space>} name="title" rules={[{ required: true, message: 'Vui lòng nhập tên đề tài!' }]}>
-                      <Input placeholder="Nhập tên đề tài..." maxLength={200} showCount />
-                    </Form.Item>
+                        <Input placeholder="Nhập tên đề tài..." maxLength={200} showCount />
+                      </Form.Item>
                     </Col>
                   </Row>
                 </Card>

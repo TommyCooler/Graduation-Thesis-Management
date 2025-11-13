@@ -23,6 +23,7 @@ public class TopicWithApprovalStatusResponse extends TopicsDTOResponse {
             String submitedAt,
             String status,
             String filePathUrl,
+            String createdBy,
             String createdAt,
             String updatedAt,
             Integer approvalCount,
@@ -38,6 +39,7 @@ public class TopicWithApprovalStatusResponse extends TopicsDTOResponse {
         this.setSubmitedAt(submitedAt);
         this.setStatus(status);
         this.setFilePathUrl(filePathUrl);
+        this.setCreatedBy(createdBy);
         this.setCreatedAt(createdAt);
         this.setUpdatedAt(updatedAt);
 

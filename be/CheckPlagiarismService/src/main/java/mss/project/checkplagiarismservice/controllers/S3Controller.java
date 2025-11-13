@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Map;
 
 @RequestMapping("/v1/s3")
 @RestController
@@ -35,15 +34,15 @@ public class S3Controller {
 //    }
 
 
-    @PostMapping("/upload")
-    public ResponseEntity<ApiResponse<?>> upload(@RequestParam("file") MultipartFile file, @RequestParam Long topicId) throws IOException {
-        N8nResponse n8n = s3Service.uploadFileAndGetUrl(file, prefix, topicId);
-        return ResponseEntity.ok(ApiResponse.builder()
-                .status("200")
-                .message("File uploaded successfully")
-                .data(n8n)
-                .build());
-    }
+//    @PostMapping("/upload")
+//    public ResponseEntity<ApiResponse<N8nResponse>> upload(@RequestParam("file") MultipartFile file, @RequestParam Long topicId) throws IOException {
+//        N8nResponse n8n = s3Service.uploadFileN8nResponse(file, prefix, topicId);
+//        ApiResponse<N8nResponse> response = new ApiResponse<>();
+//        response.setCode(200);
+//        response.setMessage("File uploaded successfully");
+//        response.setData(n8n);
+//        return ResponseEntity.ok(response);
+//    }
 
 
     public ResponseEntity<?> download(@PathVariable String filename) {

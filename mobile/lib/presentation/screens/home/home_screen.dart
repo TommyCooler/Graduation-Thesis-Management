@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_colors.dart';
 import 'package:mobile/core/routes/app_routes.dart';
+import 'package:mobile/data/services/logout_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -9,7 +10,7 @@ class HomeScreen extends StatelessWidget {
     // TODO: Clear user data, tokens, etc.
     
     // Navigate back to login
-    Navigator.pushReplacementNamed(context, AppRoutes.login);
+    LogoutService.confirmLogout(context);
   }
 
   @override
@@ -19,19 +20,26 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Trang chủ'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.calendar_today),
+            tooltip: 'Xem lịch chấm',
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.reviewCouncil);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.notifications),
             onPressed: () {},
           ),
           IconButton(
             icon: const Icon(Icons.person),
             onPressed: () {
-              // TODO: Navigate to profile
-            },
+              Navigator.pushReplacementNamed(context, AppRoutes.profile);
+            }
           ),
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Đăng xuất',
-            onPressed: () => _logout(context),
+            onPressed: () => LogoutService.confirmLogout(context),
           ),
         ],
       ),
@@ -57,17 +65,37 @@ class HomeScreen extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout),
-              label: const Text('Đăng xuất'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pushNamed(context, AppRoutes.reviewCouncil);
+                  },
+                  icon: const Icon(Icons.calendar_month),
+                  label: const Text('Xem lịch chấm'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.fptOrange,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _logout(context),
+                  icon: const Icon(Icons.logout),
+                  label: const Text('Đăng xuất'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

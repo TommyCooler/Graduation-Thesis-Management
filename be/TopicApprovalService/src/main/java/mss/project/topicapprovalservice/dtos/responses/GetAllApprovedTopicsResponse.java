@@ -15,4 +15,5 @@ public class GetAllApprovedTopicsResponse {
     private Long topicID;
     private String topicTitle;
     private String description;
+    private String topicStatus;
 }

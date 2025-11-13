@@ -9,7 +9,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class GiveCommentResponse {
+public class GradeCouncilResponse {
     private Long accountID;
     private String overallComments;
+    private String decision;
 }

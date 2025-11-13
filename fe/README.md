@@ -34,3 +34,34 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+# Frontend Routes
+
+Base URL (local): `http://localhost:3000`
+
+## Pages
+- `/` (Home)
+- `/auth/login`
+- `/auth/register`
+- `/auth/otp`
+- `/auth/request-reset`
+- `/auth/forgot-password`
+- `/auth/change-password`
+- `/auth/oauth2/fail`
+- `/profile`
+- `/calendar`
+- `/user-management`
+- `/check-plagiarism`
+- `/topic-history`
+- `/review-council`
+- `/council`
+- `/council/council-list`
+- `/topics`
+- `/topics/list`
+- `/topics/detail/[id]` → example: `/topics/detail/123`
+
+## Head of Department
+- `/head-of-department`
+- `/head-of-department/dashboard`
+- `/head-of-department/provide-account`
+- `/head-of-department/thesis-review`

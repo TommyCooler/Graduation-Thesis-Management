@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import mss.project.topicapprovalservice.enums.Status;
 
 @Entity
 @Data
@@ -25,9 +26,14 @@ public class ReviewCouncilMembers {
     @Column(nullable=true, length=500)
     private String overallComments;
 
-    public ReviewCouncilMembers(ProgressReviewCouncils progressReviewCouncil, Long accountID) {
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Status decision;
+
+    public ReviewCouncilMembers(ProgressReviewCouncils progressReviewCouncil, Long accountID, Status decision) {
         this.progressReviewCouncil = progressReviewCouncil;
         this.accountID = accountID;
+        this.decision = decision;
     }
 
 }

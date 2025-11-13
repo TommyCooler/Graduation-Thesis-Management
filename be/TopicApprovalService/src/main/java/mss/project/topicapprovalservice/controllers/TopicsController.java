@@ -1,14 +1,11 @@
 package mss.project.topicapprovalservice.controllers;
 
-import mss.project.topicapprovalservice.dtos.responses.TopicWithApprovalStatusResponse;
+import mss.project.topicapprovalservice.dtos.responses.*;
 import mss.project.topicapprovalservice.dtos.requests.TopicsDTORequest;
-import mss.project.topicapprovalservice.dtos.responses.ApiResponse;
-import mss.project.topicapprovalservice.dtos.responses.GetAllApprovedTopicsResponse;
-import mss.project.topicapprovalservice.dtos.responses.TopicsDTOResponse;
-import mss.project.topicapprovalservice.dtos.responses.AccountTopicsDTOResponse;
 import mss.project.topicapprovalservice.enums.TopicStatus;
 import mss.project.topicapprovalservice.services.TopicService;
 import mss.project.topicapprovalservice.services.TopicHistoryService;
+import mss.project.topicapprovalservice.services.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -29,6 +26,9 @@ public class TopicsController {
     
     @Autowired
     private TopicHistoryService topicHistoryService;
+    
+    @Autowired
+    private AccountService accountService;
 
     @PostMapping("/create")
     public ApiResponse<TopicsDTOResponse> createTopic(
@@ -103,6 +103,37 @@ public class TopicsController {
         return apiResponse;
     }
 
+    @PostMapping("/{topicId}/members/{accountId}")
+    public ApiResponse<AccountTopicsDTOResponse> addTopicMember(
+            @PathVariable Long topicId,
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Lấy thông tin account từ AccountService
+        AccountDTO account = accountService.getAccountById(accountId);
+        String accountName = account.getName() != null ? account.getName() : account.getEmail();
+        
+        AccountTopicsDTOResponse result = topicsService.addTopicMember(topicId, accountId, accountName);
+        
+        ApiResponse<AccountTopicsDTOResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Member added successfully");
+        apiResponse.setData(result);
+        return apiResponse;
+    }
+
+    @DeleteMapping("/{topicId}/members/{accountId}")
+    public ApiResponse<Void> removeTopicMember(
+            @PathVariable Long topicId,
+            @PathVariable Long accountId) {
+        topicsService.removeTopicMember(topicId, accountId);
+        
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Member removed successfully");
+        return apiResponse;
+    }
+
     @PutMapping("/update/{id}")
     public ApiResponse<TopicsDTOResponse> updateTopic(
             @PathVariable Long id, 
@@ -122,6 +153,23 @@ public class TopicsController {
         apiResponse.setCode(200);
         apiResponse.setMessage("Topic Updated Successfully");
         apiResponse.setData(updated);
+        return apiResponse;
+    }
+
+    @GetMapping("topic-count")
+    public ApiResponse<List<TopicsWithCouncilIsNullResponse>>getTopicCount() {
+        List<TopicsWithCouncilIsNullResponse> topicsDTOResponses= topicsService.getTopicsByCouncilNotNull();
+        if(topicsDTOResponses.isEmpty()) {
+            ApiResponse<List<TopicsWithCouncilIsNullResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(404);
+            apiResponse.setMessage("No topics found with non-null council");
+            apiResponse.setData(topicsDTOResponses);
+            return apiResponse;
+        }
+        ApiResponse<List<TopicsWithCouncilIsNullResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Total Topic Count Retrieved Successfully");
+        apiResponse.setData(topicsDTOResponses);
         return apiResponse;
     }
 
@@ -192,8 +240,16 @@ public class TopicsController {
     }
 
     @GetMapping("/approved")
-    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics() {
-        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics();
+    public ApiResponse<List<GetAllApprovedTopicsResponse>> getApprovedTopics( @AuthenticationPrincipal Jwt jwt) {
+        Long accountID = null;
+        if (jwt != null) {
+            try {
+                accountID = Long.parseLong(jwt.getSubject());
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
+            }
+        }
+        List<GetAllApprovedTopicsResponse> result = topicsService.getApprovedTopics(accountID);
         return ApiResponse.<List<GetAllApprovedTopicsResponse>>builder()
                 .code(HttpStatus.OK.value())
                 .message("Fetch all approved topics successfully")
@@ -219,6 +275,44 @@ public class TopicsController {
             apiResponse.setData(null);
             return apiResponse;
         }
+    }
+
+    @GetMapping("/my-topics")
+    public ApiResponse<List<TopicsDTOResponse>> getMyTopics(
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        // Lấy ID người dùng đăng nhập từ JWT
+        Long creatorId = null;
+        
+        if (jwt != null) {
+            try {
+                String subject = jwt.getSubject();
+                System.out.println("JWT Subject: " + subject);
+                creatorId = Long.parseLong(subject);
+                System.out.println("Parsed creatorId: " + creatorId);
+            } catch (NumberFormatException e) {
+                System.err.println("Failed to parse accountId from JWT subject: " + jwt.getSubject());
+            }
+        } else {
+            System.err.println("JWT is null");
+        }
+        
+        if (creatorId == null) {
+            ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(401);
+            apiResponse.setMessage("User not authenticated");
+            apiResponse.setData(List.of());
+            return apiResponse;
+        }
+        
+        List<TopicsDTOResponse> topics = topicsService.getTopicsByCreatorId(creatorId);
+        System.out.println("Found " + topics.size() + " topics for creatorId: " + creatorId);
+        
+        ApiResponse<List<TopicsDTOResponse>> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("My topics retrieved successfully");
+        apiResponse.setData(topics);
+        return apiResponse;
     }
 
     // ========== 2-Person Approval Workflow Endpoints ==========
@@ -306,5 +400,22 @@ public class TopicsController {
         apiResponse.setMessage("Edit permission checked successfully");
         apiResponse.setData(Map.of("canEdit", canEdit));
         return apiResponse;
+    }
+
+
+    @PutMapping("/{topicId}/status")
+    public ApiResponse<TopicsDTOResponse> updateTopicStatus(
+            @PathVariable Long topicId,
+            @RequestParam String status) {
+
+            TopicStatus topicStatus = TopicStatus.valueOf(status.toUpperCase());
+
+            TopicsDTOResponse updated = topicsService.updateTopicStatus(topicId, topicStatus);
+
+            ApiResponse<TopicsDTOResponse> apiResponse = new ApiResponse<>();
+            apiResponse.setCode(200);
+            apiResponse.setMessage("Topic status updated successfully");
+            apiResponse.setData(updated);
+            return apiResponse;
     }
 }

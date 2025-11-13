@@ -2,6 +2,8 @@ package mss.project.accountservice.services;
 
 import lombok.RequiredArgsConstructor;
 import mss.project.accountservice.enums.Role;
+import mss.project.accountservice.exceptions.AppException;
+import mss.project.accountservice.exceptions.ErrorCode;
 import mss.project.accountservice.pojos.Account;
 import mss.project.accountservice.repositories.AccountRepository;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
@@ -21,20 +23,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         OAuth2User user = super.loadUser(userRequest);
         String email = user.<String>getAttribute("email");
         String name  = user.<String>getAttribute("name");
-        if (email == null || !email.toLowerCase().endsWith("@fpt.edu.vn")) {
-            throw new OAuth2AuthenticationException(
-                    new OAuth2Error("invalid_email_domain", "Chỉ có mail FPT mới được đăng nhập", null)
-            );
-        }
 
         Account acc = accountRepository.findByEmail(email);
         if (acc == null) {
-            acc = new Account();
-            acc.setEmail(email.toLowerCase());
-            acc.setName(name);
-            acc.setRole(Role.LECTURER);
-            acc.setActive(true);
-            accountRepository.save(acc);
+            throw new OAuth2AuthenticationException(
+                    new OAuth2Error("account_not_found", "Tài khoản chưa được cấp phép ", null)
+            );
         } else if (!acc.isActive()) {
             acc.setActive(true);
             accountRepository.save(acc);

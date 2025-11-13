@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class GetAllReviewCouncilResponse {
+public class GetReviewCouncilResponse {
     private Long councilID;
     private String councilName;
     private Long topicID;
@@ -21,6 +21,7 @@ public class GetAllReviewCouncilResponse {
     private Milestone milestone;
     private LocalDateTime reviewDate;
     private String status;
+    private String result;
     private LocalDateTime createdAt;
     private ReviewFormat reviewFormat;
     private String meetingLink;

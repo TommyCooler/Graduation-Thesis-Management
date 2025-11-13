@@ -1,9 +1,20 @@
-
-
 // Request types
 export interface CouncilCreateRequest {
   semester: string;
-  topicId: number;
+  topicId: number[];
+}
+
+// Topic trong council response (matches TopicsDTOResponse)
+export interface CouncilTopic {
+  id: number;
+  title: string;
+  description: string;
+  submitedAt: string | null;
+  status: string | null;
+  filePathUrl: string | null;
+  createdBy: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
 }
 
 // Council member types
@@ -13,19 +24,18 @@ export interface CouncilMember {
   accountId: number;
   fullName: string;
   email: string;
-  phoneNumber: string;
+  phoneNumber: string | null; // Có thể null
 }
 
-// Council response types
+// Council response types (matches CouncilResponse from backend)
 export interface CouncilResponse {
   id: number;
   councilName: string;
   semester: string;
   date: string;
   status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  slot: number;
   councilMembers: CouncilMember[];
-  topicName: string;
+  topic: CouncilTopic[]; // Array of topics
 }
 
 // API response wrapper
@@ -86,3 +96,48 @@ export const COUNCIL_ROLE_COLORS = {
   [COUNCIL_ROLE.SECRETARY]: 'blue',
   [COUNCIL_ROLE.MEMBER]: 'default',
 } as const;
+
+// My Council types
+export interface MyCouncilItem {
+  role: string;
+  councilId?: number; // optional if BE provides
+  councilMemberId?: number; // ID của bản ghi CouncilMember
+  councilName: string;
+  semester: string;
+  defenseDate: string;
+  status: string;
+  topicStatus?: string; // Trạng thái của đề tài
+  topicsTitle: string;
+  topicsDescription: string;
+  fileUrl: string;
+  defenseTime: string;
+  topicId?: number; // optional if BE provides
+  retakeDate?: string | null; // Ngày chấm lại (chỉ có khi topicStatus là RETAKING)
+}
+
+export interface MyCouncilApiResponse {
+  code: number;
+  message: string;
+  data: MyCouncilItem[];
+}
+
+// Grouped council structure - nhóm theo ngày
+export interface GroupedByDate {
+  defenseDate: string;
+  councils: {
+    councilName: string;
+    semester: string;
+    status: string;
+    role: string;
+    retakeDate?: string | null; // Ngày chấm lại
+    topics: {
+      title: string;
+      description: string;
+      fileUrl: string;
+      defenseTime: string;
+      topicStatus?: string;
+      topicId?: number;
+      councilMemberId?: number; // ID của bản ghi CouncilMember
+    }[];
+  }[];
+}

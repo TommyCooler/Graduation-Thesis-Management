@@ -9,6 +9,7 @@ import {
   TopicPagination
 } from '../types/topic';
 import { topicService } from '../services/topicService';
+import { plagiarismService } from '../services/plagiarismService';
 
 interface UseTopicReturn {
   // Data
@@ -212,9 +213,32 @@ export const useTopic = (): UseTopicReturn => {
    */
   const updateTopicWithFile = useCallback(async (id: number, data: TopicUpdateRequest, file: File): Promise<Topic | null> => {
     setUpdateLoading(true);
+    const deleteLoadingMsg = message.loading('Đang xóa dữ liệu cũ từ Qdrant...', 0);
+    
+    // Lưu dữ liệu cũ để rollback nếu cần
+    let originalTopic: Topic | null = null;
     try {
+      originalTopic = await topicService.getTopicById(id);
+    } catch (err) {
+      console.warn('Could not fetch original topic for rollback:', err);
+    }
+    
+    try {
+      // Bước 1: Xóa topic khỏi Qdrant trước - BẮT BUỘC phải thành công
+      try {
+        await plagiarismService.deleteTopicFromQdrant(id);
+        deleteLoadingMsg();
+        console.log('Successfully deleted topic from Qdrant');
+      } catch (deleteError: any) {
+        deleteLoadingMsg();
+        const errorMessage = deleteError.message || 'Không thể xóa dữ liệu cũ từ Qdrant';
+        message.error(`Xóa dữ liệu cũ thất bại: ${errorMessage}. Đề tài không được cập nhật.`);
+        console.error('Error deleting topic from Qdrant:', deleteError);
+        throw new Error(`Xóa dữ liệu cũ thất bại: ${errorMessage}`);
+      }
+
+      // Bước 2: Update topic với file
       const updatedTopic = await topicService.updateTopicWithFile(id, data, file);
-      message.success('Cập nhật đề tài và file thành công');
       
       // Update in current list
       setTopics(prev => prev.map(topic => 
@@ -225,16 +249,66 @@ export const useTopic = (): UseTopicReturn => {
       if (currentTopic?.id === id) {
         setCurrentTopic(updatedTopic);
       }
+
+      // Bước 3: Gọi check plagiarism với file mới - BẮT BUỘC phải thành công
+      const plagiarismLoadingMsg = message.loading('Đang kiểm tra đạo văn...', 0);
+      try {
+        await plagiarismService.checkPlagiarism(file, id);
+        plagiarismLoadingMsg();
+        message.success('Cập nhật đề tài và kiểm tra đạo văn thành công');
+        console.log('Successfully started plagiarism check');
+      } catch (plagiarismError: any) {
+        plagiarismLoadingMsg();
+        const errorMessage = plagiarismError.message || 'Không thể kiểm tra đạo văn';
+        console.error('Error checking plagiarism:', plagiarismError);
+        
+        // Rollback: Khôi phục topic về trạng thái cũ
+        if (originalTopic) {
+          try {
+            message.loading('Đang khôi phục đề tài về trạng thái cũ...', 0);
+            const rollbackData: TopicUpdateRequest = {
+              title: originalTopic.title,
+              description: originalTopic.description,
+              filePathUrl: originalTopic.filePathUrl || undefined,
+            };
+            await topicService.updateTopic(id, rollbackData);
+            message.destroy();
+            
+            // Reload topic để đảm bảo dữ liệu đồng bộ
+            await fetchTopicById(id);
+            
+            console.log('Successfully rolled back topic to original state');
+          } catch (rollbackError: any) {
+            message.destroy();
+            console.error('Error rolling back topic:', rollbackError);
+            message.error('Kiểm tra đạo văn thất bại và không thể khôi phục đề tài. Vui lòng liên hệ quản trị viên.');
+          }
+        } else {
+          // Nếu không có dữ liệu cũ, reload từ server
+          try {
+            await fetchTopicById(id);
+          } catch (reloadError) {
+            console.error('Error reloading topic after plagiarism check failure:', reloadError);
+          }
+        }
+        
+        message.error(`Kiểm tra đạo văn thất bại: ${errorMessage}. Đề tài không được cập nhật.`);
+        throw new Error(`Kiểm tra đạo văn thất bại: ${errorMessage}`);
+      }
       
       return updatedTopic;
     } catch (error: any) {
-      message.error(error.message || 'Không thể cập nhật đề tài với file');
+      // Nếu là lỗi từ delete hoặc plagiarism check, đã có message rồi
+      if (!error.message?.includes('Xóa dữ liệu cũ thất bại') && 
+          !error.message?.includes('Kiểm tra đạo văn thất bại')) {
+        message.error(error.message || 'Không thể cập nhật đề tài với file');
+      }
       console.error('Error updating topic with file:', error);
       return null;
     } finally {
       setUpdateLoading(false);
     }
-  }, [currentTopic]);
+  }, [currentTopic, fetchTopicById]);
 
   /**
    * Delete topic
@@ -254,8 +328,8 @@ export const useTopic = (): UseTopicReturn => {
       }
       
       return true;
-    } catch (error) {
-      message.error('Không thể xóa đề tài');
+    } catch (error: any) {
+      message.error(error.message || 'Không thể xóa đề tài');
       console.error('Error deleting topic:', error);
       return false;
     } finally {

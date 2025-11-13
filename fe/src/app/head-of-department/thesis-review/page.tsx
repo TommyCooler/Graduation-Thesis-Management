@@ -20,6 +20,7 @@ import {
   Descriptions,
   Tooltip,
   Spin,
+  Alert,
 } from 'antd';
 import {
   SearchOutlined,
@@ -31,11 +32,14 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   TeamOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import Header from '../../../components/combination/Header';
 import Footer from '../../../components/combination/Footer';
 import { topicService } from '../../../services/topicService';
 import { TopicWithApprovalStatus, TOPIC_STATUS, STATUS_DISPLAY, STATUS_COLORS } from '../../../types/topic';
+import PlagiarismResultsModal from '../../../components/PlagiarismResultsModal';
+import { plagiarismService } from '../../../services/plagiarismService';
 
 const { Content } = Layout;
 const { Title, Text } = Typography;
@@ -46,10 +50,15 @@ export default function ThesisReviewPage() {
   const [approvedTopics, setApprovedTopics] = useState<TopicWithApprovalStatus[]>([]);
   const [selectedTopic, setSelectedTopic] = useState<TopicWithApprovalStatus | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isPlagiarismModalVisible, setIsPlagiarismModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('pending');
   const [searchText, setSearchText] = useState('');
   const [form] = Form.useForm();
+  const [plagiarismLoading, setPlagiarismLoading] = useState(false);
+  const [plagiarismCheckRequired, setPlagiarismCheckRequired] = useState(false);
+  const [hasViewedPlagiarism, setHasViewedPlagiarism] = useState(false);
+  const [plagiarismResultCount, setPlagiarismResultCount] = useState(0);
 
   useEffect(() => {
     loadTopics();
@@ -72,13 +81,45 @@ export default function ThesisReviewPage() {
     }
   };
 
-  const handleViewDetails = (topic: TopicWithApprovalStatus) => {
+  const handleViewDetails = async (topic: TopicWithApprovalStatus) => {
     setSelectedTopic(topic);
     setIsModalVisible(true);
+    setHasViewedPlagiarism(false);
+    setPlagiarismCheckRequired(false);
+    setPlagiarismResultCount(0);
+
+    if (!topic?.id) {
+      return;
+    }
+
+    setPlagiarismLoading(true);
+    try {
+      const results = await plagiarismService.getPlagiarismResults(topic.id);
+      const resultCount = Array.isArray(results) ? results.length : 0;
+      setPlagiarismResultCount(resultCount);
+      const shouldRequireReview = resultCount > 0;
+      setPlagiarismCheckRequired(shouldRequireReview);
+
+      if (shouldRequireReview) {
+        message.warning('Đề tài có kết quả nghi ngờ đạo văn. Vui lòng xem danh sách đạo văn trước khi phê duyệt hoặc từ chối.');
+      }
+    } catch (error) {
+      message.error('Không thể tải danh sách kết quả đạo văn.');
+    } finally {
+      setPlagiarismLoading(false);
+    }
   };
 
   const handleApprove = async (values: { comment?: string }) => {
     if (!selectedTopic) return;
+    if (plagiarismCheckRequired && !hasViewedPlagiarism) {
+      message.warning('Vui lòng xem danh sách đạo văn trước khi phê duyệt.');
+      return;
+    }
+    if (plagiarismLoading) {
+      message.warning('Đang tải dữ liệu đạo văn, vui lòng chờ.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -89,6 +130,9 @@ export default function ThesisReviewPage() {
       message.success(`Đã phê duyệt đề tài! Trạng thái: ${result.approvalStatus}`);
       setIsModalVisible(false);
       form.resetFields();
+      setPlagiarismCheckRequired(false);
+      setHasViewedPlagiarism(false);
+      setPlagiarismResultCount(0);
       await loadTopics(); // Reload data
     } catch (error: any) {
       console.error('Error approving topic:', error);
@@ -100,6 +144,14 @@ export default function ThesisReviewPage() {
 
   const handleReject = async (values: { reason: string }) => {
     if (!selectedTopic) return;
+    if (plagiarismCheckRequired && !hasViewedPlagiarism) {
+      message.warning('Vui lòng xem danh sách đạo văn trước khi từ chối.');
+      return;
+    }
+    if (plagiarismLoading) {
+      message.warning('Đang tải dữ liệu đạo văn, vui lòng chờ.');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -107,6 +159,9 @@ export default function ThesisReviewPage() {
       message.success('Đã từ chối đề tài');
       setIsModalVisible(false);
       form.resetFields();
+      setPlagiarismCheckRequired(false);
+      setHasViewedPlagiarism(false);
+      setPlagiarismResultCount(0);
       await loadTopics();
     } catch (error: any) {
       console.error('Error rejecting topic:', error);
@@ -340,6 +395,9 @@ export default function ThesisReviewPage() {
           onCancel={() => {
             setIsModalVisible(false);
             form.resetFields();
+            setPlagiarismCheckRequired(false);
+            setHasViewedPlagiarism(false);
+            setPlagiarismResultCount(0);
           }}
           width={800}
           footer={null}
@@ -377,14 +435,49 @@ export default function ThesisReviewPage() {
                 <Descriptions.Item label="Ngày tạo">
                   {topicService.formatDateTime(selectedTopic.createdAt)}
                 </Descriptions.Item>
-                {selectedTopic.filePathUrl && (
-                  <Descriptions.Item label="File đính kèm" span={2}>
-                    <a href={selectedTopic.filePathUrl} target="_blank" rel="noopener noreferrer">
-                      <Button icon={<FileTextOutlined />}>Xem file</Button>
-                    </a>
+                {(selectedTopic.filePathUrl || plagiarismResultCount > 0) && (
+                  <Descriptions.Item label="Tài liệu / Đạo văn" span={2}>
+                    <Space>
+                      {selectedTopic.filePathUrl && (
+                        <a href={selectedTopic.filePathUrl} target="_blank" rel="noopener noreferrer">
+                          <Button icon={<FileTextOutlined />}>Xem file</Button>
+                        </a>
+                      )}
+                      <Button
+                        icon={<WarningOutlined />}
+                        onClick={() => {
+                          setHasViewedPlagiarism(true);
+                          setIsPlagiarismModalVisible(true);
+                        }}
+                        danger
+                      >
+                        Xem danh sách đạo văn
+                      </Button>
+                      {plagiarismResultCount > 0 && (
+                        <Tag color="red">{plagiarismResultCount} kết quả nghi ngờ</Tag>
+                      )}
+                      {plagiarismLoading && <Spin size="small" />}
+                    </Space>
                   </Descriptions.Item>
                 )}
               </Descriptions>
+
+              {plagiarismCheckRequired && (
+                <Alert
+                  type={hasViewedPlagiarism ? 'info' : 'warning'}
+                  showIcon
+                  message={
+                    hasViewedPlagiarism
+                      ? 'Bạn đã mở danh sách đạo văn. Vui lòng đánh giá cẩn thận trước khi ra quyết định.'
+                      : 'Phát hiện kết quả nghi ngờ đạo văn. Vui lòng xem danh sách đạo văn để kiểm tra trước khi phê duyệt hoặc từ chối.'
+                  }
+                  description={
+                    hasViewedPlagiarism
+                      ? undefined
+                      : 'Nhấn “Xem danh sách đạo văn” để mở danh sách chi tiết.'
+                  }
+                />
+              )}
 
               {/* Approval History */}
               {selectedTopic.approvals.length > 0 && (
@@ -422,41 +515,58 @@ export default function ThesisReviewPage() {
                     />
                   </Form.Item>
 
-                  <Space>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      icon={<CheckOutlined />}
-                      loading={loading}
-                    >
-                      Phê duyệt
-                    </Button>
-                    <Button
-                      danger
-                      icon={<CloseOutlined />}
-                      onClick={() => {
-                        Modal.confirm({
-                          title: 'Từ chối đề tài',
-                          content: (
-                            <Form onFinish={handleReject}>
-                              <Form.Item
-                                name="reason"
-                                label="Lý do từ chối"
-                                rules={[{ required: true, message: 'Vui lòng nhập lý do từ chối' }]}
-                              >
-                                <TextArea rows={4} placeholder="Nhập lý do từ chối..." />
-                              </Form.Item>
-                            </Form>
-                          ),
-                          okText: 'Từ chối',
-                          cancelText: 'Hủy',
-                          okButtonProps: { danger: true },
-                        });
-                      }}
-                    >
-                      Từ chối
-                    </Button>
-                  </Space>
+                  {(() => {
+                    const actionDisabled = plagiarismLoading || (plagiarismCheckRequired && !hasViewedPlagiarism);
+                    const actionTooltipTitle = plagiarismLoading
+                      ? 'Đang tải dữ liệu đạo văn, vui lòng chờ.'
+                      : plagiarismCheckRequired && !hasViewedPlagiarism
+                      ? 'Vui lòng xem danh sách đạo văn trước khi phê duyệt hoặc từ chối.'
+                      : undefined;
+
+                    return (
+                      <Space>
+                        <Tooltip title={actionTooltipTitle}>
+                          <Button
+                            type="primary"
+                            htmlType="submit"
+                            icon={<CheckOutlined />}
+                            loading={loading}
+                            disabled={actionDisabled}
+                          >
+                            Phê duyệt
+                          </Button>
+                        </Tooltip>
+                        <Tooltip title={actionTooltipTitle}>
+                          <Button
+                            danger
+                            icon={<CloseOutlined />}
+                            disabled={actionDisabled}
+                            onClick={() => {
+                              Modal.confirm({
+                                title: 'Từ chối đề tài',
+                                content: (
+                                  <Form onFinish={handleReject}>
+                                    <Form.Item
+                                      name="reason"
+                                      label="Lý do từ chối"
+                                      rules={[{ required: true, message: 'Vui lòng nhập lý do từ chối' }]}
+                                    >
+                                      <TextArea rows={4} placeholder="Nhập lý do từ chối..." />
+                                    </Form.Item>
+                                  </Form>
+                                ),
+                                okText: 'Từ chối',
+                                cancelText: 'Hủy',
+                                okButtonProps: { danger: true },
+                              });
+                            }}
+                          >
+                            Từ chối
+                          </Button>
+                        </Tooltip>
+                      </Space>
+                    );
+                  })()}
                 </Form>
               )}
 
@@ -471,6 +581,13 @@ export default function ThesisReviewPage() {
             </Space>
           )}
         </Modal>
+
+        {/* Plagiarism Results Modal */}
+        <PlagiarismResultsModal
+          visible={isPlagiarismModalVisible}
+          topicId={selectedTopic?.id || null}
+          onClose={() => setIsPlagiarismModalVisible(false)}
+        />
       </Content>
       <Footer />
     </Layout>

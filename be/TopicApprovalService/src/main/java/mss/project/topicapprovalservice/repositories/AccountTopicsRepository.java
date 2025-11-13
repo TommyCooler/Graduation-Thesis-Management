@@ -23,6 +23,11 @@ public interface AccountTopicsRepository extends JpaRepository<AccountTopics, Lo
     void deleteByTopicsId(Long topicId);
     
     /**
+     * Find all AccountTopics by accountId and role
+     */
+    List<AccountTopics> findByAccountIdAndRole(Long accountId, TopicRole role);
+    
+    /**
      * Check if an account is a creator or member of a topic
      * Uses Spring Data JPA method naming convention
      * @param topicId the topic ID

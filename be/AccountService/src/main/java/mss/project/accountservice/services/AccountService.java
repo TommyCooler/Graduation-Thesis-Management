@@ -4,6 +4,7 @@ import mss.project.accountservice.dtos.requests.UpdateAccountRequest;
 import mss.project.accountservice.dtos.responses.AccountPerPageResponse;
 import mss.project.accountservice.dtos.responses.AccountResponse;
 import mss.project.accountservice.dtos.responses.PageResponse;
+import mss.project.accountservice.enums.Role;
 import mss.project.accountservice.pojos.Account;
 
 import java.util.List;
@@ -15,9 +16,11 @@ public interface AccountService {
     List<Account> getAllAccounts();
     AccountResponse findById(Long id);
 
-    PageResponse<AccountPerPageResponse> getAccountsPaged(int page, int size);
+    PageResponse<AccountPerPageResponse> getAccountsPaged(int page, int size, Account currentAccount);
 
     AccountResponse getCurrentAccount(String email);
 
     void updateAccountProfile(Long id, UpdateAccountRequest account);
+
+    void adminUpdateAccountRole(Long id, Role role);
 }

@@ -35,4 +35,7 @@ public class TopicApproval {
     
     @Column(name = "comment", columnDefinition = "TEXT")
     private String comment;
+
+    @Column(name = "approved_first")
+    private Boolean approvedFirst;
 }
