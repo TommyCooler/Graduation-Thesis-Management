@@ -67,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
                 .path("/")
                 .maxAge(60 * 60 * 24 * 30)
                 .sameSite("None")
+                .domain("nducky.id.vn")
                 .build();
 
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
