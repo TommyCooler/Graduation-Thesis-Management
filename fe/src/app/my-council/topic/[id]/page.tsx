@@ -318,6 +318,33 @@ function MyCouncilTopicDetailPage(): JSX.Element {
     setGradingLoading(true);
     
     try {
+      // Tự động lưu note nếu có thay đổi chưa lưu
+      if (noteText && noteText.trim() && councilMemberId) {
+        const myExistingNote = topicNotes.find((n: any) => n.councilMemberId === councilMemberId);
+        const hasUnsavedChanges = !myExistingNote || myExistingNote.note !== noteText.trim();
+        
+        if (hasUnsavedChanges) {
+          console.log('💾 Auto-saving note before grading...');
+          try {
+            await councilTopicEvaluationService.upsertNote({
+              topicId: Number(topicId),
+              councilMemberId,
+              note: noteText.trim(),
+            });
+            
+            // Reload notes để đảm bảo dữ liệu đồng bộ
+            const notes = await councilTopicEvaluationService.getNotesByTopic(Number(topicId));
+            setTopicNotes(notes || []);
+            
+            console.log('✅ Note auto-saved successfully');
+          } catch (noteError: any) {
+            console.warn('⚠️ Failed to auto-save note:', noteError);
+            // Không throw error, tiếp tục chấm điểm
+            toast.warning('Ghi chú chưa được lưu. Vui lòng lưu ghi chú thủ công nếu cần.');
+          }
+        }
+      }
+      
       let status: string;
       
       // Nếu status hiện tại là RETAKING và bấm FAIL → gửi FAIL_CAPSTONE
