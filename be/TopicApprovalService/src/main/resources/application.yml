@@ -67,7 +67,3 @@ app:
 plagiarism:
   service:
     url: ${PLAGIARISM_SERVICE_URL:http://localhost:8080}
-
-account:
-  service:
-    url: ${ACCOUNT_SERVICE_URL:http://localhost:8081}

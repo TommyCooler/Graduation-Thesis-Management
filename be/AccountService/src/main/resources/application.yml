@@ -47,7 +47,7 @@ resend:
   from: "MSS301 <noreply@foundershub.nducky.id.vn>"
 app:
   jwt:
-    secret-base64: ${BASE_64}
+    secret-base64: ${BASE-64}
   oauth2:
     success-redirect: http://localhost:3000
     failure-redirect: http://localhost:3000/auth/oauth2/fail

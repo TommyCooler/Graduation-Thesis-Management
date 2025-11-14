@@ -65,24 +65,43 @@ class HomeScreen extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 32),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            Column(
               children: [
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.reviewCouncil);
-                  },
-                  icon: const Icon(Icons.calendar_month),
-                  label: const Text('Xem lịch chấm'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.fptOrange,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 12,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(context, AppRoutes.capstoneGrading);
+                      },
+                      icon: const Icon(Icons.grading),
+                      label: const Text('Chấm Capstone'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.fptOrange,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 16),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(context, AppRoutes.reviewCouncil);
+                      },
+                      icon: const Icon(Icons.calendar_month),
+                      label: const Text('Xem lịch chấm'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () => _logout(context),
                   icon: const Icon(Icons.logout),
