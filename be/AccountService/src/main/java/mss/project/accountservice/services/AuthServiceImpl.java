@@ -186,6 +186,16 @@ public class AuthServiceImpl implements AuthService {
                 .secure(true)
                 .httpOnly(true)
                 .build();
+
+        ResponseCookie domainWide = ResponseCookie.from("access_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("None")
+                .domain(".nducky.id.vn") // cookie bao trùm subdomain
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, domainWide.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
