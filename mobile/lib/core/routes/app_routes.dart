@@ -4,6 +4,7 @@ import 'package:mobile/presentation/screens/login/login_screen.dart';
 import 'package:mobile/presentation/screens/home/home_screen.dart';
 import 'package:mobile/presentation/screens/profile/user_profile_screen.dart';
 import 'package:mobile/presentation/screens/review-council/review_council_screen.dart';
+import 'package:mobile/presentation/screens/capstone-grading/capstone_grading_screen.dart';
 
 /// App Routes
 class AppRoutes {
@@ -18,6 +19,7 @@ class AppRoutes {
   static const String createTopic = '/create-topic';
   static const String changePassword = '/change-password';
   static const String reviewCouncil = '/review-council';
+  static const String capstoneGrading = '/capstone-grading';
   // Routes Map
   static Map<String, WidgetBuilder> get routes => {
         login: (context) => const LoginScreen(),
@@ -25,6 +27,7 @@ class AppRoutes {
         profile: (context) => const UserProfileScreen(),
         changePassword: (context) => const ChangePasswordScreen(),
         reviewCouncil: (context) => const ReviewCouncilScreen(),
+        capstoneGrading: (context) => const CapstoneGradingScreen(),
         // Thêm các routes khác ở đây
       };
 
