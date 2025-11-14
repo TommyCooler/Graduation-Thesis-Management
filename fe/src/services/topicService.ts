@@ -12,7 +12,7 @@ import {
   ApproveTopicRequest
 } from '../types/topic';
 
-const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 class TopicService {
   private baseUrl: string;

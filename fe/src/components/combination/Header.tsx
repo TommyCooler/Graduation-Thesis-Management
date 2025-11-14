@@ -14,6 +14,7 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 
 const { Header: AntHeader } = Layout;
 
@@ -55,6 +56,7 @@ export default function Header() {
     });
     setClaims(null);
     router.push('/auth/login');
+    Cookies.remove('access_token');
   };
 
   // Kiểm tra xem user có phải là Head of Department không

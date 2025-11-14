@@ -36,7 +36,7 @@ interface Paged<T> {
     size: number;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://graduation-backend.nducky.id.vn';
 
 const ROLE_LABEL: Record<Role, string> = {
     HEADOFDEPARTMENT: 'Trưởng bộ môn',
