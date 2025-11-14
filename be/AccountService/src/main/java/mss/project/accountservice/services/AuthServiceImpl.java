@@ -63,11 +63,10 @@ public class AuthServiceImpl implements AuthService {
         response.setFirstLogin(account.isFirstLogin());
         ResponseCookie cookie = ResponseCookie.from("access_token", token)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .path("/")
                 .maxAge(60 * 60 * 24 * 30)
                 .sameSite("None")
-                .domain("nducky.id.vn")
                 .build();
 
         httpResponse.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
