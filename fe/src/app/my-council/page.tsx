@@ -141,15 +141,30 @@ const MyCouncilPage: React.FC = () => {
         setLoading(true);
         try {
             const data = await councilService.getMyCouncils();
-            setCouncilItems(data);
+            setCouncilItems(data || []);
             
             // Gom nhóm theo ngày (defenseDate)
-            const grouped = groupByDate(data);
+            const grouped = groupByDate(data || []);
             setGroupedByDate(grouped);
             setFilteredGroupedByDate(grouped);
-        } catch (error) {
+            
+            // Chỉ hiển thị error nếu có lỗi thực sự (không phải do không có dữ liệu)
+            // Nếu data là mảng rỗng, đó là trường hợp bình thường (chưa được phân công)
+        } catch (error: any) {
             console.error('Error fetching my councils:', error);
-            messageApi.error('Không thể tải danh sách hội đồng');
+            // Chỉ hiển thị error nếu là lỗi thực sự (network, 500, etc.)
+            // Không hiển thị error nếu chỉ là không có dữ liệu
+            const errorMessage = error?.message || '';
+            const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('Failed to fetch');
+            const isServerError = errorMessage.includes('500') || errorMessage.includes('Internal Server Error');
+            
+            if (isNetworkError || isServerError || error?.response?.status >= 500) {
+                messageApi.error('Không thể tải danh sách hội đồng');
+            }
+            // Nếu không có dữ liệu (404 hoặc empty), không hiển thị error
+            setCouncilItems([]);
+            setGroupedByDate([]);
+            setFilteredGroupedByDate([]);
         } finally {
             setLoading(false);
         }

@@ -438,18 +438,6 @@ export default function TopicsList(): JSX.Element {
       ),
     },
     {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: true,
-      width: 300,
-      render: (description: string) => (
-        <Tooltip title={description}>
-          <Text type="secondary">{description}</Text>
-        </Tooltip>
-      ),
-    },
-    {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
@@ -461,7 +449,6 @@ export default function TopicsList(): JSX.Element {
         return <Tag color={color}>{text}</Tag>;
       },
       filters: [
-        { text: 'Nháp', value: TOPIC_STATUS.DRAFT },
         { text: 'Chờ xử lý', value: TOPIC_STATUS.PENDING },
         { text: 'Đã nộp', value: TOPIC_STATUS.SUBMITTED },
         { text: 'Đang xem xét', value: TOPIC_STATUS.UNDER_REVIEW },
@@ -493,10 +480,17 @@ export default function TopicsList(): JSX.Element {
       key: 'createdAt',
       width: 160,
       render: (date: string) => (
-        <Text type="secondary">{formatDate(date)}</Text>
+        <Space>
+          <CalendarOutlined />
+          <Text type="secondary">{formatDate(date)}</Text>
+        </Space>
       ),
-      sorter: (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-      defaultSortOrder: 'descend', // Mặc định sắp xếp mới nhất ở đầu
+      sorter: (a, b) => {
+        if (!a.createdAt) return 1;
+        if (!b.createdAt) return -1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // Descend: mới nhất lên đầu
+      },
+      defaultSortOrder: 'descend' as const, // Mặc định sắp xếp mới nhất ở đầu
     },
     {
       title: 'Hành động',

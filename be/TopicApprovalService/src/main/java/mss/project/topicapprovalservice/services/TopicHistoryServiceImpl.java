@@ -32,6 +32,9 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
     @Autowired
     private TopicHistoryRepository topicHistoryRepository;
     
+    @Autowired
+    private S3Service s3Service;
+    
     @Override
     @Transactional
     public void recordTopicChange(Topics topic, String changedContent, String updatedBy, String actionType) {
@@ -91,6 +94,9 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
             throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
         }
         
+        // Nếu topic đang ở trạng thái REJECTED, tự động reset về PENDING khi cập nhật
+        boolean wasRejected = topic.getStatus() == mss.project.topicapprovalservice.enums.TopicStatus.REJECTED;
+        
         // Ghi nhận các thay đổi chi tiết
         List<String> changes = new ArrayList<>();
         
@@ -109,6 +115,23 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
         
         // Kiểm tra filePathUrl
         if (!Objects.equals(topic.getFilePathUrl(), request.getFilePathUrl())) {
+            // Xóa file cũ trên S3 nếu có filePathUrl cũ (khi thay đổi file hoặc xóa file)
+            String oldFilePathUrl = topic.getFilePathUrl();
+            if (oldFilePathUrl != null && !oldFilePathUrl.isEmpty()) {
+                try {
+                    String oldFileName = s3Service.extractFileNameFromUrl(oldFilePathUrl);
+                    if (oldFileName != null && !oldFileName.isEmpty()) {
+                        s3Service.deleteFile(oldFileName);
+                        log.info("Deleted old file from S3: {} for topic {}", oldFileName, id);
+                    } else {
+                        log.warn("Could not extract file name from old filePathUrl: {} for topic {}", oldFilePathUrl, id);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to delete old file from S3 for topic {}: {}", id, e.getMessage(), e);
+                    // Continue with update even if deletion fails
+                }
+            }
+            
             changes.add(String.format("Đường dẫn file: '%s' -> '%s'", 
                 topic.getFilePathUrl() != null ? topic.getFilePathUrl() : "(trống)", 
                 request.getFilePathUrl() != null ? request.getFilePathUrl() : "(trống)"));
@@ -128,6 +151,15 @@ public class TopicHistoryServiceImpl implements TopicHistoryService {
             } catch (IllegalArgumentException e) {
                 log.warn("Invalid status value: {}", request.getStatus());
             }
+        } else if (wasRejected) {
+            // Tự động reset về PENDING nếu đang REJECTED và không có status mới được chỉ định
+            // Để đề tài có thể được duyệt lại
+            topic.setStatus(mss.project.topicapprovalservice.enums.TopicStatus.PENDING);
+            topic.setApprovalCount(0); // Reset approval count
+            changes.add(String.format("Trạng thái: '%s' -> '%s' (tự động reset sau khi cập nhật)", 
+                mss.project.topicapprovalservice.enums.TopicStatus.REJECTED, 
+                mss.project.topicapprovalservice.enums.TopicStatus.PENDING));
+            log.info("Topic {} status reset from REJECTED to PENDING after update", id);
         }
         
         // Kiểm tra submitedAt nếu có

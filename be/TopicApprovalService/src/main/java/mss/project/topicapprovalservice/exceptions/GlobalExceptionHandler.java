@@ -40,7 +40,12 @@ public class GlobalExceptionHandler {
                 .code(errorCode.getCode())
                 .message(errorCode.getMessage())
                 .build();
-        return ResponseEntity.badRequest().body(response);
+        // Sử dụng đúng HTTP status code từ errorCode thay vì luôn trả về 400
+        HttpStatus httpStatus = HttpStatus.resolve(errorCode.getCode());
+        if (httpStatus == null) {
+            httpStatus = HttpStatus.BAD_REQUEST; // Fallback nếu code không hợp lệ
+        }
+        return ResponseEntity.status(httpStatus).body(response);
     }
 
     @ExceptionHandler(Exception.class)

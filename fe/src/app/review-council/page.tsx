@@ -198,6 +198,12 @@ const CouncilTable: React.FC<CouncilTableProps> = ({
         render={(status) => (
           <Tag color={getStatusColor(status)}>{status}</Tag>
         )}
+        filters={[
+          { text: 'Đã lập', value: 'Đã lập' },
+          { text: 'Hoàn thành', value: 'Hoàn thành' },
+          { text: 'Đã hủy', value: 'Đã hủy' },
+        ]}
+        onFilter={(value, record) => record.status === value}
       />
       <Table.Column
         title="Kết quả"

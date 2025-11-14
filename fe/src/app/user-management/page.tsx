@@ -84,6 +84,11 @@ export default function UserManagementPage() {
           {status === 'active' ? 'Đang hoạt động' : 'Tạm khóa'}
         </Tag>
       ),
+      filters: [
+        { text: 'Đang hoạt động', value: 'active' },
+        { text: 'Tạm khóa', value: 'inactive' },
+      ],
+      onFilter: (value, record: User) => record.status === value,
     },
     {
       title: 'Thao tác',

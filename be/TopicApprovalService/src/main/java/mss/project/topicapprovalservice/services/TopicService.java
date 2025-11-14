@@ -29,6 +29,7 @@ public interface TopicService {
     
     // New methods for 2-person approval workflow
     TopicWithApprovalStatusResponse approveTopicV2(Long topicId, String approverEmail, String approverName, String comment);
+    TopicWithApprovalStatusResponse rejectTopicV2(Long topicId, String rejectorEmail, String rejectorName, String reason);
     List<TopicWithApprovalStatusResponse> getPendingTopicsForApproval(String userEmail);
     List<TopicWithApprovalStatusResponse> getApprovedTopicsByUser(String userEmail);
     List<TopicWithApprovalStatusResponse> getFullyApprovedTopics();

@@ -238,6 +238,9 @@ public class TopicsServiceImpl implements TopicService {
         Topics existingTopic = topicsRepository.findById(Id)
                 .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
         
+        // Nếu topic đang ở trạng thái REJECTED, tự động reset về DRAFT khi cập nhật
+        boolean wasRejected = existingTopic.getStatus() == TopicStatus.REJECTED;
+        
         // Chỉ update các trường khi chúng không null
         if (topicsDTO.getTitle() != null) {
             existingTopic.setTitle(topicsDTO.getTitle());
@@ -255,6 +258,12 @@ public class TopicsServiceImpl implements TopicService {
             } catch (IllegalArgumentException e) {
                 // Keep existing status if invalid
             }
+        } else if (wasRejected) {
+            // Tự động reset về PENDING nếu đang REJECTED và không có status mới được chỉ định
+            // Để đề tài có thể được duyệt lại
+            existingTopic.setStatus(TopicStatus.PENDING);
+            existingTopic.setApprovalCount(0); // Reset approval count
+            logger.info("Topic {} status reset from REJECTED to PENDING after update", Id);
         }
         
         // Xóa file cũ trên S3 nếu có filePathUrl cũ
@@ -304,6 +313,27 @@ public class TopicsServiceImpl implements TopicService {
     public void deleteTopic(Long topicId) {
         if (!topicsRepository.existsById(topicId)) {
             throw new AppException(ErrorCode.TOPICS_NOT_FOUND);
+        }
+        
+        // Lấy topic để xóa file trên S3
+        Topics topic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+        
+        // Xóa file trên S3 nếu có
+        String filePathUrl = topic.getFilePathUrl();
+        if (filePathUrl != null && !filePathUrl.isEmpty()) {
+            try {
+                String fileName = s3Service.extractFileNameFromUrl(filePathUrl);
+                if (fileName != null && !fileName.isEmpty()) {
+                    s3Service.deleteFile(fileName);
+                    logger.info("Deleted file from S3: {} for topic {}", fileName, topicId);
+                } else {
+                    logger.warn("Could not extract file name from filePathUrl: {} for topic {}", filePathUrl, topicId);
+                }
+            } catch (Exception e) {
+                logger.error("Failed to delete file from S3 for topic {}: {}", topicId, e.getMessage(), e);
+                // Continue with deletion even if file deletion fails
+            }
         }
         
         // Xóa topic khỏi Qdrant (vector database) trước
@@ -546,6 +576,50 @@ public class TopicsServiceImpl implements TopicService {
     }
 
     @Override
+    @Transactional
+    public TopicWithApprovalStatusResponse rejectTopicV2(Long topicId, String rejectorEmail, String rejectorName, String reason) {
+        logger.info("Rejecting topic {} by user {} ({})", topicId, rejectorName, rejectorEmail);
+        
+        // Find topic
+        Topics topic = topicsRepository.findById(topicId)
+                .orElseThrow(() -> new AppException(ErrorCode.TOPICS_NOT_FOUND));
+
+        // Check if topic is already rejected
+        if (topic.getStatus() == TopicStatus.REJECTED) {
+            logger.warn("Topic {} is already rejected", topicId);
+            throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
+        }
+
+        // Check if topic is in a state that can be rejected (PENDING or UNDER_REVIEW)
+        if (topic.getStatus() != TopicStatus.PENDING && topic.getStatus() != TopicStatus.UNDER_REVIEW) {
+            logger.warn("Topic {} cannot be rejected in status {}", topicId, topic.getStatus());
+            throw new AppException(ErrorCode.INVALID_TOPIC_STATUS);
+        }
+
+        // Get account info and check if user is creator or member of the topic
+        AccountDTO account = accountService.getAccountByEmail(rejectorEmail);
+        if (account != null && accountTopicsRepository.existsByTopicsIdAndAccountIdAndRoleIn(
+                topicId, account.getId(), List.of(TopicRole.CREATOR, TopicRole.MEMBER))) {
+            logger.warn("User {} is creator or member of topic {}, cannot reject", rejectorEmail, topicId);
+            throw new AppException(ErrorCode.CANNOT_APPROVE_OWN_TOPIC);
+        }
+
+        // Set status to REJECTED
+        topic.setStatus(TopicStatus.REJECTED);
+        // Reset approval count when rejected
+        topic.setApprovalCount(0);
+        
+        // Delete all approval records for this topic (clean slate for resubmission)
+        topicApprovalRepository.deleteAll(topicApprovalRepository.findByTopicId(topicId));
+        logger.info("Deleted all approval records for rejected topic {}", topicId);
+        
+        topicsRepository.save(topic);
+        logger.info("Topic {} rejected by user {} ({}). Reason: {}", topicId, rejectorName, rejectorEmail, reason);
+
+        return convertToTopicWithApprovalStatusDTO(topic, rejectorEmail);
+    }
+
+    @Override
     public List<TopicWithApprovalStatusResponse> getPendingTopicsForApproval(String userEmail) {
         // Get account info from email
         AccountDTO account = accountService.getAccountByEmail(userEmail);
@@ -586,17 +660,17 @@ public class TopicsServiceImpl implements TopicService {
         List<TopicApproval> userApprovals = topicApprovalRepository.findByApproverEmail(userEmail);
         logger.info("Found {} approval records for user {}", userApprovals.size(), userEmail);
 
-        // Get all topics that user has approved
+        // Get all topics that user has approved or rejected
         List<TopicWithApprovalStatusResponse> result = userApprovals.stream()
                 .map(approval -> {
                     Topics topic = approval.getTopic();
                     logger.debug("Processing topic: id={}, title={}, status={}", 
                                 topic.getId(), topic.getTitle(), topic.getStatus());
                     
-                    // Only return topics that are still in review process or approved
-                    // Exclude rejected topics
+                    // Return topics that are in review process, approved, or rejected
                     if (topic.getStatus() == TopicStatus.UNDER_REVIEW || 
-                        topic.getStatus() == TopicStatus.APPROVED) {
+                        topic.getStatus() == TopicStatus.APPROVED ||
+                        topic.getStatus() == TopicStatus.REJECTED) {
                         return convertToTopicWithApprovalStatusDTO(topic, userEmail);
                     }
                     return null;
