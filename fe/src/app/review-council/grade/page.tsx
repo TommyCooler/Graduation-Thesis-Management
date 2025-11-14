@@ -59,6 +59,7 @@ export default function ReviewCouncilDetailPage() {
     if (councilID) fetchCouncilDetail(councilID);
   }, [councilID]);
 
+  // lấy thông tin chi tiết của hội đồng
   const fetchCouncilDetail = async (id: string) => {
     try {
       setLoading(true);
@@ -88,6 +89,7 @@ export default function ReviewCouncilDetailPage() {
   }, [currentUser, council]);
 
 
+  // submit cái đánh giá
   const submitGrade = async () => {
     if (!councilID) return;
 
@@ -212,7 +214,6 @@ export default function ReviewCouncilDetailPage() {
                         href={council.meetingLink}
                         target="_blank"
                         rel="noopener noreferrer"
-                      // style={{ color: '#1677ff', textDecoration: 'underline' }}
                       >
                         Link
                       </a>
@@ -268,7 +269,7 @@ export default function ReviewCouncilDetailPage() {
                             {lec.accountName}
                           </Tag>
 
-                          {/* 🔹 Hiển thị trạng thái chấm của từng giảng viên */}
+                          {/*  Hiển thị trạng thái chấm của từng giảng viên */}
                           {lec.decision === 'Chấp nhận' && <Tag color="green">Chấp nhận</Tag>}
                           {lec.decision === 'Từ chối' && <Tag color="red">Từ chối</Tag>}
                           {lec.decision === 'Chưa chấm' && <Tag color="gray">Chưa chấm</Tag>}
