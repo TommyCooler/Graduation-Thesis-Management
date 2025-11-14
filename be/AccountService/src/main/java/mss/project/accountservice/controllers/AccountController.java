@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import mss.project.accountservice.pojos.Account;
 import mss.project.accountservice.services.AccountService;
+import mss.project.accountservice.services.MailService;
 
 import java.util.List;
 
@@ -24,6 +25,9 @@ public class AccountController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private MailService mailService;
 
     @GetMapping("/all")
     public List<Account> getAccounts() {
@@ -87,6 +91,18 @@ public class AccountController {
         accountService.adminUpdateAccountRole(id, role);
         ApiResponse<?> apiResponse = new ApiResponse<>();
         apiResponse.setMessage("Cập nhật vai trò tài khoản thành công.");
+        return apiResponse;
+    }
+
+    @PostMapping("/mail/topic-approved")
+    public ApiResponse<?> sendTopicApprovedEmail(
+            @RequestParam String to,
+            @RequestParam String topicTitle,
+            @RequestParam String topicId
+    ) {
+        mailService.sendTopicApprovedEmail(to, topicTitle, topicId);
+        ApiResponse<?> apiResponse = new ApiResponse<>();
+        apiResponse.setMessage("Email đã được gửi thành công.");
         return apiResponse;
     }
 

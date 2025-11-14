@@ -7,6 +7,9 @@ spring:
     url: ${PLAGIARISM_DB_URL}
     username: ${PLAGIARISM_DB_USERNAME}
     password: ${PLAGIARISM_DB_PASSWORD}
+#    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:plagiarismdb}
+#    username: ${DB_USERNAME:postgres}
+#    password: ${DB_PASSWORD:postgres123}
     hikari:
       maximum-pool-size: 2
       minimum-idle: 1

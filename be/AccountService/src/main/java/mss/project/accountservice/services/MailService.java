@@ -7,4 +7,6 @@ public interface MailService {
     void sendPasswordResetEmail(String to, String token);
 
     void sendAccountProvisionEmail(String to, String tempPassword);
+    
+    void sendTopicApprovedEmail(String to, String topicTitle, String topicId);
 }

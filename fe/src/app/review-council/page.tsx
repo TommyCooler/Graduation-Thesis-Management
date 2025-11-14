@@ -126,9 +126,9 @@ const CouncilTable: React.FC<CouncilTableProps> = ({
 
   if (!loading && councils.length === 0) {
     return (
-      <p style={{ textAlign: 'center', padding: 20 }}>
-        Không có hội đồng nào được tìm thấy.
-      </p>
+      <div style={{ textAlign: 'center', padding: 20 }}>
+        <p>Không có hội đồng nào được tìm thấy.</p>
+      </div>
     );
   }
 
@@ -323,16 +323,13 @@ export default function ReviewCouncilPage() {
       try {
         const response: any = await accountService.getMe();
         if (response && response.data && response.code === 200) {
-          console.log('Lấy thông tin user thành công:', response.data);
           user = response.data;
           setCurrentUser(user);
         } else {
-          console.error('Lỗi khi lấy user, response không hợp lệ:', response);
           toast.error('Không thể xác thực người dùng.');
           return; // Stop if user fetch fails
         }
       } catch (err) {
-        console.error('Lỗi nghiêm trọng khi fetch user:', err);
         toast.error('Lỗi xác thực. Vui lòng đăng nhập lại.');
         return; // Stop if user fetch fails
       }
@@ -341,11 +338,8 @@ export default function ReviewCouncilPage() {
       if (user) {
         // (UPDATED) HOD fetches extra data
         if (user.role === 'HEADOFDEPARTMENT') {
-          console.log('User is HOD, fetching HOD data...');
           fetchLecturers();
           fetchApprovedTopics();
-        } else {
-          console.log('User is Lecturer/other, fetching specific councils...');
         }
         
         // (UPDATED) Both roles fetch their councils using the same function
@@ -367,7 +361,7 @@ export default function ReviewCouncilPage() {
       const data = await topicService.getApprovedTopics();
       setApprovedTopics(data);
     } catch (err) {
-      console.error('Lỗi khi tải danh sách topic được duyệt:', err);
+      toast.error('Không thể tải danh sách đề tài đã được duyệt.');
       setApprovedTopics([]);
     } finally {
       setLoadingApprovedTopics(false);
@@ -380,7 +374,7 @@ export default function ReviewCouncilPage() {
       const data = await reviewCouncilService.getAllLecturers();
       setLecturers(data);
     } catch (err) {
-      console.error('Lỗi khi tải danh sách giảng viên:', err);
+      toast.error('Không thể tải danh sách giảng viên.');
       setLecturers([]);
     } finally {
       setLoadingLecturers(false);
@@ -400,9 +394,8 @@ export default function ReviewCouncilPage() {
       });
       setAllCouncils(sortedData); // This state is used by HOD's calendar AND Lecturer's table/calendar
     } catch (err) {
-      console.error('Lỗi khi tải danh sách hội đồng:', err);
-      setAllCouncils([]);
       toast.error('Không thể tải danh sách hội đồng');
+      setAllCouncils([]);
     } finally {
       setLoadingAllCouncils(false);
     }
@@ -422,7 +415,7 @@ export default function ReviewCouncilPage() {
       });
       setCouncils(sortedData);
     } catch (err) {
-      console.error('Lỗi khi tải hội đồng:', err);
+      toast.error('Không thể tải danh sách hội đồng của đề tài này.');
       setCouncils([]);
     } finally {
       setLoadingCouncils(false);
@@ -446,6 +439,13 @@ export default function ReviewCouncilPage() {
 
     form.resetFields();
     setTimeout(() => {
+      // Đảm bảo accountID là number để so sánh đúng với Select
+      const lecturerIds = council.lecturers.map((lec) => {
+        return typeof lec.accountID === 'string' 
+          ? Number(lec.accountID) 
+          : lec.accountID;
+      });
+      
       form.setFieldsValue({
         topicTitle: council.topicTitle,
         milestone: council.milestone.replace(' ', '_'),
@@ -453,7 +453,7 @@ export default function ReviewCouncilPage() {
         reviewFormat: council.reviewFormat,
         meetingLink: council.meetingLink,
         roomNumber: council.roomNumber,
-        lecturerAccountIds: council.lecturers.map((lec) => lec.accountID),
+        lecturerAccountIds: lecturerIds,
       });
     }, 0);
   };
@@ -538,7 +538,6 @@ export default function ReviewCouncilPage() {
       } else {
         toast.error('Vui lòng điền đầy đủ thông tin hoặc xảy ra lỗi validation');
       }
-      console.error('Chi tiết lỗi:', error);
     }
   };
 
@@ -1078,15 +1077,53 @@ export default function ReviewCouncilPage() {
                   .includes(input.toLowerCase())
               }
             >
-              {lecturers
-                // (FIXED) Cập nhật filter
-                .filter((lec) => lec.accountID != null && lec.accountName && lec.email) 
-                .map((lec) => (
-                  // (FIXED) Cập nhật hiển thị trong Option
-                  <Option key={lec.accountID} value={lec.accountID}>
-                    {lec.accountName} ({lec.email})
-                  </Option>
-                ))}
+              {(() => {
+                // Lấy danh sách giảng viên hiện tại trong hội đồng (nếu đang chỉnh sửa)
+                const currentMembers = editingCouncil 
+                  ? editingCouncil.lecturers.map(lec => ({
+                      accountID: typeof lec.accountID === 'string' ? Number(lec.accountID) : lec.accountID,
+                      accountName: lec.accountName,
+                      email: lec.email || ''
+                    }))
+                  : [];
+                
+                // Tạo Set để lưu các ID đã có trong danh sách lecturers
+                const lecturerIdsSet = new Set(
+                  lecturers
+                    .filter((lec) => lec.accountID != null)
+                    .map((lec) => typeof lec.accountID === 'string' ? Number(lec.accountID) : lec.accountID)
+                );
+                
+                // Thêm các giảng viên hiện tại vào danh sách nếu chưa có
+                const allLecturers = [...lecturers];
+                currentMembers.forEach(currentMember => {
+                  if (!lecturerIdsSet.has(currentMember.accountID)) {
+                    allLecturers.push({
+                      accountID: currentMember.accountID,
+                      accountName: currentMember.accountName,
+                      email: currentMember.email
+                    });
+                  }
+                });
+                
+                return allLecturers
+                  // Cho phép hiển thị cả giảng viên chưa có email
+                  .filter((lec) => lec.accountID != null && lec.accountName)
+                  .map((lec) => {
+                    const optionLabel = lec.email
+                      ? `${lec.accountName} (${lec.email})`
+                      : lec.accountName;
+                    // Đảm bảo accountID là number để so sánh đúng
+                    const accountIdValue = typeof lec.accountID === 'string' 
+                      ? Number(lec.accountID) 
+                      : lec.accountID;
+                    return (
+                      <Option key={accountIdValue} value={accountIdValue}>
+                        {optionLabel}
+                      </Option>
+                    );
+                  });
+              })()}
             </Select>
           </Form.Item>
         </Form>

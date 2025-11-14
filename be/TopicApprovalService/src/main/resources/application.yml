@@ -4,9 +4,9 @@ spring:
 
   datasource:
     driver-class-name: org.postgresql.Driver
-#    url: ${TOPIC_DB_URL}
-#    username: ${TOPIC_DB_USERNAME}
-#    password: ${TOPIC_DB_PASSWORD}
+    url: ${TOPIC_DB_URL}
+    username: ${TOPIC_DB_USERNAME}
+    password: ${TOPIC_DB_PASSWORD}
     hikari:
       maximum-pool-size: 5
       minimum-idle: 2
@@ -17,9 +17,9 @@ spring:
       data-source-properties:
         preferQueryMode: simple
 
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:topicapproval}
-    username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:postgres123}
+#    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:topicapproval}
+#    username: ${DB_USERNAME:postgres}
+#    password: ${DB_PASSWORD:postgres123}
 #    url: ${TOPIC_DB_URL}
 #    username: ${TOPIC_DB_USERNAME}
 #    password: ${TOPIC_DB_PASSWORD}
