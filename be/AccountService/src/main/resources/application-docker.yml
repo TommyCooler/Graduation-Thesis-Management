@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: AccountService
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${ACCOUNT_DB_URL}
+    username: ${ACCOUNT_DB_USERNAME}
+    password: ${ACCOUNT_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 1
+      minimum-idle: 0
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
+      data-source-properties:
+        preferQueryMode: simple
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+        provider:
+          google:
+            issuer-uri: https://accounts.google.com
+
+server:
+  port: 8081
+resend:
+  apiKey: ${RESEND_KEY}
+  from: "MSS301 <noreply@foundershub.nducky.id.vn>"
+app:
+  jwt:
+    secret-base64: ${BASE_64}
+  oauth2:
+    success-redirect: ${SUCCESS_REDIRECT:http://localhost:3000}
+    failure-redirect: ${FAILURE_REDIRECT:http://localhost:3000/auth/oauth2/fail}
