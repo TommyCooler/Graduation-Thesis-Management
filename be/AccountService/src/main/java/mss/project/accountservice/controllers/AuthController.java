@@ -149,9 +149,9 @@ public class AuthController {
     }
 
     @PostMapping("/password/change-first-login")
-    public ApiResponse<?> changePasswordWhenFirstLogin(@RequestBody ChangePasswordRequest req) {
+    public ApiResponse<?> changePasswordWhenFirstLogin(@RequestBody @Valid ChangePasswordRequest request) {
         ApiResponse<?> res = new ApiResponse<>();
-        authService.changePasswordWhenFirstLogin(req.getEmail(), req.getNewPassword());
+        authService.changePasswordWhenFirstLogin(request);
         res.setMessage("Đổi mật khẩu thành công.");
         return res;
     }
