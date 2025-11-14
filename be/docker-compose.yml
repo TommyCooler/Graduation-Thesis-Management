@@ -1,0 +1,171 @@
+version: "3.9"
+
+networks:
+  thesis-net:
+
+volumes:
+  account-db-data:
+  subject-db-data:
+  topic-approval-db-data:
+  plagiarism-db-data:
+
+services:
+  # ===================== ACCOUNT SERVICE =====================
+  account-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: account_db
+      POSTGRES_USER: account_user
+      POSTGRES_PASSWORD: account_pass
+    volumes:
+      - account-db-data:/var/lib/postgresql/data
+    networks:
+      - thesis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U account_user -d account_db || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  account-service:
+    build:
+      context: ./AccountService
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8081
+    depends_on:
+      account-db:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    networks:
+      - thesis-net
+
+  # ===================== SUBJECT SERVICE =====================
+#  subject-db:
+#    image: postgres:16-alpine
+#    environment:
+#      POSTGRES_DB: subject_db
+#      POSTGRES_USER: subject_user
+#      POSTGRES_PASSWORD: subject_pass
+#    volumes:
+#      - subject-db-data:/var/lib/postgresql/data
+#    networks:
+#      - thesis-net
+#    healthcheck:
+#      test: ["CMD-SHELL", "pg_isready -U subject_user -d subject_db || exit 1"]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 10
+#
+#  subject-service:
+#    build:
+#      context: ./SubjectService
+#    env_file:
+#      - .env
+#    environment:
+#      SPRING_PROFILES_ACTIVE: docker
+#      SERVER_PORT: 8082
+#    depends_on:
+#      subject-db:
+#        condition: service_healthy
+#    ports:
+#      - "8082:8082"
+#    networks:
+#      - thesis-net
+
+  # ===================== TOPIC APPROVAL SERVICE =====================
+  topic-approval-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: topic_approval_db
+      POSTGRES_USER: topic_approval_user
+      POSTGRES_PASSWORD: topic_approval_pass
+    volumes:
+      - topic-approval-db-data:/var/lib/postgresql/data
+    networks:
+      - thesis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U topic_approval_user -d topic_approval_db || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  topic-approval-service:
+    build:
+      context: ./TopicApprovalService
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8083
+    depends_on:
+      topic-approval-db:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    networks:
+      - thesis-net
+
+  # ===================== CHECK PLAGIARISM SERVICE =====================
+  plagiarism-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: plagiarism_db
+      POSTGRES_USER: plagiarism_user
+      POSTGRES_PASSWORD: plagiarism_pass
+    volumes:
+      - plagiarism-db-data:/var/lib/postgresql/data
+    networks:
+      - thesis-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plagiarism_user -d plagiarism_db || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  plagiarism-service:
+    build:
+      context: ./CheckPlagiarismService
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8084
+
+      # application.yml đang dùng PLAGIARISM_DB_* nên map từ CHECK_PLAGIARISM_DB_*
+      PLAGIARISM_DB_URL: ${CHECK_PLAGIARISM_DB_URL}
+      PLAGIARISM_DB_USERNAME: ${CHECK_PLAGIARISM_DB_USERNAME}
+      PLAGIARISM_DB_PASSWORD: ${CHECK_PLAGIARISM_DB_PASSWORD}
+    depends_on:
+      plagiarism-db:
+        condition: service_healthy
+    ports:
+      - "8084:8084"
+    networks:
+      - thesis-net
+
+  # ===================== API GATEWAY =====================
+  api-gateway:
+    build:
+      context: ./APIGateway
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: 8080
+    depends_on:
+      account-service:
+        condition: service_started
+#      subject-service:
+#        condition: service_started
+      topic-approval-service:
+        condition: service_started
+      plagiarism-service:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    networks:
+      - thesis-net
