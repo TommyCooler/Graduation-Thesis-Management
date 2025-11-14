@@ -1,6 +1,7 @@
 package mss.project.accountservice.services;
 
 import jakarta.servlet.http.HttpServletResponse;
+import mss.project.accountservice.dtos.requests.ChangePasswordRequest;
 import mss.project.accountservice.dtos.requests.LoginRequest;
 import mss.project.accountservice.dtos.requests.RegisterRequest;
 import mss.project.accountservice.dtos.requests.SendMailRequest;
@@ -21,6 +22,6 @@ public interface AuthService {
 
     void provideEmail(SendMailRequest request);
 
-    void changePasswordWhenFirstLogin(String email, String newPassword);
+    void changePasswordWhenFirstLogin(ChangePasswordRequest request);
 
 }
