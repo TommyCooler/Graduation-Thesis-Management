@@ -127,15 +127,33 @@ class CouncilService {
         credentials: 'include',
       });
 
+      // Nếu response không ok, kiểm tra status code
       if (!response.ok) {
+        // Nếu là 404 (Not Found), có thể là không có dữ liệu, trả về mảng rỗng
+        if (response.status === 404) {
+          console.log('No councils found for user (404)');
+          return [];
+        }
+        // Các lỗi khác (401, 403, 500, etc.) thì throw error
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data: MyCouncilApiResponse = await response.json();
       console.log('📦 My councils API response:', data);
       
+      // Nếu code không phải 200, nhưng có thể là trường hợp không có dữ liệu
       if (data.code !== 200) {
+        // Nếu message là "No councils found" hoặc tương tự, trả về mảng rỗng
+        if (data.message?.toLowerCase().includes('not found') || 
+            data.message?.toLowerCase().includes('no councils')) {
+          return [];
+        }
         throw new Error(data.message || 'Failed to fetch my councils');
+      }
+
+      // Trả về mảng rỗng nếu data.data là null/undefined hoặc mảng rỗng
+      if (!data.data) {
+        return [];
       }
 
       return Array.isArray(data.data) ? data.data : [data.data];

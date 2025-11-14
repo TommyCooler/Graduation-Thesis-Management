@@ -311,7 +311,32 @@ class TopicService {
   }
 
   /**
-   * Từ chối đề tài
+   * Từ chối đề tài (v2 - 2-level approval system)
+   */
+  async rejectTopicV2(id: number, reason?: string): Promise<TopicWithApprovalStatus> {
+    try {
+      const response = await fetch(`${this.baseUrl}/reject-v2/${id}`, {
+        method: 'POST',
+        headers: this.getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ reason }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const apiResponse = await response.json();
+      return this.extractResponseData(apiResponse);
+    } catch (error) {
+      console.error('Error rejecting topic:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Từ chối đề tài (legacy - kept for backward compatibility)
    */
   async rejectTopic(id: number, reason?: string): Promise<Topic> {
     try {

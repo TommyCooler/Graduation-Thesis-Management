@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,4 +25,5 @@ public class TopicsDTOResponse {
     private String createdBy;
     private String createdAt;
     private String updatedAt;
+    List<NoteResponse> notes;
 }

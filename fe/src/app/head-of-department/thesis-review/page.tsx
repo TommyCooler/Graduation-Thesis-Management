@@ -142,7 +142,7 @@ export default function ThesisReviewPage() {
     }
   };
 
-  const handleReject = async (values: { reason: string }) => {
+  const handleReject = async (values: { comment: string }) => {
     if (!selectedTopic) return;
     if (plagiarismCheckRequired && !hasViewedPlagiarism) {
       message.warning('Vui lòng xem danh sách đạo văn trước khi từ chối.');
@@ -155,7 +155,7 @@ export default function ThesisReviewPage() {
 
     try {
       setLoading(true);
-      await topicService.rejectTopic(selectedTopic.id, values.reason);
+      await topicService.rejectTopicV2(selectedTopic.id, values.comment);
       message.success('Đã từ chối đề tài');
       setIsModalVisible(false);
       form.resetFields();
@@ -222,6 +222,15 @@ export default function ThesisReviewPage() {
           </Tag>
         </Space>
       ),
+      filters: [
+        { text: 'Nháp', value: TOPIC_STATUS.DRAFT },
+        { text: 'Chờ xử lý', value: TOPIC_STATUS.PENDING },
+        { text: 'Đã nộp', value: TOPIC_STATUS.SUBMITTED },
+        { text: 'Đang xem xét', value: TOPIC_STATUS.UNDER_REVIEW },
+        { text: 'Đã duyệt', value: TOPIC_STATUS.APPROVED },
+        { text: 'Từ chối', value: TOPIC_STATUS.REJECTED },
+      ],
+      onFilter: (value: any, record: TopicWithApprovalStatus) => record.status === value,
     },
     {
       title: 'Ngày nộp',
@@ -504,10 +513,11 @@ export default function ThesisReviewPage() {
 
               {/* Action Form - Only show for pending topics */}
               {!selectedTopic.hasUserApproved && (
-                <Form form={form} onFinish={handleApprove} layout="vertical">
+                <Form form={form} layout="vertical">
                   <Form.Item
                     name="comment"
-                    label="Nhận xét (tùy chọn)"
+                    label="Nhận xét"
+                    rules={[{ required: true, message: 'Vui lòng nhập nhận xét' }]}
                   >
                     <TextArea
                       rows={4}
@@ -528,10 +538,16 @@ export default function ThesisReviewPage() {
                         <Tooltip title={actionTooltipTitle}>
                           <Button
                             type="primary"
-                            htmlType="submit"
                             icon={<CheckOutlined />}
                             loading={loading}
                             disabled={actionDisabled}
+                            onClick={() => {
+                              form.validateFields().then((values) => {
+                                handleApprove(values);
+                              }).catch(() => {
+                                // Validation failed
+                              });
+                            }}
                           >
                             Phê duyệt
                           </Button>
@@ -541,23 +557,12 @@ export default function ThesisReviewPage() {
                             danger
                             icon={<CloseOutlined />}
                             disabled={actionDisabled}
+                            loading={loading}
                             onClick={() => {
-                              Modal.confirm({
-                                title: 'Từ chối đề tài',
-                                content: (
-                                  <Form onFinish={handleReject}>
-                                    <Form.Item
-                                      name="reason"
-                                      label="Lý do từ chối"
-                                      rules={[{ required: true, message: 'Vui lòng nhập lý do từ chối' }]}
-                                    >
-                                      <TextArea rows={4} placeholder="Nhập lý do từ chối..." />
-                                    </Form.Item>
-                                  </Form>
-                                ),
-                                okText: 'Từ chối',
-                                cancelText: 'Hủy',
-                                okButtonProps: { danger: true },
+                              form.validateFields().then((values) => {
+                                handleReject(values);
+                              }).catch(() => {
+                                // Validation failed
                               });
                             }}
                           >

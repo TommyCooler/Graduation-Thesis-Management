@@ -99,20 +99,31 @@ public class PlagiarismServiceImpl implements PlagiarismService {
                 .doOnNext(url -> log.info("File uploaded successfully to S3: {}", url))
                 .doOnError(e -> log.error("Failed to upload file to S3: {}", e.getMessage()))
                 
-                // Update topic with file URL
-                .flatMap(url -> updateTopicWithFileUrl(topicId, url)
-                        .doOnSuccess(topic -> log.info("Topic {} updated with file URL", topicId))
-                        .doOnError(e -> log.error("Failed to update topic {}: {}", topicId, e.getMessage()))
+                // Call N8N webhook FIRST - only update topic if n8n succeeds
+                .flatMap(url -> callN8nWebhook(topicId, url, topicDTO.getDescription())
+                        .doOnSuccess(v -> log.info("N8N webhook succeeded for topic {}", topicId))
+                        .doOnError(e -> log.error("N8N webhook failed for topic {}: {}", topicId, e.getMessage()))
                         .thenReturn(url))
                 
-                // Call N8N webhook
-                .flatMap(url -> callN8nWebhook(topicId, url, topicDTO.getDescription()))
+                // Update topic with file URL ONLY after n8n succeeds
+                .flatMap(url -> updateTopicWithFileUrl(topicId, url)
+                        .doOnSuccess(topic -> log.info("Topic {} updated with file URL after n8n success", topicId))
+                        .doOnError(e -> {
+                            log.error("Failed to update topic {} after n8n success: {}", topicId, e.getMessage());
+                            // If update fails after n8n success, we should still consider it a partial success
+                            // but log the error
+                        })
+                        .thenReturn(url))
+                
                 // Fetch plagiarism candidates from Qdrant
-                .flatMap(result -> syncPlagiarismResultsFromQdrant(topicId)
-                        .thenReturn(result))
+                .flatMap(url -> syncPlagiarismResultsFromQdrant(topicId)
+                        .thenReturn(true))
                 
                 .doOnSuccess(result -> log.info("Successfully completed processing for topic: {}", topicId))
-                .doOnError(e -> log.error("Error processing file for topic {}: {}", topicId, e.getMessage(), e))
+                .doOnError(e -> {
+                    log.error("Error processing file for topic {}: {}", topicId, e.getMessage(), e);
+                    // Topic is NOT updated in DB if n8n fails, so no rollback needed
+                })
                 
                 // Map errors to RuntimeException with context
                 .onErrorMap(e -> {

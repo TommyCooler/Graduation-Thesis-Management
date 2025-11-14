@@ -285,6 +285,12 @@ export default function HeadOfDepartmentPage() {
         const text = status === 'completed' ? 'Hoàn thành' : status === 'in_progress' ? 'Đang thực hiện' : 'Đã duyệt';
         return <Tag color={color}>{text}</Tag>;
       },
+      filters: [
+        { text: 'Đã duyệt', value: 'approved' },
+        { text: 'Đang thực hiện', value: 'in_progress' },
+        { text: 'Hoàn thành', value: 'completed' },
+      ],
+      onFilter: (value: any, record: ApprovedThesis) => record.status === value,
     },
     {
       title: 'Tham gia',

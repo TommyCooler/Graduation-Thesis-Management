@@ -18,7 +18,9 @@ import {
   Table,
   Select,
   Row,
-  Col
+  Col,
+  Tabs,
+  List
 } from 'antd';
 import { 
   ArrowLeftOutlined,
@@ -39,10 +41,12 @@ import Header from '../../../../components/combination/Header';
 import Footer from '../../../../components/combination/Footer';
 import { useTopic } from '../../../../hooks/useTopic';
 import { useAuth } from '../../../../hooks/useAuth';
-import { Topic, STATUS_DISPLAY, STATUS_COLORS } from '../../../../types/topic';
+import { Topic, STATUS_DISPLAY, STATUS_COLORS, TopicWithApprovalStatus } from '../../../../types/topic';
 import { topicService } from '../../../../services/topicService';
 import { accountService, Account } from '../../../../services/accountService';
 import { plagiarismService } from '../../../../services/plagiarismService';
+import { reviewCouncilService, ReviewCouncilUIModel } from '../../../../services/reviewCouncilService';
+import { councilTopicEvaluationService } from '../../../../services/councilTopicEvaluationService';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -72,6 +76,12 @@ function TopicDetailPage(): JSX.Element {
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [memberToAdd, setMemberToAdd] = useState<number | undefined>(undefined);
 
+  // Evaluation states
+  const [approvalEvaluations, setApprovalEvaluations] = useState<any[]>([]);
+  const [reviewEvaluations, setReviewEvaluations] = useState<ReviewCouncilUIModel[]>([]);
+  const [councilEvaluations, setCouncilEvaluations] = useState<any[]>([]);
+  const [loadingEvaluations, setLoadingEvaluations] = useState(false);
+
   // Check authentication first
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -85,6 +95,7 @@ function TopicDetailPage(): JSX.Element {
       loadTopicDetail();
       checkEditPermission();
       loadTopicMembers();
+      loadEvaluations();
     }
   }, [topicId, authLoading, isAuthenticated]);
 
@@ -123,6 +134,52 @@ function TopicDetailPage(): JSX.Element {
       setMembers([]);
     } finally {
       setLoadingMembers(false);
+    }
+  };
+
+  const loadEvaluations = async () => {
+    if (!topicId) return;
+    setLoadingEvaluations(true);
+    try {
+      // Load approval evaluations - try to get from topic with approval status
+      try {
+        // Try to get topic with approval status if available
+        const myTopics = await topicService.getMyTopics();
+        const topicWithApproval = myTopics.find((t: any) => t.id === Number(topicId));
+        if (topicWithApproval && 'approvals' in topicWithApproval) {
+          setApprovalEvaluations((topicWithApproval as TopicWithApprovalStatus).approvals || []);
+        } else {
+          // Fallback: try to get from approved topics
+          const approvedTopics = await topicService.getApprovedTopicsByUser();
+          const approvedTopic = approvedTopics.find((t: any) => t.id === Number(topicId));
+          if (approvedTopic && 'approvals' in approvedTopic) {
+            setApprovalEvaluations((approvedTopic as TopicWithApprovalStatus).approvals || []);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading approval evaluations:', err);
+        setApprovalEvaluations([]);
+      }
+
+      // Load review council evaluations
+      try {
+        const reviewCouncils = await reviewCouncilService.getCouncilsByTopicID(Number(topicId));
+        setReviewEvaluations(reviewCouncils || []);
+      } catch (err) {
+        console.error('Error loading review evaluations:', err);
+        setReviewEvaluations([]);
+      }
+
+      // Load council topic evaluations
+      try {
+        const councilNotes = await councilTopicEvaluationService.getNotesByTopic(Number(topicId));
+        setCouncilEvaluations(councilNotes || []);
+      } catch (err) {
+        console.error('Error loading council evaluations:', err);
+        setCouncilEvaluations([]);
+      }
+    } finally {
+      setLoadingEvaluations(false);
     }
   };
 
@@ -622,6 +679,142 @@ function TopicDetailPage(): JSX.Element {
                     style={{ padding: '40px 0' }}
                   />
                 )}
+              </Spin>
+            </div>
+
+            <Divider />
+
+            {/* Evaluations Tabs */}
+            <div className="mb-6">
+              <Title level={4} className="mb-4">
+                <FileTextOutlined className="mr-2" />
+                Đánh giá
+              </Title>
+              <Spin spinning={loadingEvaluations}>
+                <Tabs
+                  defaultActiveKey="approval"
+                  items={[
+                    {
+                      key: 'approval',
+                      label: `Đánh giá duyệt đề tài ${approvalEvaluations.length > 0 ? `(${approvalEvaluations.length})` : ''}`,
+                      children: approvalEvaluations.length > 0 ? (
+                        <List
+                          dataSource={approvalEvaluations}
+                          renderItem={(item: any, index: number) => (
+                            <List.Item>
+                              <Card size="small" style={{ width: '100%' }}>
+                                <Space direction="vertical" style={{ width: '100%' }}>
+                                  <Space>
+                                    <UserOutlined />
+                                    <Text strong>{item.approverName || 'Người duyệt'}</Text>
+                                    <Text type="secondary">({item.approverEmail || ''})</Text>
+                                  </Space>
+                                  <Text type="secondary">
+                                    {item.approvedAt ? new Date(item.approvedAt).toLocaleString('vi-VN') : 'N/A'}
+                                  </Text>
+                                  {item.comment && (
+                                    <div>
+                                      <Text strong>Nhận xét: </Text>
+                                      <Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                                        {item.comment}
+                                      </Paragraph>
+                                    </div>
+                                  )}
+                                </Space>
+                              </Card>
+                            </List.Item>
+                          )}
+                        />
+                      ) : (
+                        <Empty description="Chưa có đánh giá duyệt đề tài" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      ),
+                    },
+                    {
+                      key: 'review',
+                      label: `Đánh giá review ${reviewEvaluations.length > 0 ? `(${reviewEvaluations.length})` : ''}`,
+                      children: reviewEvaluations.length > 0 ? (
+                        <List
+                          dataSource={reviewEvaluations}
+                          renderItem={(council: ReviewCouncilUIModel) => (
+                            <List.Item>
+                              <Card size="small" style={{ width: '100%' }}>
+                                <Space direction="vertical" style={{ width: '100%' }}>
+                                  <Space>
+                                    <TeamOutlined />
+                                    <Text strong>{council.name}</Text>
+                                    <Tag color="blue">{council.milestone}</Tag>
+                                  </Space>
+                                  {council.reviewDate && (
+                                    <Text type="secondary">
+                                      Ngày review: {new Date(council.reviewDate).toLocaleDateString('vi-VN')}
+                                    </Text>
+                                  )}
+                                  {council.lecturers && council.lecturers.length > 0 && (
+                                    <div>
+                                      <Text strong>Đánh giá của thành viên:</Text>
+                                      {council.lecturers.map((lec, idx) => (
+                                        <Card key={idx} size="small" style={{ marginTop: 8, marginLeft: 16 }}>
+                                          <Space direction="vertical" style={{ width: '100%' }}>
+                                            <Space>
+                                              <UserOutlined />
+                                              <Text strong>{lec.accountName}</Text>
+                                            </Space>
+                                            {lec.overallComments ? (
+                                              <Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                                                {lec.overallComments}
+                                              </Paragraph>
+                                            ) : (
+                                              <Text type="secondary" italic>Chưa có nhận xét</Text>
+                                            )}
+                                          </Space>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                  )}
+                                </Space>
+                              </Card>
+                            </List.Item>
+                          )}
+                        />
+                      ) : (
+                        <Empty description="Chưa có đánh giá review" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      ),
+                    },
+                    {
+                      key: 'council',
+                      label: `Đánh giá đồ án ${councilEvaluations.length > 0 ? `(${councilEvaluations.length})` : ''}`,
+                      children: councilEvaluations.length > 0 ? (
+                        <List
+                          dataSource={councilEvaluations}
+                          renderItem={(item: any, index: number) => (
+                            <List.Item>
+                              <Card size="small" style={{ width: '100%' }}>
+                                <Space direction="vertical" style={{ width: '100%' }}>
+                                  <Space>
+                                    <UserOutlined />
+                                    <Text strong>{item.memberName || 'Thành viên hội đồng'}</Text>
+                                  </Space>
+                                  {item.note && (
+                                    <Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                                      {item.note}
+                                    </Paragraph>
+                                  )}
+                                  {item.createdAt && (
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                                      {new Date(item.createdAt).toLocaleString('vi-VN')}
+                                    </Text>
+                                  )}
+                                </Space>
+                              </Card>
+                            </List.Item>
+                          )}
+                        />
+                      ) : (
+                        <Empty description="Chưa có đánh giá đồ án" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                      ),
+                    },
+                  ]}
+                />
               </Spin>
             </div>
 

@@ -44,6 +44,9 @@ public class CouncilService implements ICouncilService {
     @Autowired
     private ProgressReviewCouncilRepository progressReviewCouncilRepository;
 
+    @Autowired
+    private CouncilTopicEvaluationRepository evaluationRepository;
+
     private static final Random RANDOM = new Random();
 
 
@@ -243,8 +246,10 @@ public class CouncilService implements ICouncilService {
     @Override
     public  List<CouncilSummaryResponse> getCouncilResponseByAccountId(Long accountId) {
         List<CouncilMember> members = councilMemberRepository.findByAccountId(accountId);
-        if(members.isEmpty()){;
-            throw new AppException(ErrorCode.COUNCIL_MEMBER_NOT_FOUND);
+        // Trả về mảng rỗng thay vì throw exception khi không có members
+        // Đây là trường hợp bình thường (user chưa được phân công vào hội đồng)
+        if(members.isEmpty()){
+            return new ArrayList<>();
         }
 
         List<CouncilSummaryResponse> summaries = new ArrayList<>();
@@ -357,6 +362,20 @@ public class CouncilService implements ICouncilService {
                 Topics checkTopic= topicsRepository.findById(topic.getId())
                         .orElseThrow(() -> new AppException(ErrorCode.TOPIC_NOT_FOUND));
                 AccountDTO creator = accountFeignClient.getAccountById(Long.valueOf(checkTopic.getCreatedBy()));
+
+                List<CouncilTopicEvaluation> evaluations = evaluationRepository.findAllByTopic(checkTopic);
+                List<NoteResponse> notes = new ArrayList<>();
+                for(CouncilTopicEvaluation evaluation : evaluations){
+                    if(evaluation.getNote() != null && !evaluation.getNote().trim().isEmpty()) {
+                        CouncilMember councilMember = evaluation.getCouncilMember();
+                        AccountDTO memberAcc = accountFeignClient.getAccountById(councilMember.getAccountId());
+                        NoteResponse noteResponse = NoteResponse.builder()
+                                .Note(evaluation.getNote())
+                                .accountName(memberAcc.getName())
+                                .build();
+                        notes.add(noteResponse);
+                    }
+                }
                 TopicsDTOResponse topicResponse = TopicsDTOResponse.builder()
                         .id(checkTopic.getId())
                         .title(checkTopic.getTitle())
@@ -364,6 +383,7 @@ public class CouncilService implements ICouncilService {
                         .filePathUrl(checkTopic.getFilePathUrl())
                         .defenseTime(checkTopic.getDefenseTime())
                         .status(checkTopic.getStatus().toString())
+                        .notes(notes)
                         .createdBy(creator.getName())
                         .build();
                 topicResponses.add(topicResponse);

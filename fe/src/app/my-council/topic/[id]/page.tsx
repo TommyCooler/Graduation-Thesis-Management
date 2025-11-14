@@ -17,7 +17,8 @@ import {
   Table,
   Select,
   Row,
-  Col
+  Col,
+  Alert
 } from 'antd';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -90,6 +91,12 @@ function MyCouncilTopicDetailPage(): JSX.Element {
   const [availableAccounts, setAvailableAccounts] = useState<Account[]>([]);
   const [loadingAccounts, setLoadingAccounts] = useState(false);
   const [memberToAdd, setMemberToAdd] = useState<number | undefined>(undefined);
+  
+  // State để track xem đã enable chấm lại chưa
+  const [isRetakeEnabled, setIsRetakeEnabled] = useState<boolean>(false);
+  
+  // State để lưu councilId
+  const [councilId, setCouncilId] = useState<number | null>(null);
 
   // Check authentication first
   useEffect(() => {
@@ -124,6 +131,15 @@ function MyCouncilTopicDetailPage(): JSX.Element {
     }
   }, [searchParams]);
 
+  // Reset isRetakeEnabled khi topic status thay đổi
+  useEffect(() => {
+    if (currentTopic?.status === 'RETAKING') {
+      setIsRetakeEnabled(false); // Reset khi status là RETAKING
+    } else {
+      setIsRetakeEnabled(true); // Enable khi status khác RETAKING
+    }
+  }, [currentTopic?.status]);
+
   // Helper function to decode JWT and get sub (accountId)
   const getAccountIdFromToken = (): number | null => {
     if (typeof window === 'undefined') return null;
@@ -157,16 +173,22 @@ function MyCouncilTopicDetailPage(): JSX.Element {
       const councilMemberIdFromUrl = searchParams?.get('councilMemberId');
       let currentCouncilMemberId: number | null = null;
       
+      // Luôn gọi API để lấy councilId
+      const myCouncils = await councilService.getMyCouncils();
+      const councilItem = myCouncils.find((item: any) => 
+        (item.topicId === Number(topicId)) || (item.topicID === Number(topicId))
+      );
+      
+      // Lấy councilId từ councilItem
+      if (councilItem?.councilId) {
+        setCouncilId(Number(councilItem.councilId));
+      }
+      
       if (councilMemberIdFromUrl) {
         currentCouncilMemberId = Number(councilMemberIdFromUrl);
         setCouncilMemberId(currentCouncilMemberId);
       } else {
         // If not in URL, get from API
-        const myCouncils = await councilService.getMyCouncils();
-        const councilItem = myCouncils.find((item: any) => 
-          (item.topicId === Number(topicId)) || (item.topicID === Number(topicId))
-        );
-        
         if (councilItem?.councilMemberId) {
           currentCouncilMemberId = Number(councilItem.councilMemberId);
           setCouncilMemberId(currentCouncilMemberId);
@@ -296,14 +318,64 @@ function MyCouncilTopicDetailPage(): JSX.Element {
     setGradingLoading(true);
     
     try {
-      const status = gradingAction === 'PASS' ? 'GRADUATED' : 'FAILED';
+      // Tự động lưu note nếu có thay đổi chưa lưu
+      if (noteText && noteText.trim() && councilMemberId) {
+        const myExistingNote = topicNotes.find((n: any) => n.councilMemberId === councilMemberId);
+        const hasUnsavedChanges = !myExistingNote || myExistingNote.note !== noteText.trim();
+        
+        if (hasUnsavedChanges) {
+          console.log('💾 Auto-saving note before grading...');
+          try {
+            await councilTopicEvaluationService.upsertNote({
+              topicId: Number(topicId),
+              councilMemberId,
+              note: noteText.trim(),
+            });
+            
+            // Reload notes để đảm bảo dữ liệu đồng bộ
+            const notes = await councilTopicEvaluationService.getNotesByTopic(Number(topicId));
+            setTopicNotes(notes || []);
+            
+            console.log('✅ Note auto-saved successfully');
+          } catch (noteError: any) {
+            console.warn('⚠️ Failed to auto-save note:', noteError);
+            // Không throw error, tiếp tục chấm điểm
+            toast.warning('Ghi chú chưa được lưu. Vui lòng lưu ghi chú thủ công nếu cần.');
+          }
+        }
+      }
+      
+      let status: string;
+      
+      // Nếu status hiện tại là RETAKING và bấm FAIL → gửi FAIL_CAPSTONE
+      if (currentTopic?.status === 'RETAKING' && gradingAction === 'FAIL') {
+        status = 'FAIL_CAPSTONE';
+      } else {
+        status = gradingAction === 'PASS' ? 'PASS_CAPSTONE' : 'FAILED';
+      }
+      
       console.log('📡 Calling API with status:', status);
       
+      // Cập nhật topic status
       await topicService.updateTopicStatus(Number(topicId), status);
-      console.log('✅ API Success');
+      console.log('✅ Topic Status Updated');
+      
+      // Nếu bấm FAIL lần đầu (status = FAILED) → cập nhật council status thành RETAKING
+      if (gradingAction === 'FAIL' && status === 'FAILED' && councilId) {
+        try {
+          await councilService.updateCouncilStatus(councilId, 'RETAKING');
+          console.log('✅ Council Status Updated to RETAKING');
+        } catch (councilError: any) {
+          console.error('❌ Error updating council status:', councilError);
+          // Không throw error để không ảnh hưởng đến việc cập nhật topic status
+          toast.warning('Đã cập nhật trạng thái đề tài nhưng không thể cập nhật trạng thái hội đồng');
+        }
+      }
       
       if (gradingAction === 'PASS') {
-        toast.success('Đã chấm đề tài: Đã tốt nghiệp');
+        toast.success('Đã chấm đề tài: Đậu đồ án');
+      } else if (status === 'FAIL_CAPSTONE') {
+        toast.success('Đã chấm đề tài: Rớt đồ án');
       } else {
         toast.success('Đã chấm đề tài: Không đạt. Đề tài đã được chuyển sang trạng thái chấm lại.');
       }
@@ -327,6 +399,11 @@ function MyCouncilTopicDetailPage(): JSX.Element {
     console.log('🔴 Handle Grade Fail clicked, topicId:', topicId);
     setGradingAction('FAIL');
     setConfirmModalVisible(true);
+  };
+
+  const handleEnableRetake = () => {
+    setIsRetakeEnabled(true);
+    toast.info('Đã kích hoạt chấm lại. Bạn có thể chấm điểm đề tài.');
   };
 
   const loadTopicMembers = async () => {
@@ -407,7 +484,6 @@ function MyCouncilTopicDetailPage(): JSX.Element {
     if (currentTopic) {
       form.setFieldsValue({
         title: currentTopic.title,
-        description: getDescriptionWithoutKeywords(currentTopic.description),
       });
       setIsEditModalVisible(true);
       await loadTopicMembers();
@@ -460,7 +536,7 @@ function MyCouncilTopicDetailPage(): JSX.Element {
           credentials: 'include',
           body: JSON.stringify({
             title: values.title,
-            description: values.description,
+            description: currentTopic.description || '',
           }),
         }
       );
@@ -508,7 +584,7 @@ function MyCouncilTopicDetailPage(): JSX.Element {
             topicTitle: values.title,
             piFullName,
             piLecturerId,
-            description: values.description,
+            description: currentTopic.description || '',
             members: membersForFile,
             format: 'docx',
           }),
@@ -701,36 +777,69 @@ function MyCouncilTopicDetailPage(): JSX.Element {
                 Ghi chú chấm điểm của hội đồng
               </Title>
 
-              <Form layout="vertical" onFinish={(e) => e.preventDefault()}>
-                <Form.Item label={noteText ? "Chỉnh sửa ghi chú của bạn" : "Ghi chú của bạn"}>
-                  <Input.TextArea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    rows={4}
-                    placeholder={noteText ? "Chỉnh sửa ghi chú của bạn..." : "Nhập ghi chú về đề tài này"}
-                    showCount
-                    maxLength={1000}
-                  />
-                </Form.Item>
-                <Space>
-                  <Button 
-                    type="primary" 
-                    htmlType="button"
-                    loading={savingNote} 
-                    onClick={handleSaveNote}
-                    disabled={!councilMemberId}
-                  >
-                    Lưu ghi chú
-                  </Button>
-                  {!councilMemberId && (
-                    <Text type="secondary">
-                      Không tìm thấy quyền hội đồng để lưu ghi chú.
-                    </Text>
-                  )}
-                </Space>
-              </Form>
+              {/* Form để thêm/cập nhật notes - chỉ hiển thị khi chưa PASS_CAPSTONE hoặc FAIL_CAPSTONE */}
+              {currentTopic && currentTopic.status !== 'PASS_CAPSTONE' && currentTopic.status !== 'FAIL_CAPSTONE' && (
+                <Form layout="vertical" onFinish={(e) => e.preventDefault()}>
+                  <Form.Item label={noteText ? "Chỉnh sửa ghi chú của bạn" : "Ghi chú của bạn"}>
+                    <Input.TextArea
+                      value={noteText}
+                      onChange={(e) => setNoteText(e.target.value)}
+                      rows={4}
+                      placeholder={noteText ? "Chỉnh sửa ghi chú của bạn..." : "Nhập ghi chú về đề tài này"}
+                      showCount
+                      maxLength={1000}
+                    />
+                  </Form.Item>
+                  <Space>
+                    <Button 
+                      type="primary" 
+                      htmlType="button"
+                      loading={savingNote} 
+                      onClick={handleSaveNote}
+                      disabled={!councilMemberId}
+                    >
+                      Lưu ghi chú
+                    </Button>
+                    {!councilMemberId && (
+                      <Text type="secondary">
+                        Không tìm thấy quyền hội đồng để lưu ghi chú.
+                      </Text>
+                    )}
+                  </Space>
+                </Form>
+              )}
 
-              {/* Show notes from other members only (not the current user's note) */}
+              {/* Hiển thị thông báo khi đã PASS_CAPSTONE hoặc FAIL_CAPSTONE */}
+              {currentTopic && (currentTopic.status === 'PASS_CAPSTONE' || currentTopic.status === 'FAIL_CAPSTONE') && (
+                <Alert
+                  message="Đề tài đã được chấm xong"
+                  description="Không thể thêm hoặc cập nhật ghi chú khi đề tài đã được chấm xong."
+                  type="info"
+                  showIcon
+                  className="mb-4"
+                />
+              )}
+
+              {/* Hiển thị ghi chú của bạn (nếu có) */}
+              {topicNotes?.length > 0 && topicNotes.find((n: any) => n.councilMemberId === councilMemberId) && (
+                <div className="mt-6">
+                  <Title level={5}>Ghi chú của bạn</Title>
+                  <Card size="small" className="mt-2">
+                    <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                      <Paragraph style={{ marginBottom: 0, whiteSpace: 'pre-wrap' }}>
+                        {topicNotes.find((n: any) => n.councilMemberId === councilMemberId)?.note}
+                      </Paragraph>
+                      {topicNotes.find((n: any) => n.councilMemberId === councilMemberId)?.updatedAt && (
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          Cập nhật: {new Date(topicNotes.find((n: any) => n.councilMemberId === councilMemberId)?.updatedAt).toLocaleString('vi-VN')}
+                        </Text>
+                      )}
+                    </Space>
+                  </Card>
+                </div>
+              )}
+
+              {/* Show notes from other members */}
               {topicNotes?.length > 0 && topicNotes.some((n: any) => n.councilMemberId !== councilMemberId) && (
                 <div className="mt-6">
                   <Title level={5}>Ghi chú của các thành viên khác</Title>
@@ -753,58 +862,105 @@ function MyCouncilTopicDetailPage(): JSX.Element {
                   </div>
                 </div>
               )}
+
+              {/* Hiển thị khi chưa có ghi chú nào */}
+              {(!topicNotes || topicNotes.length === 0) && (
+                <Empty
+                  description="Chưa có ghi chú nào"
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  style={{ padding: '20px 0' }}
+                />
+              )}
             </div>
 
             <Divider />
 
-            {/* Grading Section - Only show for CHAIRMAN role and if not already passed (GRADUATED) */}
-            {currentTopic && currentTopic.status !== 'GRADUATED' && role === 'CHAIRMAN' && (
+            {/* Grading Section - Only show for CHAIRMAN role and if not already passed (PASS_CAPSTONE) or failed (FAIL_CAPSTONE) */}
+            {currentTopic && currentTopic.status !== 'PASS_CAPSTONE' && currentTopic.status !== 'FAIL_CAPSTONE' && role === 'CHAIRMAN' && (
               <div className="mb-6">
                 <Title level={4} className="mb-4">
                   Chấm điểm đề tài
                 </Title>
-                <Space size="large">
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<CheckCircleOutlined />}
-                    onClick={handleGradePass}
-                    loading={gradingLoading}
-                    style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                  >
-                    Chấm Đạt (Pass)
-                  </Button>
-                  <Button
-                    type="primary"
-                    danger
-                    size="large"
-                    icon={<CloseCircleOutlined />}
-                    onClick={handleGradeFail}
-                    loading={gradingLoading}
-                  >
-                    Chấm Không Đạt (Fail)
-                  </Button>
-                </Space>
+                
+                {/* Nếu status là RETAKING và chưa enable chấm lại → hiện nút "Chấm lại" */}
+                {currentTopic.status === 'RETAKING' && !isRetakeEnabled ? (
+                  <Space size="large">
+                    <Button
+                      type="primary"
+                      size="large"
+                      icon={<CheckCircleOutlined />}
+                      onClick={handleEnableRetake}
+                      style={{ backgroundColor: '#ff6b35', borderColor: '#ff6b35' }}
+                    >
+                      Chấm lại
+                    </Button>
+                  </Space>
+                ) : (
+                  /* Nếu không phải RETAKING hoặc đã enable chấm lại → hiện 2 nút Pass/Fail */
+                  <Space size="large">
+                    <Button
+                      type="primary"
+                      size="large"
+                      icon={<CheckCircleOutlined />}
+                      onClick={handleGradePass}
+                      loading={gradingLoading}
+                      disabled={currentTopic.status === 'RETAKING' && !isRetakeEnabled}
+                      style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                    >
+                      Chấm Đạt (Pass)
+                    </Button>
+                    <Button
+                      type="primary"
+                      danger
+                      size="large"
+                      icon={<CloseCircleOutlined />}
+                      onClick={handleGradeFail}
+                      loading={gradingLoading}
+                      disabled={currentTopic.status === 'RETAKING' && !isRetakeEnabled}
+                    >
+                      Chấm Không Đạt (Fail)
+                    </Button>
+                  </Space>
+                )}
+                
                 <div className="mt-2">
                   <Text type="secondary">
-                    • Chấm Đạt: Đề tài sẽ được cập nhật trạng thái thành "Đã tốt nghiệp" (GRADUATED)
-                    <br />
-                    • Chấm Không Đạt: Đề tài sẽ được cập nhật trạng thái thành "Không đạt" (FAILED) và tự động chuyển sang "Đang chấm lại" (RETAKING)
+                    {currentTopic.status === 'RETAKING' ? (
+                      <>
+                        • Đề tài đang ở trạng thái chấm lại. Vui lòng bấm "Chấm lại" để kích hoạt chấm điểm.
+                        <br />
+                        • Sau khi kích hoạt, bạn có thể chấm Đạt hoặc Không Đạt.
+                        <br />
+                        • Nếu chấm Không Đạt lần này, đề tài sẽ được cập nhật trạng thái thành "Rớt đồ án" (FAIL_CAPSTONE).
+                      </>
+                    ) : (
+                      <>
+                        • Chấm Đạt: Đề tài sẽ được cập nhật trạng thái thành "Đậu đồ án" (PASS_CAPSTONE)
+                        <br />
+                        • Chấm Không Đạt: Đề tài sẽ được cập nhật trạng thái thành "Không đạt" (FAILED) và tự động chuyển sang "Đang chấm lại" (RETAKING)
+                      </>
+                    )}
                   </Text>
                 </div>
               </div>
             )}
             
-            {/* Show status if already passed */}
-            {currentTopic && currentTopic.status === 'GRADUATED' && (
+            {/* Show status if already passed or failed */}
+            {currentTopic && (currentTopic.status === 'PASS_CAPSTONE' || currentTopic.status === 'FAIL_CAPSTONE') && (
               <div className="mb-6">
                 <Title level={4} className="mb-4">
                   Trạng thái chấm điểm
                 </Title>
                 <Space>
-                  <Tag color="green" style={{ fontSize: '16px', padding: '8px 16px' }}>
-                    ✓ Đã chấm: Đạt (GRADUATED)
-                  </Tag>
+                  {currentTopic.status === 'PASS_CAPSTONE' ? (
+                    <Tag color="green" style={{ fontSize: '16px', padding: '8px 16px' }}>
+                      ✓ Đã chấm: Đậu đồ án (PASS_CAPSTONE)
+                    </Tag>
+                  ) : (
+                    <Tag color="red" style={{ fontSize: '16px', padding: '8px 16px' }}>
+                      ✗ Đã chấm: Rớt đồ án (FAIL_CAPSTONE)
+                    </Tag>
+                  )}
                 </Space>
               </div>
             )}
@@ -815,12 +971,6 @@ function MyCouncilTopicDetailPage(): JSX.Element {
             <Descriptions title="Thông tin cơ bản" bordered column={1} size="middle">
               <Descriptions.Item label="Tên đề tài">
                 <Text strong>{currentTopic.title}</Text>
-              </Descriptions.Item>
-              
-              <Descriptions.Item label="Mô tả">
-                <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>
-                  {descriptionText}
-                </Paragraph>
               </Descriptions.Item>
 
               {keywords.length > 0 && (
@@ -850,17 +1000,6 @@ function MyCouncilTopicDetailPage(): JSX.Element {
                 }
               >
                 <Text>{formatDate(currentTopic.submitedAt)}</Text>
-              </Descriptions.Item>
-
-              <Descriptions.Item 
-                label={
-                  <Space>
-                    <CalendarOutlined />
-                    <span>Ngày tạo</span>
-                  </Space>
-                }
-              >
-                <Text type="secondary">{formatDate(currentTopic.createdAt)}</Text>
               </Descriptions.Item>
 
               <Descriptions.Item 
@@ -959,7 +1098,7 @@ function MyCouncilTopicDetailPage(): JSX.Element {
 
             {/* Actions */}
             <Space className="w-full justify-end">
-              {canEdit && (
+              {canEdit && currentTopic && currentTopic.status !== 'PASS_CAPSTONE' && currentTopic.status !== 'FAIL_CAPSTONE' && (
                 <Button 
                   type="primary" 
                   icon={<EditOutlined />}
@@ -1033,19 +1172,6 @@ function MyCouncilTopicDetailPage(): JSX.Element {
             rules={[{ required: true, message: 'Vui lòng nhập tên đề tài!' }]}
           >
             <Input placeholder="Nhập tên đề tài" size="large" />
-          </Form.Item>
-
-          <Form.Item
-            name="description"
-            label="Mô tả"
-            rules={[{ required: true, message: 'Vui lòng nhập mô tả!' }]}
-          >
-            <Input.TextArea
-              placeholder="Nhập mô tả đề tài"
-              rows={4}
-              showCount
-              maxLength={500}
-            />
           </Form.Item>
 
           <Divider orientation="left">

@@ -4,6 +4,12 @@ export interface CouncilCreateRequest {
   topicId: number[];
 }
 
+// Note response
+export interface NoteResponse {
+  note: string; // Backend trả về "note" (chữ thường)
+  accountName: string;
+}
+
 // Topic trong council response (matches TopicsDTOResponse)
 export interface CouncilTopic {
   id: number;
@@ -15,6 +21,7 @@ export interface CouncilTopic {
   createdBy: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+  notes?: NoteResponse[]; // Optional notes array
 }
 
 // Council member types
@@ -33,6 +40,7 @@ export interface CouncilResponse {
   councilName: string;
   semester: string;
   date: string;
+  retakeDate?: string | null; // Ngày chấm lại (optional)
   status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   councilMembers: CouncilMember[];
   topic: CouncilTopic[]; // Array of topics

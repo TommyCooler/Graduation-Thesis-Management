@@ -340,6 +340,29 @@ public class TopicsController {
         return apiResponse;
     }
 
+    @PostMapping("/reject-v2/{id}")
+    public ApiResponse<TopicWithApprovalStatusResponse> rejectTopicV2(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, String> requestBody,
+            @AuthenticationPrincipal Jwt jwt) {
+        
+        String rejectorEmail = jwt.getClaimAsString("email");
+        String rejectorName = jwt.getClaimAsString("name");
+        if (rejectorName == null || rejectorName.isEmpty()) {
+            rejectorName = jwt.getClaimAsString("preferred_username");
+        }
+        
+        String reason = requestBody != null ? requestBody.get("reason") : null;
+        
+        TopicWithApprovalStatusResponse result = topicsService.rejectTopicV2(id, rejectorEmail, rejectorName, reason);
+        
+        ApiResponse<TopicWithApprovalStatusResponse> apiResponse = new ApiResponse<>();
+        apiResponse.setCode(200);
+        apiResponse.setMessage("Topic rejected successfully");
+        apiResponse.setData(result);
+        return apiResponse;
+    }
+
     @GetMapping("/pending-for-approval")
     public ApiResponse<List<TopicWithApprovalStatusResponse>> getPendingTopicsForApproval(
             @AuthenticationPrincipal Jwt jwt) {
