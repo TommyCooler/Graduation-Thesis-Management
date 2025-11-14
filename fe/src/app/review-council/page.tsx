@@ -58,15 +58,14 @@ const normalizeString = (str: string | null | undefined) => {
     .replace(/[\u0300-\u036f]/g, '');
 };
 
-// --- Helpers (Moved outside component for reusability) ---
 
 const getMilestoneColor = (milestone: string) => {
   switch (milestone) {
-    case 'WEEK 4':
+    case 'WEEK_4': 
       return 'orange';
-    case 'WEEK 8':
+    case 'WEEK_8': 
       return 'cyan';
-    case 'WEEK 12':
+    case 'WEEK_12': 
       return 'purple';
     default:
       return 'default';
@@ -99,14 +98,14 @@ const getResultColor = (result: string) => {
   }
 };
 
-// --- (NEW) Reusable Council Table Component ---
+// tham số bảng hội đồng
 
 interface CouncilTableProps {
   councils: ReviewCouncilUIModel[];
   loading: boolean;
   currentUser: CurrentUser | null;
   onEdit: (council: ReviewCouncilUIModel) => void;
-  router: any; // Using 'any' to avoid NextRouter type conflicts, adjust if needed
+  router: any; 
 }
 
 const CouncilTable: React.FC<CouncilTableProps> = ({
@@ -178,7 +177,6 @@ const CouncilTable: React.FC<CouncilTableProps> = ({
                 href={record.meetingLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                // style={{ color: '#1677ff', textDecoration: 'underline' }}
               >
                 Link
               </a>
@@ -279,7 +277,12 @@ const CouncilTable: React.FC<CouncilTableProps> = ({
   );
 };
 
-// --- Main Page Component ---
+const ALL_MILESTONES = [
+  { label: 'WEEK 4', value: 'WEEK_4' },
+  { label: 'WEEK 8', value: 'WEEK_8' },
+  { label: 'WEEK 12', value: 'WEEK_12' },
+];
+
 
 export default function ReviewCouncilPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -292,21 +295,18 @@ export default function ReviewCouncilPage() {
   // State for HOD (Topics)
   const [approvedTopics, setApprovedTopics] = useState<ApprovedTopic[]>([]);
   const [loadingApprovedTopics, setLoadingApprovedTopics] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false); // HOD's council list modal
+  const [isModalOpen, setIsModalOpen] = useState(false); 
   const [selectedTopic, setSelectedTopic] = useState<ApprovedTopic | null>(null);
-  const [councils, setCouncils] = useState<ReviewCouncilUIModel[]>([]); // Councils for selected topic
+  const [councils, setCouncils] = useState<ReviewCouncilUIModel[]>([]); 
   const [loadingCouncils, setLoadingCouncils] = useState(false);
 
-  // (REMOVED) State for Lecturer
-  // const [lecturerCouncils, setLecturerCouncils] = useState<ReviewCouncilUIModel[]>([]);
-  // const [loadingLecturerCouncils, setLoadingLecturerCouncils] = useState(false);
 
   const [showReviewDateField, setShowReviewDateField] = useState(false);
 
-  // state for Calendar (HOD + Lecturer)
+  // state cho lịch
   const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
-  const [allCouncils, setAllCouncils] = useState<ReviewCouncilUIModel[]>([]); // (USED BY BOTH)
-  const [loadingAllCouncils, setLoadingAllCouncils] = useState(false); // (USED BY BOTH)
+  const [allCouncils, setAllCouncils] = useState<ReviewCouncilUIModel[]>([]); 
+  const [loadingAllCouncils, setLoadingAllCouncils] = useState(false);
   const [isCouncilDetailModalVisible, setIsCouncilDetailModalVisible] = useState(false);
   const [selectedCouncil, setSelectedCouncil] = useState<ReviewCouncilUIModel | null>(null);
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -316,7 +316,8 @@ export default function ReviewCouncilPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
-  // (UPDATED) Combined useEffect for data fetching
+  const [availableMilestones, setAvailableMilestones] = useState(ALL_MILESTONES);
+
   useEffect(() => {
     const fetchCurrentUserAndData = async () => {
       let user: CurrentUser | null = null;
@@ -327,11 +328,11 @@ export default function ReviewCouncilPage() {
           setCurrentUser(user);
         } else {
           toast.error('Không thể xác thực người dùng.');
-          return; // Stop if user fetch fails
+          return; 
         }
       } catch (err) {
         toast.error('Lỗi xác thực. Vui lòng đăng nhập lại.');
-        return; // Stop if user fetch fails
+        return; 
       }
 
       // Fetch data based on role
@@ -341,17 +342,16 @@ export default function ReviewCouncilPage() {
           fetchLecturers();
           fetchApprovedTopics();
         }
-        
+
         // (UPDATED) Both roles fetch their councils using the same function
-        fetchAllCouncils(); 
+        fetchAllCouncils();
       }
     };
 
     fetchCurrentUserAndData();
   }, []); // Empty dependency array, runs once on mount
 
-  // (REMOVED) Fetch function for Lecturer
-  // const fetchLecturerCouncils = async () => { ... }
+
 
   // --- HOD Specific Functions ---
 
@@ -386,13 +386,13 @@ export default function ReviewCouncilPage() {
     try {
       setLoadingAllCouncils(true);
       // This service call fetches data based on the user's role (handled by backend)
-      const data = await reviewCouncilService.getAllCouncils(); 
+      const data = await reviewCouncilService.getAllCouncils();
       const sortedData = [...data].sort((a, b) => {
         if (!a.reviewDate) return 1;
         if (!b.reviewDate) return -1;
         return new Date(a.reviewDate).getTime() - new Date(b.reviewDate).getTime();
       });
-      setAllCouncils(sortedData); // This state is used by HOD's calendar AND Lecturer's table/calendar
+      setAllCouncils(sortedData);
     } catch (err) {
       toast.error('Không thể tải danh sách hội đồng');
       setAllCouncils([]);
@@ -422,13 +422,9 @@ export default function ReviewCouncilPage() {
     }
   };
 
-  const milestoneOptions = [
-    { label: 'WEEK 4', value: 'WEEK_4' },
-    { label: 'WEEK 8', value: 'WEEK_8' },
-    { label: 'WEEK 12', value: 'WEEK_12' },
-  ];
 
-  // --- Common Handlers (mostly for HOD) ---
+
+  // handle cái edit
 
   const handleEditCouncil = (council: ReviewCouncilUIModel) => {
     setEditingCouncil(council);
@@ -441,11 +437,11 @@ export default function ReviewCouncilPage() {
     setTimeout(() => {
       // Đảm bảo accountID là number để so sánh đúng với Select
       const lecturerIds = council.lecturers.map((lec) => {
-        return typeof lec.accountID === 'string' 
-          ? Number(lec.accountID) 
+        return typeof lec.accountID === 'string'
+          ? Number(lec.accountID)
           : lec.accountID;
       });
-      
+
       form.setFieldsValue({
         topicTitle: council.topicTitle,
         milestone: council.milestone.replace(' ', '_'),
@@ -458,11 +454,25 @@ export default function ReviewCouncilPage() {
     }, 0);
   };
 
+  // handle tạo hội đồng
+
   const handleCreateCouncil = async () => {
     if (!selectedTopic) return;
     const existingCouncils = await reviewCouncilService.getCouncilsByTopicID(
       selectedTopic.topicID
     );
+    const existingMilestoneValues = new Set(
+      existingCouncils.map(c => c.milestone.replace(' ', '_'))
+    );
+
+    const newAvailableOptions = ALL_MILESTONES.filter(
+      option => !existingMilestoneValues.has(option.value)
+    );
+
+    setAvailableMilestones(newAvailableOptions);
+    const defaultMilestone = newAvailableOptions.length > 0
+      ? newAvailableOptions[0].value
+      : undefined;
     setShowReviewDateField(existingCouncils.length === 0);
     setEditingCouncil(null);
     setIsModalVisible(true);
@@ -473,7 +483,7 @@ export default function ReviewCouncilPage() {
       form.setFieldsValue({
         topicID: selectedTopic.topicID,
         topicTitle: selectedTopic.topicTitle,
-        milestone: existingCouncils.length === 0 ? 'WEEK_4' : 'WEEK_8',
+        milestone: defaultMilestone,
       });
     }, 0);
   };
@@ -482,10 +492,10 @@ export default function ReviewCouncilPage() {
     setIsModalVisible(false);
     form.resetFields();
     setEditingCouncil(null);
+    setAvailableMilestones(ALL_MILESTONES);
   };
 
   const handleOk = async () => {
-    // This logic assumes selectedTopic is set, which only happens for HOD
     if (!selectedTopic && !editingCouncil) {
       toast.error('Lỗi: Không tìm thấy đề tài đã chọn.');
       return;
@@ -512,7 +522,6 @@ export default function ReviewCouncilPage() {
         });
         toast.success('Cập nhật hội đồng thành công!');
       } else if (selectedTopic) {
-        // Only create if selectedTopic exists
         const createPayload = {
           topicID: selectedTopic.topicID,
           milestone: values.milestone,
@@ -526,12 +535,13 @@ export default function ReviewCouncilPage() {
       setIsModalVisible(false);
       form.resetFields();
       setEditingCouncil(null);
+      setAvailableMilestones(ALL_MILESTONES);
 
       // Refetch data
       if (selectedTopic) {
-        await handleViewCouncils(selectedTopic); // Refresh HOD topic modal
+        await handleViewCouncils(selectedTopic); 
       }
-      await fetchAllCouncils(); // Refresh HOD calendar AND Lecturer list/calendar
+      await fetchAllCouncils(); 
     } catch (error: any) {
       if (error.message) {
         toast.error(error.message);
@@ -562,7 +572,7 @@ export default function ReviewCouncilPage() {
     return (
       <Tooltip title={event.title}>
         {council?.status === 'Hoàn thành' ? (
-          // (MỚI) Icon tick xanh nếu 'Hoàn thành'
+          // Icon tick xanh nếu 'Hoàn thành'
           // Dùng màu trắng để nổi bật trên nền xanh
           <CheckCircleFilled style={{ color: 'white', fontSize: 20 }} />
         ) : (
@@ -612,7 +622,7 @@ export default function ReviewCouncilPage() {
     );
   }, [approvedTopics, searchText]);
 
-  // --- Main Render ---
+
 
   const renderContent = () => {
     if (!currentUser) {
@@ -626,9 +636,7 @@ export default function ReviewCouncilPage() {
       );
     }
 
-    // ===================================
-    // == HOD VIEW
-    // ===================================
+    // nếu là trưởng bộ môn
     if (currentUser.role === 'HEADOFDEPARTMENT') {
       return (
         <Card>
@@ -683,7 +691,7 @@ export default function ReviewCouncilPage() {
           </div>
 
           {viewMode === 'table' ? (
-            // HOD: Table View (Topic List)
+            // Danh sách đề tài đã được duyệt
             <>
               {loadingApprovedTopics ? (
                 <div style={{ textAlign: 'center', padding: '30px 0' }}>
@@ -762,7 +770,7 @@ export default function ReviewCouncilPage() {
               )}
             </>
           ) : (
-            // HOD: Calendar View
+            // mode lịch
             loadingAllCouncils ? (
               <div style={{ textAlign: 'center', padding: '30px 0' }}>
                 <Spin size="large" />
@@ -795,9 +803,7 @@ export default function ReviewCouncilPage() {
       );
     }
 
-    // ===================================
-    // == LECTURER VIEW (UPDATED)
-    // ===================================
+
     return (
       <Card>
         <Title
@@ -812,8 +818,8 @@ export default function ReviewCouncilPage() {
           <TeamOutlined style={{ color: '#1890ff' }} />
           Danh sách hội đồng của bạn
         </Title>
-        
-        {/* (NEW) Added ViewMode toggle for Lecturer */}
+
+        {/* Added ViewMode toggle for Lecturer */}
         <div
           style={{
             display: 'flex',
@@ -837,17 +843,17 @@ export default function ReviewCouncilPage() {
           </Space>
         </div>
 
-        {/* (NEW) Added Ternary for Lecturer view */}
+      
         {viewMode === 'table' ? (
           <CouncilTable
-            councils={allCouncils} // (UPDATED) Use allCouncils
-            loading={loadingAllCouncils} // (UPDATED) Use loadingAllCouncils
+            councils={allCouncils} 
+            loading={loadingAllCouncils}
             currentUser={currentUser}
-            onEdit={handleEditCouncil} 
+            onEdit={handleEditCouncil}
             router={router}
           />
         ) : (
-          // (NEW) Added Calendar view for Lecturer
+          // mode lịch cho giảng viên
           loadingAllCouncils ? (
             <div style={{ textAlign: 'center', padding: '30px 0' }}>
               <Spin size="large" />
@@ -855,7 +861,7 @@ export default function ReviewCouncilPage() {
           ) : (
             <Calendar
               localizer={localizer}
-              events={getCalendarEvents()} // Reuses the same event getter
+              events={getCalendarEvents()} 
               startAccessor="start"
               endAccessor="end"
               style={{ height: 600 }}
@@ -890,9 +896,7 @@ export default function ReviewCouncilPage() {
       </Content>
       <Footer />
 
-      {/* --- Modals (Mostly for HOD) --- */}
-
-      {/* Modal hiển thị hội đồng (HOD clicks 'View') */}
+      {/* bảng hội đồng */}
       <Modal
         title={
           <span>
@@ -915,7 +919,7 @@ export default function ReviewCouncilPage() {
         }
         width={1000}
       >
-        {/* (UPDATED) Use Reusable Component */}
+        {/* Use Reusable Component */}
         <CouncilTable
           councils={councils}
           loading={loadingCouncils}
@@ -925,7 +929,7 @@ export default function ReviewCouncilPage() {
         />
       </Modal>
 
-    
+
       {/* Modal TẠO/SỬA hội đồng (HOD only) */}
       <Modal
         title={editingCouncil ? 'Chỉnh sửa hội đồng' : 'Tạo hội đồng mới'}
@@ -960,7 +964,7 @@ export default function ReviewCouncilPage() {
             rules={[{ required: true, message: 'Vui lòng chọn milestone!' }]}
           >
             <Select placeholder="Chọn milestone" disabled={!!editingCouncil}>
-              {milestoneOptions.map((milestone) => (
+              {availableMilestones.map((milestone) => (
                 <Option key={milestone.value} value={milestone.value}>
                   {milestone.label}
                 </Option>
@@ -975,7 +979,6 @@ export default function ReviewCouncilPage() {
               label="Ngày review"
               rules={[
                 {
-                  // Yêu cầu nhập khi tạo council LẦN ĐẦU
                   required: !editingCouncil && showReviewDateField,
                   message: 'Vui lòng chọn ngày review!',
                 },
@@ -984,8 +987,6 @@ export default function ReviewCouncilPage() {
               <DatePicker
                 style={{ width: '100%' }}
                 format="YYYY-MM-DD"
-                // (FIXED) Quay lại logic gốc:
-                // Chỉ disable khi TẠO MỚI và KHÔNG PHẢI council đầu tiên
                 disabled={!editingCouncil && !showReviewDateField}
               />
             </Form.Item>
@@ -1010,7 +1011,7 @@ export default function ReviewCouncilPage() {
             </Select>
           </Form.Item>
 
-          {/* Link/Room dependent field */}
+          {/* Link meeting hoặc room  */}
           <Form.Item
             noStyle
             shouldUpdate={(prev, curr) => prev.reviewFormat !== curr.reviewFormat}
@@ -1067,10 +1068,10 @@ export default function ReviewCouncilPage() {
               placeholder="Chọn giảng viên"
               maxTagCount={3}
               showSearch
-              optionFilterProp="children" // Giữ nguyên để search
+              optionFilterProp="children" 
               loading={loadingLecturers}
-              
-              // (FIXED) Cập nhật filter để đảm bảo có email (nếu email là bắt buộc)
+
+              //  Cập nhật filter để đảm bảo có email (nếu email là bắt buộc)
               filterOption={(input, option) =>
                 (option?.children as unknown as string)
                   ?.toLowerCase()
@@ -1079,21 +1080,21 @@ export default function ReviewCouncilPage() {
             >
               {(() => {
                 // Lấy danh sách giảng viên hiện tại trong hội đồng (nếu đang chỉnh sửa)
-                const currentMembers = editingCouncil 
+                const currentMembers = editingCouncil
                   ? editingCouncil.lecturers.map(lec => ({
-                      accountID: typeof lec.accountID === 'string' ? Number(lec.accountID) : lec.accountID,
-                      accountName: lec.accountName,
-                      email: lec.email || ''
-                    }))
+                    accountID: typeof lec.accountID === 'string' ? Number(lec.accountID) : lec.accountID,
+                    accountName: lec.accountName,
+                    email: lec.email || ''
+                  }))
                   : [];
-                
+
                 // Tạo Set để lưu các ID đã có trong danh sách lecturers
                 const lecturerIdsSet = new Set(
                   lecturers
                     .filter((lec) => lec.accountID != null)
                     .map((lec) => typeof lec.accountID === 'string' ? Number(lec.accountID) : lec.accountID)
                 );
-                
+
                 // Thêm các giảng viên hiện tại vào danh sách nếu chưa có
                 const allLecturers = [...lecturers];
                 currentMembers.forEach(currentMember => {
@@ -1105,7 +1106,7 @@ export default function ReviewCouncilPage() {
                     });
                   }
                 });
-                
+
                 return allLecturers
                   // Cho phép hiển thị cả giảng viên chưa có email
                   .filter((lec) => lec.accountID != null && lec.accountName)
@@ -1114,8 +1115,8 @@ export default function ReviewCouncilPage() {
                       ? `${lec.accountName} (${lec.email})`
                       : lec.accountName;
                     // Đảm bảo accountID là number để so sánh đúng
-                    const accountIdValue = typeof lec.accountID === 'string' 
-                      ? Number(lec.accountID) 
+                    const accountIdValue = typeof lec.accountID === 'string'
+                      ? Number(lec.accountID)
                       : lec.accountID;
                     return (
                       <Option key={accountIdValue} value={accountIdValue}>
@@ -1151,7 +1152,7 @@ export default function ReviewCouncilPage() {
       >
         {selectedCouncil ? (
           <>
-            {/* (FIXED) Sửa lỗi layout cho Descriptions */}
+            {/* thông tin chi tiết của hội đồng  */}
             <Descriptions bordered column={2} size="small">
               <Descriptions.Item label="Đề tài" span={2}>
                 {selectedCouncil.topicTitle}
@@ -1201,7 +1202,7 @@ export default function ReviewCouncilPage() {
                 </Tag>
               </Descriptions.Item>
             </Descriptions>
-            
+
             <Divider orientation="left" style={{ marginTop: 24 }}>
               Thành viên hội đồng
             </Divider>
