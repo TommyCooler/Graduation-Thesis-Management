@@ -3,6 +3,7 @@ package mss.project.accountservice.services;
 import com.nimbusds.jwt.SignedJWT;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import mss.project.accountservice.dtos.requests.ChangePasswordRequest;
 import mss.project.accountservice.dtos.requests.LoginRequest;
 import mss.project.accountservice.dtos.requests.RegisterRequest;
 import mss.project.accountservice.dtos.requests.SendMailRequest;
@@ -210,12 +211,14 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public void changePasswordWhenFirstLogin(String email, String newPassword) {
-        Account account = accountRepository.findByEmail(email);
+    public void changePasswordWhenFirstLogin(ChangePasswordRequest request) {
+        Account account = accountRepository.findByEmail(request.getEmail());
         if (account == null) {
             throw new AppException(ErrorCode.ACCOUNT_NOT_FOUND);
         }
-        account.setPassword(passwordEncoder.encode(newPassword));
+        account.setName(request.getName());
+        account.setPhoneNumber(request.getPhoneNumber());
+        account.setPassword(passwordEncoder.encode(request.getNewPassword()));
         account.setFirstLogin(false);
         accountRepository.save(account);
     }

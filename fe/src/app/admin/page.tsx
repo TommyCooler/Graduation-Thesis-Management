@@ -13,7 +13,7 @@ import {
 
 const { Title, Text } = Typography;
 
-type Role = 'HEADOFDEPARTMENT' | 'LECTURER' | 'ADMIN';
+type Role = 'HEADOFDEPARTMENT' | 'LECTURER';
 
 interface Account {
     id: number;
@@ -38,7 +38,6 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
 const ROLE_LABEL: Record<Role, string> = {
     HEADOFDEPARTMENT: 'Trưởng bộ môn',
     LECTURER: 'Giảng viên',
-    ADMIN: 'Quản trị',
 };
 
 const roleTag = (r: Role) => {
@@ -50,10 +49,10 @@ const roleTag = (r: Role) => {
 };
 
 const roleOptions = (current?: Role) =>
-    (['HEADOFDEPARTMENT', 'LECTURER', 'ADMIN'] as Role[]).map(v => ({
+    (['HEADOFDEPARTMENT', 'LECTURER'] as Role[]).map(v => ({
         label: ROLE_LABEL[v],
         value: v,
-        disabled: v === current, // không cho chọn lại đúng role hiện tại
+        disabled: v === current,
     }));
 
 export default function AdminRolesPage() {
@@ -269,7 +268,7 @@ export default function AdminRolesPage() {
                 </div>
                 <div className='text-black text-xl'>Trang số <label className='border-0 rounded-2xl px-4 py-1 bg-orange-500 text-white'>{page}</label> bao gồm</div>
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Card className="shadow-sm rounded-2xl">
                         <Space direction="vertical" size={2}>
                             <Text type="secondary">Trưởng bộ môn</Text>
@@ -280,12 +279,6 @@ export default function AdminRolesPage() {
                         <Space direction="vertical" size={2}>
                             <Text type="secondary">Giảng viên</Text>
                             <Title level={4} style={{ margin: 0 }}>{stats.LECTURER}</Title>
-                        </Space>
-                    </Card>
-                    <Card className="shadow-sm rounded-2xl">
-                        <Space direction="vertical" size={2}>
-                            <Text type="secondary">Quản trị</Text>
-                            <Title level={4} style={{ margin: 0 }}>{stats.ADMIN}</Title>
                         </Space>
                     </Card>
                 </div>

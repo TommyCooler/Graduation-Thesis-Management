@@ -64,7 +64,7 @@ public class AccountServiceImpl implements AccountService {
     @Override
     public PageResponse<AccountPerPageResponse> getAccountsPaged(int page, int size, Account currentAccount) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        Page<Account> accountPage = accountRepository.findAll(pageable);
+        Page<Account> accountPage = accountRepository.findAllByRoleIn(List.of(Role.LECTURER, Role.HEADOFDEPARTMENT), pageable);
 
         List<Account> filtered = accountPage.getContent().stream()
                 .filter(acc -> !acc.getId().equals(currentAccount.getId()))
@@ -84,7 +84,7 @@ public class AccountServiceImpl implements AccountService {
                         .collect(Collectors.toList()))
                 .currentPage(accountPage.getNumber() + 1)
                 .totalPages(accountPage.getTotalPages())
-                .totalElements(accountPage.getTotalElements() - 1) // 👈 trừ bớt 1
+                .totalElements(accountPage.getTotalElements()) // 👈 trừ bớt 1
                 .pageSize(accountPage.getSize())
                 .build();
     }
