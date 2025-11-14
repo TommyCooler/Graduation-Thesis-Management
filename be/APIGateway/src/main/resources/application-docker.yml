@@ -1,0 +1,57 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: account-service
+              uri: http://account-service:8081   # nếu chạy docker: tên container
+              predicates:
+                - Path=/account-service/**
+              filters:
+                - RewritePath=/account-service/(?<segment>.*), /$\{segment}
+
+            - id: subject-service
+              uri: http://subject-service:8082
+              predicates:
+                - Path=/subject-service/**
+              filters:
+                - RewritePath=/subject-service/(?<segment>.*), /$\{segment}
+
+            - id: topic-approval-service
+              uri: http://topic-approval-service:8083
+              predicates:
+                - Path=/topic-approval-service/**
+              filters:
+                - RewritePath=/topic-approval-service/(?<segment>.*), /$\{segment}
+
+            - id: plagiarism-service
+              uri: http://plagiarism-service:8084
+              predicates:
+                - Path=/plagiarism-service/**
+              filters:
+                - RewritePath=/plagiarism-service/(?<segment>.*), /$\{segment}
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    display-request-duration: true
+    urls:
+      - name: Account Service
+        url: /account-service/v3/api-docs
+      - name: Subject Service
+        url: /subject-service/v3/api-docs
+      - name: Topic Approval Service
+        url: /topic-approval-service/v3/api-docs
+      - name: Plagiarism Service
+        url: /plagiarism-service/v3/api-docs

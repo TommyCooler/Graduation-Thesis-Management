@@ -14,7 +14,7 @@ spring:
       max-lifetime: 1800000
       connection-timeout: 20000
       data-source-properties:
-        preferQueryMode: simple  # hoặc: prepareThreshold: 0
+        preferQueryMode: simple
 
   jpa:
     hibernate:
@@ -49,5 +49,5 @@ app:
   jwt:
     secret-base64: ${BASE_64}
   oauth2:
-    success-redirect: http://localhost:3000
-    failure-redirect: http://localhost:3000/auth/oauth2/fail
+    success-redirect: ${SUCCESS_REDIRECT:http://localhost:3000}
+    failure-redirect: ${FAILURE_REDIRECT:http://localhost:3000/auth/oauth2/fail}

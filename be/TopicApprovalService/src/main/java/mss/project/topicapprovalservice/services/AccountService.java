@@ -10,7 +10,7 @@ import mss.project.topicapprovalservice.dtos.responses.AccountDTO;
 
 import java.util.List;
 
-@FeignClient(name = "account-service", url = "http://localhost:8081")
+@FeignClient(name = "account-service", url = "${account.service.url}")
 public interface AccountService {
 
     // Account endpoints
