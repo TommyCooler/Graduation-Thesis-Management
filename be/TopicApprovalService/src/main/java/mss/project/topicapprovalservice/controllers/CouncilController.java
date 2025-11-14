@@ -25,7 +25,7 @@ public class CouncilController {
     @Autowired
     private ICouncilService councilService;
 
-    @PreAuthorize("hasRole('HEADOFDEPARTMENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create")
     public ApiResponse<List<CouncilResponse>> createCouncil(@RequestBody CouncilCreateRequest councilCreateRequest) {
         List<CouncilResponse> saved = councilService.addCouncil(councilCreateRequest);
@@ -36,7 +36,7 @@ public class CouncilController {
                 .build();
     }
 
-    @PreAuthorize("hasRole('HEADOFDEPARTMENT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/all")
     public ApiResponse<List<CouncilResponse>> findAllCouncil() {
         List<CouncilResponse> councils = councilService.getAllCouncils();
