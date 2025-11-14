@@ -40,6 +40,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 .secure(true)             // nhớ dùng HTTPS
                 .path("/")
                 .maxAge(60 * 60 * 24 * 30)
+                .domain(".nducky.id.vn")
                 .sameSite("None")         // nếu FE chạy domain khác
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
