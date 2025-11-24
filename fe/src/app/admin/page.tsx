@@ -3,17 +3,20 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Card, Table, Tag, Select, Typography, Input, Space,
-    Button, Popconfirm, message, Skeleton, Tooltip, Empty, Divider, Badge
+    Button, Popconfirm, message, Skeleton, Tooltip, Empty, Divider, Badge, Layout
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
     ReloadOutlined, CheckOutlined, SearchOutlined, SafetyCertificateOutlined,
     TeamOutlined, ApartmentOutlined
 } from '@ant-design/icons';
+import AdminHeader from '../../components/combination/AdminHeader';
+import Footer from '../../components/combination/Footer';
 
 const { Title, Text } = Typography;
+const { Content } = Layout;
 
-type Role = 'HEADOFDEPARTMENT' | 'LECTURER';
+type Role = 'HEADOFDEPARTMENT' | 'LECTURER' | 'ADMIN';
 
 interface Account {
     id: number;
@@ -33,11 +36,12 @@ interface Paged<T> {
     size: number;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://graduation-backend.nducky.id.vn';
 
 const ROLE_LABEL: Record<Role, string> = {
     HEADOFDEPARTMENT: 'Trưởng bộ môn',
     LECTURER: 'Giảng viên',
+    ADMIN:'Quản trị'
 };
 
 const roleTag = (r: Role) => {
@@ -49,10 +53,10 @@ const roleTag = (r: Role) => {
 };
 
 const roleOptions = (current?: Role) =>
-    (['HEADOFDEPARTMENT', 'LECTURER'] as Role[]).map(v => ({
+    (['HEADOFDEPARTMENT', 'LECTURER', 'ADMIN'] as Role[]).map(v => ({
         label: ROLE_LABEL[v],
         value: v,
-        disabled: v === current,
+        disabled: v === current, // không cho chọn lại đúng role hiện tại
     }));
 
 export default function AdminRolesPage() {
@@ -233,97 +237,99 @@ export default function AdminRolesPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-white via-[#fff7f3] to-white p-6">
-            <div className="mx-auto max-w-7xl space-y-4">
-                {/* Page header */}
-                <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
-                    <div className="flex items-center justify-between">
-                        <Title level={3} style={{ margin: 0 }}>Quản lý vai trò tài khoản</Title>
-                        <Space>
-                            <Input
-                                allowClear
-                                prefix={<SearchOutlined />}
-                                placeholder="Tìm theo tên hoặc email…"
-                                value={search}
-                                onChange={(e) => onChangeSearch(e.target.value)}
-                                className="w-72"
-                            />
+        <Layout className="min-h-screen">
+            <AdminHeader />
+            <Content className="bg-gradient-to-br from-white via-[#fff7f3] to-white p-6">
+                <div className="mx-auto max-w-7xl space-y-4">
+                    {/* Page header */}
+                    <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
+                        <div className="flex items-center justify-between">
+                            <Title level={3} style={{ margin: 0 }}>Quản lý vai trò tài khoản</Title>
+                            <Space>
+                                <Input
+                                    allowClear
+                                    prefix={<SearchOutlined />}
+                                    placeholder="Tìm theo tên hoặc email…"
+                                    value={search}
+                                    onChange={(e) => onChangeSearch(e.target.value)}
+                                    className="w-72"
+                                />
                             <Button
                                 icon={<ReloadOutlined />}
                                 onClick={() => fetchAccounts(page, pageSize)}
                             >
                                 Làm mới
                             </Button>
-                            <Button
-                                danger
-                                type="primary"
-                                onClick={onLogout}
-                                className="bg-red-500 hover:bg-red-600 border-none"
-                            >
-                                Đăng xuất
-                            </Button>
-                        </Space>
+                            </Space>
+                        </div>
+
+                    </div>
+                    <div className='text-black text-xl'>Trang số <label className='border-0 rounded-2xl px-4 py-1 bg-orange-500 text-white'>{page}</label> bao gồm</div>
+                    {/* Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="shadow-sm rounded-2xl">
+                            <Space direction="vertical" size={2}>
+                                <Text type="secondary">Trưởng bộ môn</Text>
+                                <Title level={4} style={{ margin: 0 }}>{stats.HEADOFDEPARTMENT}</Title>
+                            </Space>
+                        </Card>
+                        <Card className="shadow-sm rounded-2xl">
+                            <Space direction="vertical" size={2}>
+                                <Text type="secondary">Giảng viên</Text>
+                                <Title level={4} style={{ margin: 0 }}>{stats.LECTURER}</Title>
+                            </Space>
+                        </Card>
+                        <Card className="shadow-sm rounded-2xl">
+                            <Space direction="vertical" size={2}>
+                                <Text type="secondary">Quản trị</Text>
+                                <Title level={4} style={{ margin: 0 }}>{stats.ADMIN}</Title>
+                            </Space>
+                        </Card>
                     </div>
 
-                </div>
-                <div className='text-black text-xl'>Trang số <label className='border-0 rounded-2xl px-4 py-1 bg-orange-500 text-white'>{page}</label> bao gồm</div>
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card className="shadow-sm rounded-2xl">
-                        <Space direction="vertical" size={2}>
-                            <Text type="secondary">Trưởng bộ môn</Text>
-                            <Title level={4} style={{ margin: 0 }}>{stats.HEADOFDEPARTMENT}</Title>
-                        </Space>
+                    {/* Table */}
+                    <Card className="shadow-md rounded-2xl">
+                        {loading && rows.length === 0 ? (
+                            <>
+                                <Skeleton active paragraph={{ rows: 2 }} />
+                                <Divider />
+                                <Skeleton active paragraph={{ rows: 8 }} />
+                            </>
+                        ) : (
+                            <Table<Account>
+                                rowKey="id"
+                                columns={columns}
+                                dataSource={filtered}
+                                loading={loading}
+                                sticky
+                                bordered
+                                locale={{
+                                    emptyText: (
+                                        <Empty
+                                            image={Empty.PRESENTED_IMAGE_SIMPLE}
+                                            description="Chưa có tài khoản nào"
+                                        />
+                                    ),
+                                }}
+                                pagination={{
+                                    current: page,
+                                    pageSize,
+                                    total,
+                                    showSizeChanger: true,
+                                    showTotal: (t) => `Tổng ${t} tài khoản`,
+                                    onChange: (p, s) => {
+                                        setPage(p);
+                                        setPageSize(s);
+                                        fetchAccounts(p, s);
+                                    },
+                                }}
+                                scroll={{ x: 960 }}
+                            />
+                        )}
                     </Card>
-                    <Card className="shadow-sm rounded-2xl">
-                        <Space direction="vertical" size={2}>
-                            <Text type="secondary">Giảng viên</Text>
-                            <Title level={4} style={{ margin: 0 }}>{stats.LECTURER}</Title>
-                        </Space>
-                    </Card>
                 </div>
-
-                {/* Table */}
-                <Card className="shadow-md rounded-2xl">
-                    {loading && rows.length === 0 ? (
-                        <>
-                            <Skeleton active paragraph={{ rows: 2 }} />
-                            <Divider />
-                            <Skeleton active paragraph={{ rows: 8 }} />
-                        </>
-                    ) : (
-                        <Table<Account>
-                            rowKey="id"
-                            columns={columns}
-                            dataSource={filtered}
-                            loading={loading}
-                            sticky
-                            bordered
-                            locale={{
-                                emptyText: (
-                                    <Empty
-                                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                        description="Chưa có tài khoản nào"
-                                    />
-                                ),
-                            }}
-                            pagination={{
-                                current: page,
-                                pageSize,
-                                total,
-                                showSizeChanger: true,
-                                showTotal: (t) => `Tổng ${t} tài khoản`,
-                                onChange: (p, s) => {
-                                    setPage(p);
-                                    setPageSize(s);
-                                    fetchAccounts(p, s);
-                                },
-                            }}
-                            scroll={{ x: 960 }}
-                        />
-                    )}
-                </Card>
-            </div>
-        </div>
+            </Content>
+            <Footer />
+        </Layout>
     );
 }

@@ -16,8 +16,8 @@ public enum TopicStatus {
 
 
     ASSIGNED_TO_COUNCIL("Đã gán vào hội đồng"),
-    GRADUATED("Đã tốt nghiệp"),
-    FAILED_GRADUATION("Rớt tốt nghiệp"),
+    PASS_CAPSTONE("Đậu đồ án"),
+    FAIL_CAPSTONE("Rớt đồ án"),
     RETAKING("Đang chấm lại"),
     ;
     private final String displayName;

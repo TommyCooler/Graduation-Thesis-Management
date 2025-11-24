@@ -8,8 +8,6 @@ import {
   AuditOutlined,
   BarChartOutlined,
   MailOutlined,
-  TeamOutlined,
-  UnorderedListOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import Header from '../../../components/combination/Header';
@@ -116,26 +114,6 @@ export default function HeadOfDepartmentDashboard() {
                       icon={<MailOutlined />}
                     >
                       Cấp email cho giảng viên
-                    </Button>
-                  </Link>
-
-                  <Link href="/head-of-department/council-list">
-                    <Button
-                      size="large"
-                      className="w-full h-12 text-[#ff6b35] border-[#ff6b35]"
-                      icon={<UnorderedListOutlined />}
-                    >
-                      Danh sách hội đồng
-                    </Button>
-                  </Link>
-
-                  <Link href="/head-of-department/council">
-                    <Button
-                      size="large"
-                      className="w-full h-12 text-[#ff6b35] border-[#ff6b35]"
-                      icon={<TeamOutlined />}
-                    >
-                      Quản lý hội đồng
                     </Button>
                   </Link>
                 </Space>

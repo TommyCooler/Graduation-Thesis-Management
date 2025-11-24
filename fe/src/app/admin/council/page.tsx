@@ -23,13 +23,14 @@ import {
   FileTextOutlined, 
   CalendarOutlined,
   PlusOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons';
 import { Topic } from '../../../types/topic';
 import { CouncilCreateRequest } from '../../../types/council';
 import { topicService } from '../../../services/topicService';
 import { councilService } from '../../../services/councilService';
-import Header from '../../../components/combination/Header';
+import AdminHeader from '../../../components/combination/AdminHeader';
 import Footer from '../../../components/combination/Footer';
 
 const { Content } = Layout;
@@ -86,9 +87,9 @@ const CouncilPage: React.FC = () => {
         return;
       }
       
-      // Kiểm tra role (hỗ trợ cả HEADOFDEPARTMENT và HEAD_OF_DEPARTMENT)
+      // Kiểm tra role ADMIN
       const normalizedRole = role?.toUpperCase().replace(/_/g, '');
-      if (normalizedRole === 'HEADOFDEPARTMENT') {
+      if (normalizedRole === 'ADMIN') {
         setIsAuthorized(true);
       } else {
         messageApi.error('Bạn không có quyền truy cập trang này');
@@ -200,7 +201,7 @@ const CouncilPage: React.FC = () => {
       
       // Chuyển đến trang danh sách sau 1.5 giây
       setTimeout(() => {
-        router.push('/head-of-department/council-list');
+        router.push('/admin/council-list');
       }, 1500);
     } catch (error) {
       console.error('Error creating council:', error);
@@ -248,7 +249,7 @@ const CouncilPage: React.FC = () => {
           <Result
             status="403"
             title="Không có quyền truy cập"
-            subTitle="Chỉ có Trưởng bộ môn mới được phép truy cập trang này."
+            subTitle="Chỉ có Admin mới được phép truy cập trang này."
             extra={
               <Button type="primary" onClick={() => router.push('/')}>
                 Về trang chủ
@@ -263,18 +264,36 @@ const CouncilPage: React.FC = () => {
   return (
     <Layout className="min-h-screen">
       {contextHolder}
-      <Header />
+      <AdminHeader />
       
       <Content className="p-10 bg-gray-50">
         <div className="max-w-7xl mx-auto">
           {/* Header Section */}
           <div className="mb-8">
-            <Title level={2} className="text-orange-500 mb-2">
-              <TeamOutlined /> Thành lập hội đồng
-            </Title>
-            <Paragraph className="text-base text-gray-600">
-              Danh sách đề tài đã được sắp xếp theo ngày review. Bấm "Tạo hội đồng" để tạo hội đồng với tất cả đề tài.
-            </Paragraph>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <Title level={2} className="text-orange-500 mb-2">
+                  <TeamOutlined /> Thành lập hội đồng
+                </Title>
+                <Paragraph className="text-base text-gray-600">
+                  Danh sách đề tài đã được sắp xếp theo ngày review. Bấm "Tạo hội đồng" để tạo hội đồng với tất cả đề tài.
+                </Paragraph>
+              </div>
+              <Button
+                type="default"
+                size="large"
+                icon={<UnorderedListOutlined />}
+                onClick={() => router.push('/admin/council-list')}
+                style={{
+                  borderRadius: '8px',
+                  height: '40px',
+                  fontSize: '14px',
+                  fontWeight: 500
+                }}
+              >
+                Danh sách hội đồng
+              </Button>
+            </div>
           </div>
 
           {/* Action Card */}

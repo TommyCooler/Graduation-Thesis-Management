@@ -1,7 +1,7 @@
 import { TopicHistory, TopicHistoryApiResponse, TopicHistoryFilters } from '../types/topic-history';
 
 // Use the same base URL as topicService
-const API_BASE_URL = process.env.TOPIC_API_BASE_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
 
 class TopicHistoryService {
   private baseUrl: string;

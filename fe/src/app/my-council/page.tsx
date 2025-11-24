@@ -297,12 +297,16 @@ const MyCouncilPage: React.FC = () => {
 
     // Convert councils to calendar events
     const getCalendarEvents = () => {
-        return filteredGroupedByDate
+        const events: any[] = [];
+        
+        filteredGroupedByDate
             .filter((dateGroup) => dateGroup.defenseDate)
-            .flatMap((dateGroup) => {
-                return dateGroup.councils.map((council) => {
+            .forEach((dateGroup) => {
+                dateGroup.councils.forEach((council) => {
                     const topicCount = council.topics.length;
-                    return {
+                    
+                    // Event cho ngày chấm chính
+                    events.push({
                         id: `${council.councilName}_${dateGroup.defenseDate}`,
                         title: `${council.councilName} (${topicCount} đề tài)`,
                         start: dayjs(dateGroup.defenseDate).startOf('day').toDate(),
@@ -312,16 +316,39 @@ const MyCouncilPage: React.FC = () => {
                             defenseDate: dateGroup.defenseDate,
                             councils: [council],
                             council: council,
-                            topicCount: topicCount
+                            topicCount: topicCount,
+                            isRetakeDate: false
                         }
-                    };
+                    });
+                    
+                    // Event cho ngày chấm lại (nếu có)
+                    if (council.retakeDate) {
+                        events.push({
+                            id: `${council.councilName}_retake_${council.retakeDate}`,
+                            title: `${council.councilName} - Chấm lại (${topicCount} đề tài)`,
+                            start: dayjs(council.retakeDate).startOf('day').toDate(),
+                            end: dayjs(council.retakeDate).endOf('day').toDate(),
+                            allDay: true,
+                            resource: {
+                                defenseDate: council.retakeDate,
+                                councils: [council],
+                                council: council,
+                                topicCount: topicCount,
+                                isRetakeDate: true
+                            }
+                        });
+                    }
                 });
             });
+        
+        return events;
     };
 
     // Event style getter - tùy chỉnh màu sắc dựa trên status và role
     const eventStyleGetter = (event: any) => {
         const council = event.resource?.council;
+        const isRetakeDate = event.resource?.isRetakeDate || false;
+        
         if (!council) {
             return {
                 style: {
@@ -336,7 +363,26 @@ const MyCouncilPage: React.FC = () => {
             };
         }
 
-        // Màu dựa trên status
+        // Nếu là ngày chấm lại, dùng màu đỏ/tím để phân biệt
+        if (isRetakeDate) {
+            return {
+                style: {
+                    backgroundColor: '#722ed1', // purple/violet
+                    borderColor: '#722ed1',
+                    color: 'white',
+                    borderRadius: '6px',
+                    border: `2px solid #722ed1`,
+                    padding: '4px 6px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    transition: 'all 0.2s ease',
+                }
+            };
+        }
+
+        // Màu dựa trên status cho ngày chấm chính
         let backgroundColor = '#ff6b35'; // default orange
         let borderColor = '#ff6b35';
         
@@ -372,18 +418,26 @@ const MyCouncilPage: React.FC = () => {
     const CustomEvent = ({ event }: { event: any }) => {
         const council = event.resource?.council;
         const topicCount = event.resource?.topicCount || 0;
+        const isRetakeDate = event.resource?.isRetakeDate || false;
         
         return (
             <Tooltip 
                 title={
                     <div style={{ padding: '4px' }}>
-                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>{event.title}</div>
+                        <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                            {isRetakeDate ? '🔄 ' : ''}{event.title}
+                        </div>
                         {council && (
                             <>
                                 <div>Vai trò: {councilService.getRoleDisplay(council.role)}</div>
                                 <div>Trạng thái: {councilService.getStatusDisplay(council.status)}</div>
                                 <div>Học kỳ: {council.semester}</div>
                                 <div>Số đề tài: {topicCount}</div>
+                                {isRetakeDate && (
+                                    <div style={{ color: '#722ed1', fontWeight: 'bold', marginTop: '4px' }}>
+                                        📅 Ngày chấm lại
+                                    </div>
+                                )}
                             </>
                         )}
                     </div>
@@ -408,7 +462,11 @@ const MyCouncilPage: React.FC = () => {
                         e.currentTarget.style.zIndex = '1';
                     }}
                 >
-                    <TeamOutlined style={{ fontSize: 14, flexShrink: 0 }} />
+                    {isRetakeDate ? (
+                        <ClockCircleOutlined style={{ fontSize: 14, flexShrink: 0 }} />
+                    ) : (
+                        <TeamOutlined style={{ fontSize: 14, flexShrink: 0 }} />
+                    )}
                     <span 
                         style={{ 
                             fontSize: '11px', 
@@ -482,6 +540,10 @@ const MyCouncilPage: React.FC = () => {
             'SUBMITTED': 'Đã nộp',
             'UNDER_REVIEW': 'Đang xem xét',
             'REVISION_REQUIRED': 'Yêu cầu sửa đổi',
+            'RETAKING': 'Đang chấm lại',
+            'PASS_CAPSTONE': 'Đậu đồ án',
+            'FAILED': 'Không đạt',
+            'FAIL_CAPSTONE': 'Rớt đồ án'
         };
         return statusMap[status] || status;
     };
@@ -498,8 +560,28 @@ const MyCouncilPage: React.FC = () => {
             'SUBMITTED': 'blue',
             'UNDER_REVIEW': 'orange',
             'REVISION_REQUIRED': 'yellow',
+            'RETAKING': 'purple',
+            'PASS_CAPSTONE': 'green',
+            'FAILED': 'red',
+            'FAIL_CAPSTONE': 'red'
         };
         return colorMap[status] || 'default';
+    };
+
+    // Kiểm tra xem tất cả topics trong council đã hoàn thành chưa
+    // Chỉ hoàn thành khi tất cả topics có status là PASS_CAPSTONE hoặc FAIL_CAPSTONE
+    // Và không có topic nào có status RETAKING
+    const isCouncilCompleted = (council: GroupedByDate['councils'][0]): boolean => {
+        if (!council.topics || council.topics.length === 0) {
+            return false; // Không có topic thì không hoàn thành
+        }
+        
+        // Kiểm tra tất cả topics
+        return council.topics.every((topic) => {
+            const topicStatus = (topic as any)?.topicStatus;
+            // Chỉ hoàn thành khi status là PASS_CAPSTONE hoặc FAIL_CAPSTONE
+            return topicStatus === 'PASS_CAPSTONE' || topicStatus === 'FAIL_CAPSTONE';
+        });
     };
 
     return (
@@ -717,7 +799,7 @@ const MyCouncilPage: React.FC = () => {
                                                                             Bắt đầu chấm
                                                                         </Button>
                                                                     )}
-                                                                    {(council.status === 'IN_PROGRESS' || council.status === 'RETAKING') && (
+                                                                    {(council.status === 'IN_PROGRESS' || council.status === 'RETAKING') && isCouncilCompleted(council) && (
                                                                         <Button
                                                                             size="small"
                                                                             type="primary"
@@ -747,6 +829,17 @@ const MyCouncilPage: React.FC = () => {
                                                                         >
                                                                             Hoàn thành
                                                                         </Button>
+                                                                    )}
+                                                                    {(council.status === 'IN_PROGRESS' || council.status === 'RETAKING') && !isCouncilCompleted(council) && (
+                                                                        <Tooltip title="Chỉ có thể hoàn thành khi tất cả đề tài đã được chấm (Đậu đồ án hoặc Rớt đồ án)">
+                                                                            <Button
+                                                                                size="small"
+                                                                                type="primary"
+                                                                                disabled
+                                                                            >
+                                                                                Hoàn thành
+                                                                            </Button>
+                                                                        </Tooltip>
                                                                     )}
                                                                 </>
                                                             )}
@@ -844,7 +937,7 @@ const MyCouncilPage: React.FC = () => {
                                         {/* Summary Stats */}
                                         <div className="mb-4 p-3 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg border border-orange-200">
                                             <div className="flex items-center justify-between flex-wrap gap-3">
-                                                <div className="flex items-center gap-2 text-xs">
+                                                <div className="flex items-center gap-2 text-xs flex-wrap">
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-3 h-3 rounded bg-blue-500"></div>
                                                         <Text>Đã lập</Text>
@@ -856,6 +949,10 @@ const MyCouncilPage: React.FC = () => {
                                                     <div className="flex items-center gap-1">
                                                         <div className="w-3 h-3 rounded bg-orange-500"></div>
                                                         <Text>Khác</Text>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <div className="w-3 h-3 rounded bg-purple-500"></div>
+                                                        <Text>Chấm lại</Text>
                                                     </div>
                                                 </div>
                                             </div>

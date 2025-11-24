@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: SUBJECT-SERVICE
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: ${SUBJECT_DB_URL}
+    username: ${SUBJECT_DB_USERNAME}
+    password: ${SUBJECT_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 2
+      minimum-idle: 1
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+server:
+  port: 8082
+
+springdoc:
+  swagger-ui:
+    operationsSorter: method
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true

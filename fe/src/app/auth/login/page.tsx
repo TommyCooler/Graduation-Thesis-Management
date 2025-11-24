@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Cookies from 'js-cookie';
 
 const { Title, Text } = Typography;
 
@@ -18,7 +19,7 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [form] = Form.useForm();
   const router = useRouter();
-  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+  const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://graduation-backend.nducky.id.vn';
 
   const onFinish = async (values: { email: string; password: string }) => {
     form.setFields([{ name: 'email', errors: [] }, { name: 'password', errors: [] }]);
@@ -45,7 +46,15 @@ export default function LoginPage() {
             }
           }
 
-          const token = parsed?.data?.token as string | undefined;
+          const token = parsed?.data?.token as string | "";
+          console.log(token)
+          if (parsed.code === 200) {
+            Cookies.set('access_token', token, {
+              expires: 2 / 24, // 1 hour
+              secure: true,
+              sameSite: 'Lax',
+            });
+          }
           const role = parsed?.data?.role as string | undefined;
           const firstLogin = parsed?.data?.firstLogin as boolean | undefined;
           console.log(firstLogin)

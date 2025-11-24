@@ -24,6 +24,19 @@ class AppColors {
   static const Color warning = Color(0xFFFFC107);
   static const Color info = Color(0xFF2196F3);
   
+  // Status Colors with Pastel variants
+  static const Color successGreen = Color(0xFF28a745);
+  static const Color successGreenPastel = Color(0xFFE9F7EB);
+  static const Color errorRed = Color(0xFFdc3545);
+  static const Color errorRedPastel = Color(0xFFFDEEEE);
+  static const Color infoBlue = Color(0xFF007bff);
+  static const Color infoBluePastel = Color(0xFFE6F2FF);
+  
+  // Additional Colors
+  static const Color fptOrangePastel = Color(0xFFFFE5D3);
+  static const Color cream = Color(0xFFFFF8F0);
+  static const Color white = Color(0xFFFFFFFF);
+  
   // Border & Divider
   static const Color border = Color(0xFFE0E0E0);
   static const Color divider = Color(0xFFBDBDBD);
